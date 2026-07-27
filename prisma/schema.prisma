@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  sku       String   @unique
+  price     Float
+  cost      Float
+  stock     Int
+  category  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One product can appear on many transaction line items.
+  items TransactionItem[]
+
+  // A product can appear on many sale line items.
+  saleItems SaleItem[]
+
+  // A product may optionally belong to a supplier (nullable). Cascade on
+  // delete so removing a supplier clears the link without dropping products.
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId])
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // A supplier can provide many products.
+  products Product[]
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // NOTE: intentionally no `@unique` on `email` (or `name`). SQLite treats
+  // multiple NULLs as violating a unique constraint, so a unique-on-nullable
+  // column would reject the second walk-in customer with no email — clearly
+  // wrong. Name collisions are legitimate customer data too (two "John Smith"s).
+  //
+  // `loyaltyPoints` starts at 0 for new customers and is bumped later, e.g. by
+  // a checkout flow or an admin edit. It bottoms out at 0 — never negative.
+
+  // A customer's purchases. Optional relation so guest checkouts (no account)
+  // can create a Sale with a null customerId.
+  sales Sale[]
+}
+
+model Sale {
+  id            String   @id @default(uuid())
+  totalAmount   Float
+  subtotal      Float
+  tax           Float
+  paymentMethod String
+  status        String   @default("Completed")
+  createdAt     DateTime @default(now())
+
+  // Optional link to a Customer — null for guest checkouts. SetNull keeps the
+  // sale record intact if the customer is later deleted (audit trail preserved).
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  // A sale owns many line items; deleting a sale removes its items to keep the
+  // ledger consistent.
+  items SaleItem[]
+
+  @@index([customerId])
+}
+
+model SaleItem {
+  id      String @id @default(uuid())
+  saleId  String
+  productId String
+  quantity Int
+  priceAtSale Float
+
+  // Snapshotted connection between a Sale and a Product. Cascade on sale
+  // delete; Restrict on product delete so product removal can't silently drop
+  // sale history.
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  totalAmount   Float
+  subtotal      Float
+  tax           Float
+  paymentMethod String
+  status        String   @default("Completed")
+  createdAt     DateTime @default(now())
+
+  // A transaction owns many line items; deleting a transaction
+  // removes its items to keep the ledger consistent.
+  items TransactionItem[]
+}
+
+model TransactionItem {
+  id            String @id @default(uuid())
+  transactionId String
+  productId     String
+  quantity      Int
+  priceAtSale   Float
+
+  // Snapshotted connection between a Transaction and a Product.
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([productId])
+}
+
+/// Store-wide configuration: a single singleton row (the settings page + its
+/// server action guarantee at most one row exists). The tax rate and currency
+/// symbol here are intended to drive POS checkout and receipts — today those
+/// are hardcoded constants (e.g. `TAX_RATE` in `PosCheckout.tsx`); this model
+/// externalizes them so the manager can change them without a deploy.
+///
+/// `updatedAt` is a plain `DateTime` (not `@updatedAt`) so it only moves on an
+/// explicit write — the action bumps it manually, and we can read "last edited"
+/// from it without Prisma touching it on every unrelated transaction.
+model StoreSetting {
+  id        String @id @default(uuid())
+  storeName String
+  address   String?
+  phone     String?
+  /// Sales-tax percentage as a number, e.g. `8.5` means 8.5%. 0 = tax disabled.
+  taxRate   Float  @default(0)
+  /// Short currency glyph, e.g. "$", "€", "¥". Kept tiny on purpose.
+  currencySymbol String @default("$")
+  updatedAt DateTime
+}
