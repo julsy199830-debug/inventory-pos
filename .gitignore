@@ -49,4 +49,5 @@ next-env.d.ts
 
 # local stray logs / scratch HTML exports
 /dev.log
+/.dev-out.log
 /*.html
