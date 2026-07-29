@@ -1,0 +1,160 @@
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.202.52:3000
+- Environments: .env.local, .env
+✓ Ready in 338ms
+
+ GET /employees 200 in 2.3s (next.js: 2000ms, application-code: 320ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /employees 500 in 242ms (next.js: 5ms, application-code: 237ms)
+ GET /employees 200 in 155ms (next.js: 6ms, application-code: 149ms)
+ GET /employees 200 in 53ms (next.js: 5ms, application-code: 48ms)
+ GET /suppliers 200 in 272ms (next.js: 241ms, application-code: 30ms)
+ GET /customers 200 in 267ms (next.js: 245ms, application-code: 22ms)
+ GET /employees 200 in 21ms (next.js: 2ms, application-code: 18ms)
+⨯ Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:915:239)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:436:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:966:193)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:942:30)
+    at <unknown> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:977:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:1015:412)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS... {
+  digest: '277974718@E352'
+}
+ POST /employees 500 in 243ms (next.js: 2ms, application-code: 241ms)
+[browser] Uncaught Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?129:915:239)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?130:436:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?131:966:193)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?132:942:30)
+    at <anonymous> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?134:977:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?135:1015:412)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?136:997:30)
+    at form (<anonymous>)
+    at RoleSelect (src/app/(dashboard)/employees/RoleSelect.tsx:33:5)
+    at <anonymous> (src\app\(dashboard)\employees\page.tsx:221:21)
+    at Array.map (<anonymous>:1:18)
+    at EmployeesPage (src\app\(dashboard)\employees\page.tsx:207:26)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS...
+[browser] ⨯ unhandledRejection: ChunkLoadError: Failed to load chunk /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_0k3wjgd._.js from module [turbopack]/browser/dev/hmr-client/hmr-client.ts [app-client] (ecmascript, async loader)
+    at <unknown> (file://C:/Users/OCA/Desktop/inventory-pos/.next/dev/static/chunks/turbopack-Desktop_inventory-pos_1e4gcrx._.js:698:25)
+ GET /accounting?range=7d 200 in 379ms (next.js: 240ms, application-code: 138ms)
+ GET /accounting 200 in 7ms (next.js: 2ms, application-code: 5ms)
+ GET /accounting 200 in 42ms (next.js: 1893µs, application-code: 40ms)
+ GET /employees 200 in 21ms (next.js: 4ms, application-code: 17ms)
+⨯ Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:915:239)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:436:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:966:193)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:942:30)
+    at <unknown> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:977:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:1015:412)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS... {
+  digest: '277974718@E352'
+}
+ POST /employees 500 in 167ms (next.js: 3ms, application-code: 164ms)
+[browser] ⨯ unhandledRejection: Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?114:915:239)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?115:436:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?116:966:193)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?117:942:30)
+    at <anonymous> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?119:977:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?120:1015:412)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?121:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS...
+⨯ Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:915:239)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:436:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:966:193)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:942:30)
+    at <unknown> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:977:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:1015:412)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS... {
+  digest: '277974718@E352'
+}
+ POST /employees 500 in 188ms (next.js: 3ms, application-code: 185ms)
+[browser] ⨯ unhandledRejection: Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?114:915:239)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?115:436:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?116:966:193)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?117:942:30)
+    at <anonymous> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?119:977:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?120:1015:412)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?121:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS...
+⨯ Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:915:239)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:436:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:966:193)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:942:30)
+    at <unknown> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:977:30)
+    at <unknown> (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:1015:412)
+    at module evaluation (C:\Users\OCA\Desktop\inventory-pos\.next\dev\server\chunks\ssr\[root-of-the-server]__1qpe63d._.js:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS... {
+  digest: '277974718@E352'
+}
+ POST /employees 500 in 166ms (next.js: 2ms, application-code: 164ms)
+[browser] ⨯ unhandledRejection: Error: A "use server" file can only export async functions, found object.
+Read more: https://nextjs.org/docs/messages/invalid-use-server-value
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?114:915:239)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?115:436:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?116:966:193)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?117:942:30)
+    at <anonymous> (.next-internal\server\app\(dashboard)\employees\page\actions.js (server actions loader):1:1)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?119:977:30)
+    at <anonymous> (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?120:1015:412)
+    at module evaluation (about://React/Server/C:%5CUsers%5COCA%5CDesktop%5Cinventory-pos%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__1qpe63d._.js?121:997:30)
+> 1 | export {createEmployee as '40e0360737bb91eadf12f24820723c1c1c82b86bcb'} from 'ACTIONS_MODULE0'
+    | ^
+  2 | export {updateEmployee as '40b8b3dd99b0e0854c186a60097b72049e3e42695b'} from 'ACTIONS_MODULE0'
+  3 | export {deleteEmployee as '40144054e90e9ee94c2a0e1779d7c2c681d3dce7af'} from 'ACTIONS_MODULE0'
+  4 | export {toggleEmployeeStatus as '409ae2b3bf819a51905e27045bacc8cfc9cd85bc99'} from 'ACTIONS...

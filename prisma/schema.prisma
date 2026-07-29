@@ -12,6 +12,37 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  /// Numeric login PIN, 4–6 digits. Stored as a string so leading zeros are
+  /// preserved (a "0123" PIN must not collapse to "123"). Validated to match
+  /// `/^\d{4,6}$/` at the action layer; the schema only commits the shape.
+  pin          String
+  /// Whether this employee can currently sign in / is staffed. Distinguished
+  /// from hard delete so an offboarded cashier's audit trail survives while
+  /// their login is revoked — `toggleEmployeeStatus` flips this bit.
+  active       Boolean  @default(true)
+  // Authorization role. Modeled as a plain `String` column (not a native SQLite
+  // enum) to mirror `Sale.status` / `Transaction.status`: the column holds the
+  // literal, and the set of allowed values is enforced at the TypeScript layer
+  // via the `Role` union in `src/lib/types.ts` ('ADMIN' | 'MANAGER' | 'CASHIER').
+  // The default seeds new accounts as the least-privileged 'CASHIER'.
+  role         String   @default("CASHIER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Back-relations for the employee performance view. A user's completed sales
+  // (the cashier who rang them up) and their worked shifts. Cascade on shift
+  // delete is implicit (a User delete removes their shifts — there's no audit
+  // value in orphan shift clock-ins once the employee is gone); sales keep their
+  // audit trail via the Sale.cashier `onDelete: SetNull` below.
+  sales  Sale[]   // sales this cashier rang up (nullable on the Sale side)
+  shifts Shift[]  // clock-in/out records for this employee
+}
+
 model Product {
   id        String   @id @default(uuid())
   name      String
@@ -88,11 +119,20 @@ model Sale {
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
+  // Optional link to the cashier (User) who rang up this sale. Null for
+  // legacy/guest sales made before cashier attribution existed, and SetNull
+  // preserves an offboarded cashier's audit trail just like `customerId` — the
+  // User.* `active` comment calls this out explicitly. Drives per-employee
+  // sales metrics in the Employees module.
+  cashierId String?
+  cashier   User? @relation(fields: [cashierId], references: [id], onDelete: SetNull)
+
   // A sale owns many line items; deleting a sale removes its items to keep the
   // ledger consistent.
   items SaleItem[]
 
   @@index([customerId])
+  @@index([cashierId])
 }
 
 model SaleItem {
@@ -160,4 +200,32 @@ model StoreSetting {
   /// Short currency glyph, e.g. "$", "€", "¥". Kept tiny on purpose.
   currencySymbol String @default("$")
   updatedAt DateTime
+}
+
+/// A work shift for an employee (User). Opened by `clockIn` (sets `start`,
+/// leaves `end` null = currently clocked in) and closed by `clockOut`
+/// (sets `end` and snapshots that shift's sale totals so historical
+/// performance is stable and not recomputed against a mutable Sale ledger).
+///
+/// `totalSales`/`salesCount` are snapshot fields populated at clock-out by
+/// summing completed sales attributed to this user whose `createdAt` falls
+/// inside [start, end]. They stay 0 for open shifts until closed. Kept as
+/// `@default(0)` so a clock-in insert needs no values, matching the
+/// plain-column + TS-narrowing convention (no native enum for a "shiftStatus").
+model Shift {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Shift start. `@default(now())` so `clockIn` only sends `userId`.
+  start      DateTime @default(now())
+  /// Shift end. NULL = the employee is still on the clock. Set by `clockOut`.
+  end        DateTime?
+  /// Snapshot of total sales $ rung up during this shift, filled at clock-out.
+  totalSales Float   @default(0)
+  /// Snapshot of the count of completed sales during this shift, at clock-out.
+  salesCount Int     @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([start])
 }

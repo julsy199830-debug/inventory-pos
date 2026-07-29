@@ -1,0 +1,36 @@
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.202.52:3000
+- Environments: .env.local, .env
+✓ Ready in 326ms
+
+○ Compiling /employees ...
+ GET /employees 200 in 4.2s (next.js: 3.8s, application-code: 335ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /employees 500 in 248ms (next.js: 3ms, application-code: 245ms)
+ GET /customers 200 in 321ms (next.js: 250ms, application-code: 71ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /customers 500 in 179ms (next.js: 2ms, application-code: 177ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /employees 500 in 195ms (next.js: 5ms, application-code: 190ms)
+ GET /employees 200 in 87ms (next.js: 7ms, application-code: 80ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /employees 500 in 372ms (next.js: 8ms, application-code: 365ms)
+⨯ Error: Connection closed.
+    at ignore-listed frames {
+  digest: '1736059469'
+}
+ POST /employees 500 in 204ms (next.js: 5ms, application-code: 199ms)
+[?25h
