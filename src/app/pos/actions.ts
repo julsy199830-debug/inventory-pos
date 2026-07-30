@@ -4,6 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { setCashierCookie, clearCashierCookie } from "@/lib/session";
 import { PIN_PATTERN } from "@/lib/pin";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * Cashier sign-in / sign-out for the POS register.
@@ -23,14 +24,15 @@ import { PIN_PATTERN } from "@/lib/pin";
  */
 
 /**
- * Result shape for {@link signInCashierPin}. The discriminated `ok` matches the
- * `CreateSaleResult` convention so the POS gate's submit handler can branch the
- * same way it does for sale checkout. No payload on success — the cookie is set
- * and the page revalidates, so the signed-in UI streams in on its own.
+ * Result shape for {@link signInCashierPin} — the shared discriminated
+ * {@link ActionResult} with no success payload (`ActionResult<void>` reads back
+ * as `{ ok: true } | { ok: false; error: string }`). The discriminated `ok`
+ * matches the `CreateSaleResult` convention so the POS gate's submit handler
+ * branches the same way it does for sale checkout. No payload on success — the
+ * cookie is set and the page revalidates, so the signed-in UI streams in on its
+ * own.
  */
-export type SignInResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type SignInResult = ActionResult<void>;
 
 /**
  * Constant-time comparison of two strings of equal length, so a wrong PIN

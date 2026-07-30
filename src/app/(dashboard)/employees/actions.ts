@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
-import { asRole, ROLES, type Role } from "@/lib/types";
+import { asRole, ROLES, type Role, type ActionResult } from "@/lib/types";
 import { PIN_PATTERN } from "@/lib/pin";
 
 /**
@@ -63,37 +63,26 @@ async function verifyPassword(cleartext: string, stored: string): Promise<boolea
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// ── Result types (mirror the customers/suppliers convention) ────────────────
+// ── Result types (shared discriminated union from @/lib/types) ──────────────
+//
+// Aliased here so action signatures read self-documentingly and so any client
+// that imports these names resolves to the one shared {@link ActionResult}.
+// The success arm spreads its payload onto `{ ok: true }`, so the existing
+// `return { ok: true, name }` / `return { ok: true, shiftId }` sites type-check
+// unchanged. `error` lives only on the `{ ok: false }` arm.
 
-/** Result shape returned to the client so the dialog can react without an
- *  exception bubbling into React's nearest error boundary. */
-export type CreateEmployeeResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-  /** The name of the row we created, so the client can confirm + close. */
-  name?: string;
-};
+/** Result of {@link createEmployee}. Echos back the new row's `name` so the
+ *  dialog can confirm + close. */
+export type CreateEmployeeResult = ActionResult<{ name?: string }>;
 
-/** Result shape for `updateEmployee`. Mirrors `CreateEmployeeResult` — the
- *  success case has nothing to echo back (the page revalidates), so no `name`
- *  field is needed here. */
-export type UpdateEmployeeResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-};
+/** Result of {@link updateEmployee}. No payload — `revalidatePath` refreshes the
+ *  row, so the success case has nothing to echo back. */
+export type UpdateEmployeeResult = ActionResult<void>;
 
-/** Result shape for the shift actions (`clockIn` / `clockOut`). Carries the
- *  affected row so the client can confirm transitions inline without waiting on
- *  the revalidated page. */
-export type ShiftResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-  /** The id of the shift that was opened or closed, if any. */
-  shiftId?: string;
-};
+/** Result of the shift actions ({@link clockIn} / {@link clockOut}). Carries
+ *  the affected `shiftId` so the client can confirm transitions inline without
+ *  waiting on the revalidated page. */
+export type ShiftResult = ActionResult<{ shiftId?: string }>;
 
 // ── Employee CRUD ───────────────────────────────────────────────────────────
 

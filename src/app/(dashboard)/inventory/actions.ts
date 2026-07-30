@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -16,18 +17,17 @@ function load(formData: FormData, key: string): string | undefined {
   return str === "" ? undefined : str;
 }
 
-/** Result shape returned to the client so the dialog can react without an
- *  exception bubbling into React's nearest error boundary. */
-export type CreateProductResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-  /** The SKU of the row we created, so the client can confirm + close. */
-  sku?: string;
-};
+// Result type: the shared discriminated {@link ActionResult} from
+// `@/lib/types`, aliased here so the action signatures read self-documentingly
+// (single source of truth in `lib/types.ts`). The success arm spreads its
+// payload onto `{ ok: true }`, so the existing `return { ok: true, sku }` sites
+// on create AND update type-check unchanged.
+/** Result of {@link createProduct} / {@link updateProduct}. Echos back the
+ *  row's `sku` so the client can confirm + close. */
+export type CreateProductResult = ActionResult<{ sku?: string }>;
 
-/** Result shape for `updateProduct` — structurally identical to the create
- *  result, kept as its own name so the edit dialog's state is self-documenting. */
+/** Same shape as {@link CreateProductResult} — the edit dialog auto-closes on
+ *  `ok` and the revalidated table streams the new values back in. */
 export type UpdateProductResult = CreateProductResult;
 
 /**

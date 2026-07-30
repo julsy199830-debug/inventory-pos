@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import type { MutationResult } from "@/lib/types";
 
 /**
  * One line item in an outgoing sale. The client supplies `productId` and

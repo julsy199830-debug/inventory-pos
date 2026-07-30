@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -16,24 +17,17 @@ function load(formData: FormData, key: string): string | undefined {
   return str === "" ? undefined : str;
 }
 
-/** Result shape returned to the client so the dialog can react without an
- *  exception bubbling into React's nearest error boundary. */
-export type CreateCustomerResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-  /** The name of the row we created, so the client can confirm + close. */
-  name?: string;
-};
+// Result types: the shared discriminated {@link ActionResult} from
+// `@/lib/types`. Kept as named aliases so the action signatures read
+// self-documentingly; the single source of truth lives in `lib/types.ts`. The
+// success arm spreads its payload onto `{ ok: true }`, so the existing
+// `return { ok: true, name }` / `return { ok: true }` sites type-check unchanged.
+/** Result of {@link createCustomer}. Echos back the new row's `name`. */
+export type CreateCustomerResult = ActionResult<{ name?: string }>;
 
-/** Result shape for `updateCustomer`. Mirrors `CreateCustomerResult` — the
- *  success case has nothing to echo back (the page revalidates), so no `name`
- *  field is needed here. */
-export type UpdateCustomerResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-};
+/** Result of {@link updateCustomer}. No payload — `revalidatePath` refreshes the
+ *  row, so the success case has nothing to echo back. */
+export type UpdateCustomerResult = ActionResult<void>;
 
 /**
  * Parse the optional `loyaltyPoints` field from the form.

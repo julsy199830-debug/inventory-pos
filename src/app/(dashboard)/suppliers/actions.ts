@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -16,25 +17,18 @@ function load(formData: FormData, key: string): string | undefined {
   return str === "" ? undefined : str;
 }
 
-/** Result shape returned to the client so the dialog can react without an
- *  exception bubbling into React's nearest error boundary. */
-export type CreateSupplierResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-  /** The name of the row we created, so the client can confirm + close. */
-  name?: string;
-};
+// Result types: the shared discriminated {@link ActionResult} from
+// `@/lib/types`, aliased here so the action signatures read self-documentingly
+// (single source of truth in `lib/types.ts`). The success arm spreads its
+// payload onto `{ ok: true }`, so the existing `return { ok: true, name }` /
+// `return { ok: true }` sites type-check unchanged.
+/** Result of {@link createSupplier}. Echos back the new row's `name` so the
+ *  dialog can confirm + close. */
+export type CreateSupplierResult = ActionResult<{ name?: string }>;
 
-/** Result shape for `updateSupplier`. Mirrors `CreateSupplierResult` — the
- *  dialog observes it with `useActionState` and auto-closes on `ok` — but
- *  the success case has nothing to echo back (the page revalidates), so no
- *  `name` field is needed here. */
-export type UpdateSupplierResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-};
+/** Result of {@link updateSupplier}. No payload — `revalidatePath` refreshes the
+ *  row, so the success case has nothing to echo back. */
+export type UpdateSupplierResult = ActionResult<void>;
 
 /**
  * Server Action backing the "Add New Supplier" dialog.
