@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { StoreSetting } from "@/generated/prisma/client";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -33,18 +34,15 @@ export type StoreSettingsData = Pick<
 
 /**
  * Result shape for `saveSettings`. The form observes it with a manual `await`
- * (event-handler calling convention, not `useActionState` — see the
- * EditSupplierDialog for the rationale, chiefly avoiding setState-in-effect).
+ * (event-handler calling convention, not `useActionState`).
  *
- * `ok: true` carries no payload: `revalidatePath('/settings')` refreshes the
+ * The shared discriminated {@link ActionResult} with no success payload
+ * (`ActionResult<void>` reads back as `{ ok: true } | { ok: false; error }`).
+ * `ok: true` carries nothing: `revalidatePath('/settings')` refreshes the
  * cached row, so the "last edited" stamp and form values stream back in on the
  * next render without the client merging anything.
  */
-export type SaveSettingsResult = {
-  ok: boolean;
-  /** The first validation/server error to surface inline. */
-  error?: string;
-};
+export type SaveSettingsResult = ActionResult<void>;
 
 /**
  * The single store-settings row this app keeps. Settings are a 1-row table by

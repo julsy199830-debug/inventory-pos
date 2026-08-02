@@ -1,25 +1,28 @@
-// Seed the `Product` and `Supplier` tables with a realistic starting
-// inventory, and link each product to the supplier that provides it.
+// Seed the `Product`, `Supplier`, and `Category` tables with a realistic
+// starting inventory, and link each product to the supplier + category that
+// provide/classify it.
 //
 // Run directly:
 //   npx tsx prisma/seed.ts
 // …or through Prisma (after wiring `prisma.seed`):
 //   npx prisma db seed
 //
-// Idempotent: products are upserted by SKU and suppliers by name, so re-running
-// won't duplicate rows or trip unique constraints. On insert, `id`/`createdAt`/
-// `updatedAt` are left to their schema defaults; on update, only the supplied
-// fields are refreshed (the id and createdAt stay put). The product↔supplier
-// link is re-applied on every run by matching SKU → supplier name, so editing
-// the `supplierFor` mapping below and re-seeding will rebind products without
-// orphaning them.
+// Idempotent: products are upserted by SKU, suppliers + categories by name, so
+// re-running won't duplicate rows or trip unique constraints. On insert,
+// `id`/`createdAt`/`updatedAt` are left to their schema defaults; on update,
+// only the supplied fields are refreshed (the id and createdAt stay put). The
+// product↔supplier and product↔category links are re-applied on every run by
+// matching SKU → supplier/category name, so editing either mapping below and
+// re-seeding will rebind products without orphaning them.
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 /** One row per physical product we stock. `cost` < `price` (intended margin),
- *  SKUs follow `<CAT>-####` so they sort and read well. `supplier` (optional)
- *  is the supplier name to link this product to; omitted products remain un
- *  supplied to honor the optional Product↔Supplier relation. */
+ *  SKUs follow `<CAT>-####` so they sort and read well. `category` is the
+ *  category NAME to link to (resolved to a Category id at seed time); omitted
+ *  or unknown names leave the product uncategorized. `supplier` (optional) is
+ *  the supplier name to link this product to; omitted products remain unsupplied
+ *  to honor the optional Product↔Supplier relation. */
 type SeedProduct = {
   name: string;
   sku: string;
@@ -28,6 +31,13 @@ type SeedProduct = {
   stock: number;
   category: string;
   supplier?: string;
+};
+
+/** One row per category we stock. `name` is the idempotency key; the threshold
+ *  overrides the app-wide `LOW_STOCK_THRESHOLD` default for that line. */
+type SeedCategory = {
+  name: string;
+  lowStockThreshold?: number;
 };
 
 /** One row per vendor that supplies us. `name` is the idempotency key (matched
@@ -62,6 +72,13 @@ const suppliers: SeedSupplier[] = [
     phone: "+1-555-0198",
     address: "7 Cooperage Row, Burlington, VT",
   },
+];
+
+const categories: SeedCategory[] = [
+  // Electronics are pricier, slower movers — flag anything under 20 as low.
+  { name: "Electronics", lowStockThreshold: 20 },
+  { name: "Apparel", lowStockThreshold: 10 },
+  { name: "Food/Beverage", lowStockThreshold: 10 },
 ];
 
 const products: SeedProduct[] = [
@@ -195,11 +212,42 @@ async function main() {
       }
     }
 
+    // Upsert categories by name so their ids exist before we link products to
+    // them. `name` IS `@unique` on Category, so a plain `upsert` by name works
+    // (unlike suppliers). `lowStockThreshold` defaults to 10 in the schema;
+    // we only write it when the seed row overrides the default, and re-apply it
+    // on update so changing the value here rebinds existing rows on re-seed.
+    const categoryIdByName = new Map<string, string>();
+    let categoriesCreated = 0;
+    let categoriesUpdated = 0;
+
+    for (const c of categories) {
+      const existing = await prisma.category.findUnique({ where: { name: c.name } });
+      await prisma.category.upsert({
+        where: { name: c.name },
+        create: {
+          name: c.name,
+          lowStockThreshold: c.lowStockThreshold ?? 10,
+        },
+        update: {
+          lowStockThreshold: c.lowStockThreshold ?? 10,
+        },
+      });
+      const resolved = await prisma.category.findUnique({ where: { name: c.name } });
+      if (!resolved) throw new Error(`Failed to resolve category "${c.name}" after upsert`);
+      categoryIdByName.set(c.name, resolved.id);
+      if (existing) {
+        categoriesUpdated++;
+      } else {
+        categoriesCreated++;
+      }
+    }
+
     for (const p of products) {
       const before = await prisma.product.findUnique({ where: { sku: p.sku } });
-      // Resolve the supplier link (if any) to a concrete id now, then strip
-      // the helper field before handing the row to Prisma.
-      const { supplier: _supplierName, ...productData } = p;
+      // Resolve the supplier + category links (if any) to concrete ids now, then
+      // strip the helper fields before handing the row to Prisma.
+      const { supplier: _supplierName, category: _categoryName, ...productData } = p;
       const supplierId =
         _supplierName !== undefined ? supplierIdByName.get(_supplierName) : undefined;
       if (_supplierName !== undefined && supplierId === undefined) {
@@ -207,19 +255,26 @@ async function main() {
           `Product ${p.sku} references unknown supplier "${_supplierName}"`,
         );
       }
+      const categoryId = categoryIdByName.get(_categoryName);
+      if (!categoryId) {
+        throw new Error(
+          `Product ${p.sku} references unknown category "${_categoryName}"`,
+        );
+      }
 
       await prisma.product.upsert({
         where: { sku: p.sku },
-        create: { ...productData, supplierId: supplierId ?? null },
+        // `category` (name) is dropped before create; only `categoryId` is sent.
+        create: { ...productData, supplierId: supplierId ?? null, categoryId },
         update: {
           name: p.name,
           price: p.price,
           cost: p.cost,
           stock: p.stock,
-          category: p.category,
-          // Re-apply the link each run so editing the `supplier` mapping
-          // rebinds products without leaving stale references.
+          // Re-apply both links each run so editing the `supplier`/`category`
+          // mappings rebinds products without leaving stale references.
           supplierId: supplierId ?? null,
+          categoryId,
         },
       });
       if (before) {
@@ -231,10 +286,16 @@ async function main() {
 
     const total = await prisma.product.count();
     const totalSuppliers = await prisma.supplier.count();
+    const totalCategories = await prisma.category.count();
     console.log(
       `Seeding complete: ${suppliers.length} suppliers upserted by name ` +
         `(${suppliersCreated} created, ${suppliersUpdated} updated). ` +
         `Supplier table now holds ${totalSuppliers} row(s).`,
+    );
+    console.log(
+      `Seeding complete: ${categories.length} categories upserted by name ` +
+        `(${categoriesCreated} created, ${categoriesUpdated} updated). ` +
+        `Category table now holds ${totalCategories} row(s).`,
     );
     console.log(
       `Seeding complete: ${products.length} products upserted by SKU ` +

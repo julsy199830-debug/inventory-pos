@@ -24,6 +24,18 @@ export function asRole(value: string | null | undefined): Role {
   return ROLES.includes(value as Role) ? (value as Role) : "CASHIER";
 }
 
+// ── Inventory ────────────────────────────────────────────────────────────────
+//
+// The "running low" threshold for stock. A product is Low Stock when its `stock`
+// is strictly below this threshold and Out of Stock when it's 0. The default
+// applies to uncategorized products and to categories with no explicit
+// `Category.lowStockThreshold`; a category may override it (raise for
+// high-velocity lines, lower for slow movers) via the category management page.
+//
+// Keep this value in sync with `Category.lowStockThreshold @default(10)` in
+// `schema.prisma` so a freshly seeded DB and the TS fallback agree.
+export const LOW_STOCK_THRESHOLD = 10;
+
 // ── Server Action result shapes ─────────────────────────────────────────────
 //
 // Every Server Action in the app resolves to one of these rather than throwing

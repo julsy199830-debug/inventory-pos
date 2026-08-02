@@ -50,7 +50,13 @@ model Product {
   price     Float
   cost      Float
   stock     Int
-  category  String
+  // Category link. `categoryId` is nullable so an archive/delete of a category
+  // clears the link (onDelete: SetNull) rather than dragging every product with
+  // it — see the `Category` model comment. Separated from the old free-text
+  // `category` column so the list of categories is now a first-class entity the
+  // management page can govern (counts, low-stock thresholds, rename/delete).
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -66,6 +72,33 @@ model Product {
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([supplierId])
+  @@index([categoryId])
+}
+
+/// A product category. Replaces the old free-text `Product.category` string so
+/// the set of categories is governable from the management page: counts, a
+/// per-category low-stock threshold (used by the inventory "needs restock"
+/// badges and the category page), and rename/delete with idempotent structural
+/// changes.
+///
+/// `lowStockThreshold` overrides the app-wide default (`LOW_STOCK_THRESHOLD` in
+/// `src/lib/types.ts`) when set higher; the inventory badge falls back to the
+/// default when a category has none or the product is uncategorized. Modeled as
+/// a plain `Int @default(10)` rather than a native enum — matching the
+/// `Role`/`Sale.status` plain-column + TS-narrowing convention this schema uses
+/// throughout (SQLite has no native enum anyway).
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  /// Per-category "running low" cutoff: a product whose `stock` is strictly
+  /// below this is flagged Low Stock (0 is Out of Stock). Defaults to 10, the
+  /// app-wide default; raise it for loss-leader categories or lower it for
+  /// slow-movers so the inventory alerts match how each line is actually run.
+  lowStockThreshold Int     @default(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
 }
 
 model Supplier {

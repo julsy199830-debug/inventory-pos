@@ -29,9 +29,7 @@ export type CreateSaleInput = {
   items: SaleItemInput[];
 };
 
-export type CreateSaleResult =
-  | { ok: true; data: { id: string } }
-  | { ok: false; error: string };
+export type CreateSaleResult = MutationResult<{ id: string }>;
 
 /**
  * Create a Sale header + its SaleItem rows, decrement product stock, and bump
