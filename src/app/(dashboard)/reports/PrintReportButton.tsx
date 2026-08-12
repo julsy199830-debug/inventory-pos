@@ -15,7 +15,7 @@ export default function PrintReportButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-emerald-700"
     >
       <svg
         className="h-4 w-4"

@@ -1,7 +1,7 @@
 import { getCustomers } from "./actions";
 import { CustomersClient } from "./CustomersClient";
 
-export const metadata = { title: "Customers — Apex POS" };
+export const metadata = { title: "Customers — JuLs POS" };
 
 export default async function CustomersPage() {
   const result = await getCustomers();

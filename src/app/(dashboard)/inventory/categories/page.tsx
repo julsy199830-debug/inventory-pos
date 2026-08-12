@@ -155,7 +155,7 @@ function ProductCountPill({ count }: { count: number }) {
   const color =
     count === 0
       ? "bg-slate-100 text-slate-600"
-      : "bg-indigo-50 text-indigo-700";
+      : "bg-emerald-50 text-emerald-700";
   const label = count === 1 ? "1 product" : `${count} products`;
   return (
     <span

@@ -30,7 +30,7 @@ export default function InventoryLoading() {
         {/* Filter button */}
         <div className="h-10 w-28 rounded-xl border border-slate-200/80 bg-white shadow-sm animate-pulse" />
         {/* Add New Product button */}
-        <div className="h-10 w-44 rounded-lg bg-indigo-600 animate-pulse" />
+        <div className="h-10 w-44 rounded-lg bg-emerald-600 animate-pulse" />
       </div>
 
       {/* Data table */}

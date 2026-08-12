@@ -137,7 +137,7 @@ function KpiTile({
           className={[
             "mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
             badgeTone === "indigo"
-              ? "bg-indigo-50 text-indigo-700"
+              ? "bg-emerald-50 text-emerald-700"
               : "bg-slate-100 text-slate-500",
           ].join(" ")}
         >

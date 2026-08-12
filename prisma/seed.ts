@@ -296,7 +296,7 @@ async function main() {
       await prisma.storeSetting.create({
         data: {
           id: "default-store",
-          storeName: "Apex POS Store",
+          storeName: "JuLs POS Store",
           address: "123 Main Street, Manila",
           phone: "+63-2-555-0100",
           taxRate: 8,
@@ -312,14 +312,14 @@ async function main() {
     const seedUsers = [
       {
         name: "Admin",
-        email: "admin@apexpos.test",
+        email: "admin@julspos.test",
         passwordHash: "seed-placeholder",
         pin: "1234",
         role: "ADMIN",
       },
       {
         name: "Cashier",
-        email: "cashier@apexpos.test",
+        email: "cashier@julspos.test",
         passwordHash: "seed-placeholder",
         pin: "0000",
         role: "CASHIER",

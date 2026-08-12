@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Apex POS",
+  title: "JuLs POS",
   description: "Inventory & Point of Sale",
 };
 

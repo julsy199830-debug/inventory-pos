@@ -217,7 +217,7 @@ export default async function InventoryPage({
             name="q"
             defaultValue={query}
             placeholder="Search items..."
-            className="w-full rounded-xl border border-slate-200/80 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10"
+            className="w-full rounded-xl border border-slate-200/80 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
           />
         </div>
 
@@ -347,7 +347,7 @@ export default async function InventoryPage({
 const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
   out: { badge: "bg-red-100 text-red-800", status: "Out of Stock" },
   low: { badge: "bg-red-50 text-red-700", status: "Low Stock" },
-  ok: { badge: "bg-indigo-50 text-indigo-700", status: "In Stock" },
+  ok: { badge: "bg-emerald-50 text-emerald-700", status: "In Stock" },
 };
 
 /**

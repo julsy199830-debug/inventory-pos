@@ -5,6 +5,6 @@ CREATE TABLE "StoreSetting" (
     "address" TEXT,
     "phone" TEXT,
     "taxRate" REAL NOT NULL DEFAULT 0,
-    "currencySymbol" TEXT NOT NULL DEFAULT '$',
+    "currencySymbol" TEXT NOT NULL DEFAULT '₱',
     "updatedAt" DATETIME NOT NULL
 );

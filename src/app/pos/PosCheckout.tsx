@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AnimatePresence, motion } from 'framer-motion'
 import { createSale, type CreateSaleResult } from '@/app/actions/sales'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
@@ -292,7 +293,7 @@ export default function PosCheckout({
             autoComplete="off"
             autoFocus
             placeholder="Scan or type a SKU, then Enter"
-            className="h-10 w-full rounded-xl border border-slate-200/80 bg-white pl-9 pr-3 font-mono text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600/10"
+            className="h-10 w-full rounded-xl border border-slate-200/80 bg-white pl-9 pr-3 font-mono text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
           />
         </div>
       </div>
@@ -309,7 +310,7 @@ export default function PosCheckout({
           id="customer-select"
           value={customerId}
           onChange={(e) => setCustomerId(e.target.value)}
-          className="mt-1 h-10 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600/10"
+          className="mt-1 h-10 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
         >
           <option value="">Guest (no loyalty)</option>
           {customers.map((c) => (
@@ -343,8 +344,8 @@ export default function PosCheckout({
                 className={[
                   'inline-flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-semibold transition active:scale-[0.98]',
                   active
-                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-                    : 'border-slate-200/80 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600',
+                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                    : 'border-slate-200/80 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600',
                 ].join(' ')}
               >
                 <Icon className="h-4 w-4" />
@@ -391,7 +392,7 @@ export default function PosCheckout({
                     type="button"
                     onClick={() => changeQty(line.product.id, -1)}
                     aria-label={`Decrease ${line.product.name} quantity`}
-                    className="px-2 py-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-indigo-600"
+                    className="px-2 py-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-emerald-600"
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
@@ -402,7 +403,7 @@ export default function PosCheckout({
                     type="button"
                     onClick={() => changeQty(line.product.id, 1)}
                     aria-label={`Increase ${line.product.name} quantity`}
-                    className="px-2 py-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-indigo-600"
+                    className="px-2 py-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-emerald-600"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -455,7 +456,7 @@ export default function PosCheckout({
         type="button"
         disabled={cart.length === 0 || pending || creditBlocked}
         onClick={onCheckout}
-        className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-4 text-base font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+        className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-4 text-base font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
       >
         {pending ? 'Processing…' : 'Process Payment'}
       </button>
@@ -481,7 +482,7 @@ export default function PosCheckout({
       <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4">
         <h2 className="text-base font-semibold text-slate-900">Current Order</h2>
         {cart.length > 0 && (
-          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
             {cart.reduce((n, l) => n + l.qty, 0)} items
           </span>
         )}
@@ -512,7 +513,7 @@ export default function PosCheckout({
               >
                 <Link
                   href="/"
-                  className="font-medium text-slate-500 transition-colors hover:text-indigo-600"
+                  className="font-medium text-slate-500 transition-colors hover:text-emerald-600"
                 >
                   Dashboard
                 </Link>
@@ -527,10 +528,10 @@ export default function PosCheckout({
             // register title + operator badge instead of a dead link.
             <div className="flex min-w-0 items-center gap-3">
               <span className="truncate text-base font-semibold tracking-tight text-slate-900">
-                Apex POS Register
+                'JuLs POS Register'
               </span>
-              <span className="hidden items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 ring-1 ring-indigo-100 md:inline-flex">
-                <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              <span className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100 md:inline-flex">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 {cashier.name} · {cashier.role.charAt(0) + cashier.role.slice(1).toLowerCase()}
               </span>
             </div>
@@ -572,7 +573,7 @@ export default function PosCheckout({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products or SKU…"
                 autoComplete="off"
-                className="h-10 w-full rounded-xl border border-slate-200/80 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600/10"
+                className="h-10 w-full rounded-xl border border-slate-200/80 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
               />
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -618,20 +619,20 @@ export default function PosCheckout({
                           disabled={out}
                           onClick={() => addToCart(p)}
                           aria-label={`Add ${p.name} to order`}
-                          className="group relative flex min-h-[116px] flex-col rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-indigo-300 enabled:hover:shadow-md enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="group relative flex min-h-[116px] flex-col rounded-xl border border-slate-200/80 bg-white p-4 text-left shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:shadow-md enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {out && (
                             <span className="absolute right-3 top-3 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-600 ring-1 ring-red-100">
                               Out
                             </span>
                           )}
-                          <p className="min-w-0 truncate pr-10 text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
+                          <p className="min-w-0 truncate pr-10 text-sm font-semibold text-slate-900 group-hover:text-emerald-700">
                             {p.name}
                           </p>
                           <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-400">
                             {p.sku}
                           </p>
-                          <p className="mt-auto pt-3 text-sm font-semibold text-indigo-600">
+                          <p className="mt-auto pt-3 text-sm font-semibold text-emerald-600">
                             {money(p.price)}
                           </p>
                           <p
@@ -674,7 +675,7 @@ export default function PosCheckout({
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98]"
           >
             <ShoppingCart className="h-4 w-4" />
             View Cart
@@ -683,34 +684,46 @@ export default function PosCheckout({
       )}
 
       {/* ── Mobile: cart slide-over drawer ─────────────────────────────── */}
-      {cartOpen && (
-        <div
-          className="fixed inset-0 z-50 md:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Current order"
-        >
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setCartOpen(false)}
-          />
-          <div className="absolute inset-y-0 right-0 flex w-[88%] max-w-md flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Current Order</h2>
-              <button
-                type="button"
-                onClick={() => setCartOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                aria-label="Close cart"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col">{cartBody}</div>
-            {cartFooter}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {cartOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Current order"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setCartOpen(false)}
+            />
+            <motion.div
+              className="absolute inset-y-0 right-0 flex w-[88%] max-w-md flex-col bg-white shadow-xl"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4">
+                <h2 className="text-base font-semibold text-slate-900">Current Order</h2>
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(false)}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  aria-label="Close cart"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">{cartBody}</div>
+              {cartFooter}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
       {/* Sale-completion modal — receipt preview + print action. The receipt
@@ -773,7 +786,7 @@ export default function PosCheckout({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 active:scale-[0.98]"
               >
                 <Printer className="h-4 w-4" />
                 Print Receipt
@@ -808,8 +821,8 @@ function CategoryChip({
       className={[
         'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition active:scale-[0.97]',
         active
-          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-          : 'border-slate-200/80 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600',
+          ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+          : 'border-slate-200/80 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600',
       ].join(' ')}
     >
       {children}

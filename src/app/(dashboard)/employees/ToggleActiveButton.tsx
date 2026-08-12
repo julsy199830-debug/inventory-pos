@@ -51,7 +51,7 @@ export default function ToggleActiveButton({
         className={[
           'inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
           active
-            ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
             : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
         ].join(' ')}
       >

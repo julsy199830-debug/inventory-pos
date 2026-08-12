@@ -221,7 +221,7 @@ export default function EditCategoryDialog({
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
                   {pending ? "Saving…" : "Save changes"}
                 </button>
@@ -235,7 +235,7 @@ export default function EditCategoryDialog({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 disabled:bg-slate-50";
+  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 disabled:bg-slate-50";
 
 /** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
 function Field({

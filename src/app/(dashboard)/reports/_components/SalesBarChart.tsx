@@ -23,7 +23,7 @@ import {
 /**
  * Stacked sales-volume bar chart — the centrepiece of the analytics page.
  *
- * Two stacked series per bucket: **Cash** (indigo-600) vs **Card / Credit**
+ * Two stacked series per bucket: **Cash** (emerald-600) vs **Card / Credit**
  * (emerald-500), with the top segment's corners rounded. The Month / Week
  * toggle is client-side state over the two datasets the server action already
  * computed, so switching periods never refetches. Both series share a
@@ -150,7 +150,7 @@ function PeriodButton({
       className={[
         "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
         active
-          ? "bg-white text-indigo-600 shadow-sm"
+          ? "bg-white text-emerald-600 shadow-sm"
           : "text-slate-500 hover:text-slate-700",
       ].join(" ")}
     >
