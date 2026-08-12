@@ -41,6 +41,8 @@ model User {
   // audit trail via the Sale.cashier `onDelete: SetNull` below.
   sales  Sale[]   // sales this cashier rang up (nullable on the Sale side)
   shifts Shift[]  // clock-in/out records for this employee
+  // Debt payments this cashier logged against customer balances.
+  customerPayments CustomerPayment[]
 }
 
 model Product {
@@ -65,6 +67,13 @@ model Product {
 
   // A product can appear on many sale line items.
   saleItems SaleItem[]
+
+  // Append-only audit trail of every stock change for this product (restocks,
+  // sales, edits, damage). `onDelete: Restrict` on the StockMovement side means
+  // a product with any movement history can't be hard-deleted until those rows
+  // are removed — same integrity the SaleItem/TransactionItem links enforce, so
+  // `deleteProduct`'s P2003 path covers stock movements too. See StockMovement.
+  movements StockMovement[]
 
   // A product may optionally belong to a supplier (nullable). Cascade on
   // delete so removing a supplier clears the link without dropping products.
@@ -121,6 +130,15 @@ model Customer {
   email         String?
   phone         String?
   address       String?
+  /// Max outstanding debt ("utang") this customer may carry. 0 = no credit
+  /// (cash/loyalty only). Enforced at the action layer against `currentBalance`.
+  creditLimit   Float    @default(0)
+  /// Current outstanding balance. Increased by STORE_CREDIT sales, decreased
+  /// by `CustomerPayment` records — kept in sync only inside `$transaction`s.
+  /// Bottomed at 0 by the actions that decrement it (never negative).
+  currentBalance Float   @default(0)
+  /// Free-text note: payment reminders, terms, ID notes, etc. Optional.
+  notes         String?
   loyaltyPoints Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -132,10 +150,56 @@ model Customer {
   //
   // `loyaltyPoints` starts at 0 for new customers and is bumped later, e.g. by
   // a checkout flow or an admin edit. It bottoms out at 0 — never negative.
+  //
+  // `creditLimit`/`currentBalance` gate the STORE_CREDIT payment method in POS
+  // checkout: a sale on account is only allowed when `currentBalance + newTotal
+  // <= creditLimit`. `currentBalance` is intentionally NOT derived (a computed
+  // read) because the ledger needs an atomic floor for the limit check inside
+  // `createSale`'s transaction.
 
   // A customer's purchases. Optional relation so guest checkouts (no account)
   // can create a Sale with a null customerId.
   sales Sale[]
+
+  // Every debt settlement against this customer's balance. Cascade on customer
+  // delete: payments are transactional records of a specific account, not audit
+  // rows that must outlive the account (contrast Sale.customerId SetNull).
+  payments CustomerPayment[]
+}
+
+/// A debt settlement (payment) applied against a {@link Customer}'s outstanding
+/// balance. Complementary to `Sale.paymentMethod = "STORE_CREDIT"`: a credit
+/// sale INCREASES `Customer.currentBalance`; a `CustomerPayment` row DECREASES
+/// it. Each row records the settled amount, how it was paid (cash, card, GCash),
+/// which cashier logged it, and an optional note so the statement view can show
+/// the full credit lifecycle (Sales vs. Payments).
+///
+/// `cashierId` is optional + SetNull so an offboarded cashier's payment records
+/// survive (same convention as `Sale.cashierId`). The `amount` is always
+/// positive; the balance decrement is applied by the action inside a
+/// `$transaction` that writes this row + updates `Customer.currentBalance`
+/// atomically. Clamped at 0 — a payment larger than the balance never drives
+/// `currentBalance` negative.
+model CustomerPayment {
+  id            String   @id @default(uuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// Amount settled. Always positive.
+  amount        Float
+  /// How the payment was made — "CASH" | "CARD" | "GCASH" | "OTHER" (plain
+  /// String column + TS narrowing, matching this schema's convention).
+  paymentMethod String
+  /// Cashier (User) who logged the payment. Optional + SetNull preserves the
+  /// record if the cashier is later offboarded.
+  cashierId     String?
+  cashier       User?    @relation(fields: [cashierId], references: [id], onDelete: SetNull)
+  /// Free-text note (e.g. "Payment on account", "Weekly settle"). Optional.
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([customerId])
+  @@index([cashierId])
+  @@index([createdAt])
 }
 
 model Sale {
@@ -214,6 +278,43 @@ model TransactionItem {
   @@index([productId])
 }
 
+/// Append-only audit trail of every stock change for a {@link Product}: a
+/// restock, a checkout sale, an inline edit, or a damage write-off. Each row
+/// records the signed `quantityChange` (restock +N, sale/damage −N, adjust any
+/// sign) and the `type` literal narrowed by `StockMovementType` in
+/// `src/lib/types.ts` — the column is a plain `String`, matching this schema's
+/// convention for `Role`/`Sale.status`/`Transaction.status` (SQLite has no
+/// native enum).
+///
+/// `productId` is non-nullable with `onDelete: Restrict`, mirroring
+/// {@link SaleItem}→`Product` and {@link TransactionItem}→`Product`: an audit
+/// row must resist the destruction of the product it records, so a product with
+/// any movement history can't be hard-deleted until those rows are cleared. The
+/// `Restrict` is the same integrity `deleteProduct`'s P2003 path already covers,
+/// extending it from sale/transaction line items to the stock audit trail.
+///
+/// No backfill — logging begins at go-live; past sales are not reconstructed.
+model StockMovement {
+  id             String   @id @default(uuid())
+  productId      String
+  /// Signed change applied to the product's `stock`: positive for restocks,
+  /// negative for sales/damage, any sign for a manual adjustment.
+  quantityChange Int
+  /// Which kind of movement: a `StockMovementType` literal ("RESTOCK" | "SALE"
+  /// | "ADJUSTMENT" | "DAMAGE"), narrowed in `src/lib/types.ts` via
+  /// `asStockMovementType`.
+  type           String
+  /// Free-text note carried with the movement (e.g. "Initial stock", "Edit via
+  /// inventory", a damage reason). Optional — automated movements may omit it.
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
 /// Store-wide configuration: a single singleton row (the settings page + its
 /// server action guarantee at most one row exists). The tax rate and currency
 /// symbol here are intended to drive POS checkout and receipts — today those
@@ -230,8 +331,8 @@ model StoreSetting {
   phone     String?
   /// Sales-tax percentage as a number, e.g. `8.5` means 8.5%. 0 = tax disabled.
   taxRate   Float  @default(0)
-  /// Short currency glyph, e.g. "$", "€", "¥". Kept tiny on purpose.
-  currencySymbol String @default("$")
+  /// Short currency glyph, e.g. "₱", "€", "¥". Kept tiny on purpose.
+  currencySymbol String @default("₱")
   updatedAt DateTime
 }
 

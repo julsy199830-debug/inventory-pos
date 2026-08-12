@@ -45,7 +45,7 @@ export default function DeleteEmployeeButton({
         type="submit"
         aria-label={`Delete ${label}`}
         title={`Delete ${label}`}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
       >
         <svg
           className="h-4 w-4"

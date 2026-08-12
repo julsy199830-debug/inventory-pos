@@ -3,6 +3,10 @@
 import { useRef, useState } from "react";
 import { createProduct, type CreateProductResult } from "./actions";
 
+/** One selectable option in the category dropdown. The empty-string id is the
+ * "Uncategorized" sentinel the server accepts (it coerces `""`/absent to null). */
+export type CategoryOption = { id: string; name: string };
+
 /**
  * Modal dialog for creating a new product.
  *
@@ -26,8 +30,19 @@ import { createProduct, type CreateProductResult } from "./actions";
  * shape. Self-contained client island that owns the trigger + modal together so
  * the parent page stays a pure Server Component — the same structure as the
  * suppliers `AddSupplierDialog`.
+ *
+ * Category is chosen from a managed `<select>` populated server-side (the page
+ * passes the current set of {@link CategoryOption}s), so a product is always
+ * linked to a real {@link Category} id or left uncategorized — the old free-text
+ * `category` field is gone. The field is named `categoryId` to match what
+ * {@link createProduct} reads; an empty value means "uncategorized" and is a
+ * legal, intentional choice.
  */
-export default function AddProductDialog() {
+export default function AddProductDialog({
+  categories,
+}: {
+  categories: CategoryOption[];
+}) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
   // than reading them out of `useActionState` — same UX (inputs + buttons lock
@@ -64,7 +79,7 @@ export default function AddProductDialog() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700"
       >
         <svg
           className="h-4 w-4"
@@ -86,21 +101,21 @@ export default function AddProductDialog() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-zinc-900">
+          <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">
                 Add New Product
               </h2>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50"
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
                 aria-label="Close"
               >
                 <svg
@@ -155,16 +170,23 @@ export default function AddProductDialog() {
                     className={`${inputCls} font-mono`}
                   />
                 </Field>
-                <Field label="Category" htmlFor="category" required>
-                  <input
-                    id="category"
-                    name="category"
-                    type="text"
-                    required
+                <Field label="Category" htmlFor="categoryId">
+                  <select
+                    id="categoryId"
+                    name="categoryId"
                     disabled={pending}
-                    placeholder="e.g. Electronics"
+                    defaultValue=""
                     className={inputCls}
-                  />
+                  >
+                    {/* value="" is the "Uncategorized" sentinel the server
+                        coerces to null; kept first so it reads as the default. */}
+                    <option value="">Uncategorized</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
               </div>
 
@@ -218,14 +240,14 @@ export default function AddProductDialog() {
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                  className="inline-flex items-center rounded-xl border border-slate-200/80 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                 >
                   {pending ? "Saving…" : "Save product"}
                 </button>
@@ -239,7 +261,7 @@ export default function AddProductDialog() {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 disabled:bg-zinc-50";
+  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50";
 
 /** Labeled field wrapper — keeps the form DRY. */
 function Field({
@@ -257,7 +279,7 @@ function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-zinc-500"
+        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
       >
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}

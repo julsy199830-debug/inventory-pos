@@ -57,12 +57,12 @@ export default function SettingsForm({
 
   // Tax rate + currency symbol are controlled so we can mirror live guards. The
   // defaults here mirror the schema (`taxRate` defaults to 0, `currencySymbol`
-  // to "$") for the no-row-yet case.
+  // to "₱") for the no-row-yet case.
   const [taxRate, setTaxRate] = useState<string>(
     settings ? String(settings.taxRate) : "0",
   );
   const [currencySymbol, setCurrencySymbol] = useState<string>(
-    settings?.currencySymbol ?? "$",
+    settings?.currencySymbol ?? "₱",
   );
 
   // Live client-side guards. These are advisory UX only — the server action
@@ -106,7 +106,7 @@ export default function SettingsForm({
       {saved && !pending && (
         <p
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700"
         >
           Settings saved.
         </p>
@@ -197,7 +197,7 @@ export default function SettingsForm({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="inline-flex items-center rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save settings"}
         </button>
@@ -207,7 +207,7 @@ export default function SettingsForm({
 }
 
 const inputCls =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 disabled:bg-zinc-50";
+  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50";
 
 /** Labeled field wrapper — keeps the form DRY (matches the supplier dialogs). */
 function Field({
@@ -225,7 +225,7 @@ function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-zinc-500"
+        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
       >
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}

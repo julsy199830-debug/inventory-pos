@@ -2,218 +2,312 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import type { ActionResult } from "@/lib/types";
+import {
+  NoCashierError,
+  requireCashierSession,
+  roleGuardError,
+} from "@/lib/session";
+import type { MutationResult } from "@/lib/types";
 
-/**
- * `load` reads a `FormData` field as a string and coerces an empty/whitespace
- * value to `undefined`, so a missing field is treated as "absent" rather than
- * the literal empty string. Field values arrive as `FormDataEntryValue | null`,
- * so we stringify booleans/files away (unwanted here) before trimming.
- */
-function load(formData: FormData, key: string): string | undefined {
-  const raw = formData.get(key);
-  if (raw == null) return undefined;
-  const str = String(raw).trim();
-  return str === "" ? undefined : str;
-}
+export type CustomerRow = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  creditLimit: number;
+  currentBalance: number;
+  salesCount: number;
+  paymentsCount: number;
+};
 
-// Result types: the shared discriminated {@link ActionResult} from
-// `@/lib/types`. Kept as named aliases so the action signatures read
-// self-documentingly; the single source of truth lives in `lib/types.ts`. The
-// success arm spreads its payload onto `{ ok: true }`, so the existing
-// `return { ok: true, name }` / `return { ok: true }` sites type-check unchanged.
-/** Result of {@link createCustomer}. Echos back the new row's `name`. */
-export type CreateCustomerResult = ActionResult<{ name?: string }>;
+export type CustomerInput = {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  creditLimit?: number;
+  notes?: string | null;
+};
 
-/** Result of {@link updateCustomer}. No payload — `revalidatePath` refreshes the
- *  row, so the success case has nothing to echo back. */
-export type UpdateCustomerResult = ActionResult<void>;
+export type CustomerPaymentInput = {
+  customerId: string;
+  amount: number;
+  paymentMethod: string;
+  notes?: string | null;
+};
 
-/**
- * Parse the optional `loyaltyPoints` field from the form.
- *
- * The Edit dialog renders it as a number input; the Add dialog omits it
- * entirely so new customers always start at the schema's `@default(0)`. We
- * coerce an empty/missing field to `undefined` (leave the column alone on
- * update) and reject non-numeric garbage rather than silently storing 0 — a
- * staff typo like "1a" shouldn't reset a customer's balance.
- *
- * Negative balances are rejected up front: loyalty points are an accrual, not
- * a ledger that can dip below zero here.
- */
-function parseLoyaltyPoints(
-  formData: FormData,
-): { value: number | undefined; error?: string } {
-  const raw = load(formData, "loyaltyPoints");
-  if (raw == null) return { value: undefined };
-  const n = Number(raw);
-  if (!Number.isFinite(n) || !Number.isInteger(n)) {
-    return { value: undefined, error: "Loyalty points must be a whole number." };
-  }
-  if (n < 0) {
-    return { value: undefined, error: "Loyalty points cannot be negative." };
-  }
-  return { value: n };
-}
+export type StatementEntry = {
+  id: string;
+  type: "SALE" | "PAYMENT";
+  date: Date;
+  amount: number;
+  paymentMethod: string;
+  notes?: string | null;
+};
 
-/**
- * Server Action backing the "Add New Customer" dialog.
- *
- * Reachable by anyone who can POST to the app — like every Server Action — so
- * validation is enforced here on the server, not just in the form. We never
- * trust the client to have run it.
- *
- * On success we `revalidatePath('/customers')` so the customers table's cached
- * data is purged and the new row streams in on the next render — no manual
- * refetch needed on the client. Like `/inventory` and `/suppliers`, the
- * `(dashboard)` route group is folder-only, so the public path is `/customers`.
- *
- * `loyaltyPoints` is intentionally NOT accepted on create: new customers
- * always start at 0 (the schema default). Only `updateCustomer` touches it,
- * so a stray form field here is ignored.
- */
-export async function createCustomer(
-  // No `prevState` here — the dialog invokes this directly via an event
-  // handler rather than `useActionState`, so there is no `(prevState, formData)`
-  // signature to honor. The whole page is refreshed by revalidatePath, so there
-  // is no client state to merge anyway.
-  formData: FormData,
-): Promise<CreateCustomerResult> {
-  const name = load(formData, "name");
-  const email = load(formData, "email");
-  const phone = load(formData, "phone");
-  const address = load(formData, "address");
+export type CustomerStatement = {
+  customer: {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    creditLimit: number;
+    currentBalance: number;
+    loyaltyPoints: number;
+    notes: string | null;
+    createdAt: Date;
+  };
+  entries: StatementEntry[];
+};
 
-  // ── Required-field & shape validation (server-authoritative) ───────────
-  if (!name) return { ok: false, error: "Customer name is required." };
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
 
-  // Email is optional but, when present, must be a believable shape.
-  if (email != null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: "Email address is not valid." };
-  }
+type Actor = { ok: false; error: string } | { ok: true; actor: { id: string } };
 
-  // ── Insert ─────────────────────────────────────────────────────────────
-  // `loyaltyPoints` is omitted from `data` so SQLite applies its DEFAULT 0.
+async function requireActor(): Promise<Actor> {
   try {
-    await prisma.customer.create({
-      data: {
-        name,
-        email,
-        phone,
-        address,
-      },
-    });
-  } catch {
-    // The Customer model has no `@unique` columns (see schema note), so there
-    // is no P2002 path to guard here — two customers of the same name/email
-    // are legitimate. Anything unexpected is surfaced as a generic message
-    // rather than leaking internals, and rethrown nothing so the UI stays
-    // usable.
-    return { ok: false, error: "Could not save the customer. Please try again." };
-  }
-
-  revalidatePath("/customers");
-  return { ok: true, name };
-}
-
-/**
- * Edit an existing customer by its `id`.
- *
- * Like `createCustomer`, this is invoked directly from the dialog's event
- * handler, so it takes only the `formData` — no `prevState`. The row's `id`
- * travels as a hidden field in the same payload — same technique
- * `deleteCustomer` uses — so there is no second argument or curried closure
- * to worry about.
- *
- * Validation mirrors `createCustomer` (required `name`, optional-but-shape-
- * checked `email`) plus a parsed `loyaltyPoints`. We rely on Prisma's P2025
- * (record not found) surfacing as a generic error via the catch's fallthrough —
- * if the row was deleted after the page rendered, the user just sees "could
- * not save" and the revalidated table shows the row is already gone.
- *
- * `revalidatePath('/customers')` refreshes the cached table so the edited row
- * streams back in on the next render.
- */
-export async function updateCustomer(
-  // Invoked directly from the event handler rather than `useActionState`, so
-  // there is no `prevState` to accept — the whole page is refreshed by
-  // revalidatePath, nothing to merge.
-  formData: FormData,
-): Promise<UpdateCustomerResult> {
-  const id = load(formData, "id");
-  const name = load(formData, "name");
-  const email = load(formData, "email");
-  const phone = load(formData, "phone");
-  const address = load(formData, "address");
-  const loyalty = parseLoyaltyPoints(formData);
-
-  // ── Required-field & shape validation (server-authoritative) ───────────
-  if (!id) return { ok: false, error: "Missing customer. Please reopen and try again." };
-  if (!name) return { ok: false, error: "Customer name is required." };
-  if (loyalty.error) return { ok: false, error: loyalty.error };
-
-  // Email is optional but, when present, must be a believable shape.
-  if (email != null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: "Email address is not valid." };
-  }
-
-  // ── Update ─────────────────────────────────────────────────────────────
-  // `loyaltyPoints` is only included when the form actually sent it; otherwise
-  // the column is left untouched (so an edit without the points field — if it
-  // ever happens — keeps the accrued balance).
-  const data: Record<string, unknown> = { name, email, phone, address };
-  if (loyalty.value !== undefined) data.loyaltyPoints = loyalty.value;
-
-  try {
-    await prisma.customer.update({
-      where: { id },
-      data,
-    });
-  } catch {
-    // No P2002 to guard (no unique columns). P2025 (record not found, if the
-    // row was deleted mid-flight) and anything else is surfaced as a generic
-    // message — no internals leaked, UI stays usable.
-    return { ok: false, error: "Could not save the customer. Please try again." };
-  }
-
-  revalidatePath("/customers");
-  return { ok: true };
-}
-
-/**
- * Delete a customer by its `id`.
- *
- * Form-driven (so it works with plain HTML and progressive enhancement): the
- * row's hidden `id` field is the only payload. Customer has no inbound
- * relations in the schema, so there is no foreign-key violation to guard
- * against and no cascade to reason about — unlike `deleteProduct`, there is no
- * P2003 branch here.
- *
- * Like `createCustomer`, we `revalidatePath('/customers')` so the row is gone
- * from the cached table on the next render.
- */
-export async function deleteCustomer(formData: FormData): Promise<void> {
-  const id = load(formData, "id");
-  if (!id) {
-    // No id means the form was tampered or malformed — nothing to delete.
-    return;
-  }
-
-  try {
-    await prisma.customer.delete({ where: { id } });
+    const actor = await requireCashierSession();
+    return { ok: true, actor: { id: actor.id } };
   } catch (err) {
-    // P2025 = record not found (the row was already deleted after the page
-    // rendered). Nothing to do — the table already reflects the desired state.
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "code" in err &&
-      (err as { code: string }).code === "P2025"
-    ) {
-      return;
+    if (err instanceof NoCashierError) {
+      return { ok: false, error: "Sign in to continue." };
     }
     throw err;
   }
+}
+
+export async function getCustomers(query?: string) {
+  const actor = await requireActor();
+  if (!actor.ok) return actor;
+
+  const q = query?.trim();
+  const where = q
+    ? {
+        OR: [
+          { name: { contains: q } },
+          { phone: { contains: q } },
+          { email: { contains: q } },
+        ],
+      }
+    : undefined;
+
+  const customers = await prisma.customer.findMany({
+    where,
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      creditLimit: true,
+      currentBalance: true,
+      _count: { select: { sales: true, payments: true } },
+    },
+  });
+
+  const rows: CustomerRow[] = customers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    email: c.email,
+    creditLimit: c.creditLimit,
+    currentBalance: c.currentBalance,
+    salesCount: c._count.sales,
+    paymentsCount: c._count.payments,
+  }));
+
+  return { ok: true as const, data: rows };
+}
+
+export async function createCustomer(
+  data: CustomerInput,
+): Promise<MutationResult<{ id: string }>> {
+  const denied = await roleGuardError(STAFF_ROLES);
+  if (denied) return { ok: false, error: denied };
+
+  const name = data.name?.trim() ?? "";
+  if (!name) return { ok: false, error: "Customer name is required." };
+
+  const creditLimit = Number(data.creditLimit ?? 0);
+  if (!Number.isFinite(creditLimit) || creditLimit < 0) {
+    return { ok: false, error: "Credit limit must be 0 or more." };
+  }
+
+  const created = await prisma.customer.create({
+    data: {
+      name,
+      phone: data.phone?.trim() || null,
+      email: data.email?.trim() || null,
+      address: data.address?.trim() || null,
+      creditLimit,
+      notes: data.notes?.trim() || null,
+    },
+    select: { id: true },
+  });
 
   revalidatePath("/customers");
+  return { ok: true as const, data: { id: created.id } };
+}
+
+export async function updateCustomer(
+  id: string,
+  data: CustomerInput,
+): Promise<MutationResult<null>> {
+  const denied = await roleGuardError(STAFF_ROLES);
+  if (denied) return { ok: false, error: denied };
+
+  const name = data.name?.trim() ?? "";
+  if (!name) return { ok: false, error: "Customer name is required." };
+
+  const creditLimit = Number(data.creditLimit ?? 0);
+  if (!Number.isFinite(creditLimit) || creditLimit < 0) {
+    return { ok: false, error: "Credit limit must be 0 or more." };
+  }
+
+  const existing = await prisma.customer.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, error: "Customer not found." };
+
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      name,
+      phone: data.phone?.trim() || null,
+      email: data.email?.trim() || null,
+      address: data.address?.trim() || null,
+      creditLimit,
+      notes: data.notes?.trim() || null,
+    },
+  });
+
+  revalidatePath("/customers");
+  return { ok: true as const, data: null };
+}
+
+export async function recordCustomerPayment(
+  input: CustomerPaymentInput,
+): Promise<MutationResult<{ id: string }>> {
+  const actor = await requireActor();
+  if (!actor.ok) return actor;
+
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, error: "Payment amount must be greater than 0." };
+  }
+  const paymentMethod = (input.paymentMethod ?? "").trim();
+  if (!paymentMethod) {
+    return { ok: false, error: "Payment method is required." };
+  }
+
+  try {
+    const payment = await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, currentBalance: true },
+      });
+      if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+      if (customer.currentBalance <= 0) throw new Error("NO_BALANCE");
+
+      const applied = Math.min(amount, customer.currentBalance);
+
+      await tx.customer.update({
+        where: { id: customer.id },
+        data: { currentBalance: { decrement: applied } },
+      });
+
+      return tx.customerPayment.create({
+        data: {
+          customerId: customer.id,
+          amount: applied,
+          paymentMethod,
+          cashierId: actor.actor.id,
+          notes: input.notes?.trim() || null,
+        },
+        select: { id: true },
+      });
+    });
+
+    revalidatePath("/customers");
+    return { ok: true as const, data: { id: payment.id } };
+  } catch (err) {
+    if (err instanceof Error) {
+      if (err.message === "CUSTOMER_NOT_FOUND") {
+        return { ok: false, error: "Customer not found." };
+      }
+      if (err.message === "NO_BALANCE") {
+        return { ok: false, error: "This customer has no outstanding balance." };
+      }
+    }
+    return { ok: false, error: "Could not record the payment. Please try again." };
+  }
+}
+
+export async function getCustomerStatement(
+  id: string,
+): Promise<{ ok: true; data: CustomerStatement } | { ok: false; error: string }> {
+  const actor = await requireActor();
+  if (!actor.ok) return actor;
+
+  const customer = await prisma.customer.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      address: true,
+      creditLimit: true,
+      currentBalance: true,
+      loyaltyPoints: true,
+      notes: true,
+      createdAt: true,
+      sales: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          createdAt: true,
+          totalAmount: true,
+          paymentMethod: true,
+          status: true,
+        },
+      },
+      payments: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          createdAt: true,
+          amount: true,
+          paymentMethod: true,
+          notes: true,
+        },
+      },
+    },
+  });
+  if (!customer) return { ok: false, error: "Customer not found." };
+
+  const entries: StatementEntry[] = [
+    ...customer.sales.map((s) => ({
+      id: s.id,
+      type: "SALE" as const,
+      date: s.createdAt,
+      amount: s.totalAmount,
+      paymentMethod: s.paymentMethod,
+      notes: null as string | null,
+    })),
+    ...customer.payments.map((p) => ({
+      id: p.id,
+      type: "PAYMENT" as const,
+      date: p.createdAt,
+      amount: p.amount,
+      paymentMethod: p.paymentMethod,
+      notes: p.notes,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  const { sales: _sales, payments: _payments, ...rest } = customer;
+
+  return { ok: true as const, data: { customer: rest, entries } };
 }

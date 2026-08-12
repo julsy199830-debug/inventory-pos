@@ -114,11 +114,11 @@ export async function saveSettings(
     return { ok: false, error: "Tax rate must be a number between 0 and 100." };
   }
 
-  // Currency symbol defaults to "$" in the schema, but once submitted we keep
+  // Currency symbol defaults to "₱" in the schema, but once submitted we keep
   // whatever the manager chose. Cap it tight — it's a glyph, not free text — so
   // a runaway paste can't blow up receipts/layout. A blank is allowed and falls
-  // back to "$" on save.
-  const symbol = currencySymbol ?? "$";
+  // back to "₱" on save.
+  const symbol = currencySymbol ?? "₱";
   if (symbol.length > 8) {
     return {
       ok: false,

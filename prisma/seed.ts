@@ -284,6 +284,66 @@ async function main() {
       }
     }
 
+    // ── Default sign-in accounts ──────────────────────────────────────────
+    // The register now requires PIN sign-in (see /login). Seed an admin +
+    // cashier so a fresh DB has someone who can actually log in. Upserted by
+    // email (unique). `passwordHash` has no login path in this app (PIN is the
+    // auth mechanism), so a placeholder keeps the NOT NULL column populated.
+    
+
+    const existingSetting = await prisma.storeSetting.findFirst();
+    if (!existingSetting) {
+      await prisma.storeSetting.create({
+        data: {
+          id: "default-store",
+          storeName: "Apex POS Store",
+          address: "123 Main Street, Manila",
+          phone: "+63-2-555-0100",
+          taxRate: 8,
+          currencySymbol: String.fromCodePoint(0x20B1),
+          updatedAt: new Date(),
+        },
+      });
+      console.log("Store settings: created default singleton row.");
+    } else {
+      console.log("Store settings: existing row kept.");
+    }
+
+    const seedUsers = [
+      {
+        name: "Admin",
+        email: "admin@apexpos.test",
+        passwordHash: "seed-placeholder",
+        pin: "1234",
+        role: "ADMIN",
+      },
+      {
+        name: "Cashier",
+        email: "cashier@apexpos.test",
+        passwordHash: "seed-placeholder",
+        pin: "0000",
+        role: "CASHIER",
+      },
+    ];
+    let usersCreated = 0;
+    let usersUpdated = 0;
+    for (const u of seedUsers) {
+      const before = await prisma.user.findUnique({ where: { email: u.email } });
+      await prisma.user.upsert({
+        where: { email: u.email },
+        update: { name: u.name, pin: u.pin, role: u.role, active: true },
+        create: { ...u, active: true },
+      });
+      if (before) usersUpdated++;
+      else usersCreated++;
+    }
+    const totalUsers = await prisma.user.count();
+    console.log(
+      `Seeding complete: ${seedUsers.length} users upserted by email ` +
+        `(${usersCreated} created, ${usersUpdated} updated). ` +
+        `User table now holds ${totalUsers} row(s).`,
+    );
+
     const total = await prisma.product.count();
     const totalSuppliers = await prisma.supplier.count();
     const totalCategories = await prisma.category.count();

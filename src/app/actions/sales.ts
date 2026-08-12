@@ -2,25 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { NoCashierError, requireCashierSession } from "@/lib/session";
 import type { MutationResult } from "@/lib/types";
 
-/**
- * One line item in an outgoing sale. The client supplies `productId` and
- * `quantity`; `priceAtSale` is the unit price to snapshot for the ledger. We do
- * NOT trust these blindly server-side — see `createSale`.
- */
 export type SaleItemInput = {
   productId: string;
   quantity: number;
   priceAtSale: number;
 };
 
-/**
- * Payload for `createSale`. Everything here comes from an untrusted client, so
- * the action re-validates each field rather than assuming the UI ran checks.
- */
 export type CreateSaleInput = {
-  /** Optional customer for loyalty accrual; null/omitted = guest checkout. */
   customerId?: string | null;
   subtotal: number;
   tax: number;
@@ -32,16 +23,10 @@ export type CreateSaleInput = {
 export type CreateSaleResult = MutationResult<{ id: string }>;
 
 /**
- * Create a Sale header + its SaleItem rows, decrement product stock, and bump
- * the customer's loyalty points — all inside a single `prisma.$transaction` so
- * the ledger can never be left half-written. If any step throws (out-of-stock,
- * deleted product, bad customer id), the whole transaction rolls back and we
- * surface a generic, leak-free error.
- *
- * Loyalty accrues at 1 point per whole $10 spent (subtotal only — tax doesn't
- * count, matching "per $10 spent"). Points are added to whatever the customer
- * already has; the schema itself enforces a 0 floor for new rows, and an update
- * here only ever increases the balance, so it never goes negative.
+ * Create a Sale header + its SaleItem rows, decrement product stock, bump the
+ * customer's loyalty points, and (for STORE_CREDIT) verify + raise the
+ * customer's outstanding balance — all inside a single `prisma.$transaction`
+ * so the ledger can never be left half-written.
  */
 export async function createSale(
   input: CreateSaleInput,
@@ -53,9 +38,17 @@ export async function createSale(
   const paymentMethod = (input.paymentMethod ?? "").trim();
   const items = Array.isArray(input.items) ? input.items : [];
 
+  // ── Session gate ──────────────────────────────────────────────────────
+  try {
+    await requireCashierSession();
+  } catch (err) {
+    if (err instanceof NoCashierError) {
+      return { ok: false, error: "Sign in to the register to complete this sale." };
+    }
+    throw err;
+  }
+
   // ── Server-authoritative validation ────────────────────────────────────
-  // The client may have been bypassed entirely — a Server Action is just a
-  // POST endpoint to anyone who can craft one.
   if (!Number.isFinite(subtotal) || subtotal < 0) {
     return { ok: false, error: "Subtotal is invalid." };
   }
@@ -68,16 +61,18 @@ export async function createSale(
   if (!paymentMethod) {
     return { ok: false, error: "Payment method is required." };
   }
+  // Store Credit ("On Account") can only be used with a customer attached —
+  // there's no ledger to charge without an account.
+  if (paymentMethod === "STORE_CREDIT" && !customerId) {
+    return { ok: false, error: "Select a customer to charge this on account." };
+  }
   if (items.length === 0) {
     return { ok: false, error: "Cannot check out an empty cart." };
   }
   for (const item of items) {
     const qty = Number(item.quantity);
     const price = Number(item.priceAtSale);
-    if (
-      typeof item.productId !== "string" ||
-      item.productId.trim() === ""
-    ) {
+    if (typeof item.productId !== "string" || item.productId.trim() === "") {
       return { ok: false, error: "A cart item is missing its product." };
     }
     if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty < 1) {
@@ -88,17 +83,11 @@ export async function createSale(
     }
   }
 
-  // Loyalty points to accrue if a customer was attached. ℹ points per whole
-  // $10 of subtotal — `Math.floor(subtotal / 10)`.
+  // Loyalty points per whole ₱10 of subtotal.
   const earnedPoints = Math.floor(subtotal / 10);
 
   try {
     const sale = await prisma.$transaction(async (tx) => {
-      // Create the header first so we get an id to hang line items off. If a
-      // customerId was supplied but doesn't exist anymore (deleted between the
-      // page render and checkout), the FK insert would fail — caught below as a
-      // generic error after the rollback. We don't pre-check existence; the
-      // transaction's integrity constraint is the source of truth.
       const created = await tx.sale.create({
         data: {
           customerId,
@@ -117,11 +106,7 @@ export async function createSale(
         select: { id: true },
       });
 
-      // Decrement stock for each purchased product. We `select stock` first so
-      // we can detect an underflow and abort the whole sale before it commits —
-      // a partial-sale-then-roll-back is preferable to selling stock we don't
-      // have. A missing product (deleted mid-checkout) also lands here as a
-      // null check.
+      // Decrement stock for each purchased product, auditing each movement.
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
@@ -138,11 +123,35 @@ export async function createSale(
           where: { id: item.productId },
           data: { stock: { decrement: qty } },
         });
+        await tx.stockMovement.create({
+          data: {
+            productId: item.productId,
+            quantityChange: -qty,
+            type: "SALE",
+          },
+        });
+      }
+
+      // Store Credit ("On Account" / utang): verify the customer exists and is
+      // within their credit limit, then raise their outstanding balance by this
+      // sale's total inside the same tx — the ledger can't be half-updated.
+      if (paymentMethod === "STORE_CREDIT") {
+        if (!customerId) throw new Error("NO_CUSTOMER");
+        const account = await tx.customer.findUnique({
+          where: { id: customerId },
+          select: { id: true, creditLimit: true, currentBalance: true },
+        });
+        if (!account) throw new Error("CUSTOMER_NOT_FOUND");
+        if (account.currentBalance + totalAmount > account.creditLimit) {
+          throw new Error("CREDIT_LIMIT_EXCEEDED");
+        }
+        await tx.customer.update({
+          where: { id: account.id },
+          data: { currentBalance: { increment: totalAmount } },
+        });
       }
 
       // Loyalty accrual — only when a customer was linked and earned anything.
-      // Switched to `increment` so concurrent sales for the same customer
-      // don't clobber each other (a read-then-set would lose updates).
       if (customerId && earnedPoints > 0) {
         await tx.customer.update({
           where: { id: customerId },
@@ -153,21 +162,23 @@ export async function createSale(
       return created;
     });
 
-    // The POS view and the dashboard stats both depend on product stock /
-    // sale totals, so refresh both routes after a successful checkout.
     revalidatePath("/pos");
     revalidatePath("/");
 
     return { ok: true as const, data: { id: sale.id } };
   } catch (err) {
-    // Inline-known failures translate to user-facing copy; anything else is a
-    // generic leak-free message so internals never reach the client.
     if (err instanceof Error) {
       if (err.message === "OUT_OF_STOCK") {
         return { ok: false, error: "Some items are out of stock. Please restock or remove them and try again." };
       }
       if (err.message === "PRODUCT_NOT_FOUND") {
         return { ok: false, error: "One of the items in your cart no longer exists." };
+      }
+      if (err.message === "CREDIT_LIMIT_EXCEEDED") {
+        return { ok: false, error: "This customer has reached their credit limit for this transaction." };
+      }
+      if (err.message === "CUSTOMER_NOT_FOUND") {
+        return { ok: false, error: "The selected customer no longer exists." };
       }
     }
     return { ok: false, error: "Could not complete the sale. Please try again." };

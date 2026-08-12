@@ -27,10 +27,10 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Store Settings
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-slate-500">
           Store-wide configuration that drives receipts and checkout.
           {settings && (
             <>
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
               Last edited{" "}
               <time
                 dateTime={settings.updatedAt.toISOString()}
-                className="font-medium text-zinc-900"
+                className="font-medium text-slate-900"
               >
                 {settings.updatedAt.toLocaleDateString(undefined, {
                   year: "numeric",

@@ -1,1 +1,58 @@
 @import "tailwindcss";
+
+/*
+ * Printing.
+ *
+ * Both printable surfaces (the 80mm thermal .print-receipt from POS checkout
+ * and the full-width .print-report Z-Report sheet) use the same technique:
+ * `body *` is hidden, then the printable element and its descendants are
+ * re-shown and pulled out of flow at the top-left of the page. A printable
+ * never shares the page with another, so the two rules never conflict.
+ */
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* ── 80mm thermal receipt (POS checkout) ─────────────────────────────── */
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+
+  .print-receipt {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80mm;
+    padding: 2mm;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* ── Z-Report / end-of-day sheet (full paper width) ──────────────────── */
+  .print-report,
+  .print-report * {
+    visibility: visible;
+  }
+
+  .print-report {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* App chrome never lands on paper — removed entirely so it can't leave an
+     empty page before the report. */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+}

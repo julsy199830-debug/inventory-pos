@@ -59,7 +59,7 @@ export default function ClockButton({
           'inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
           clockedIn
             ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-            : 'bg-zinc-900 text-white hover:bg-zinc-800',
+            : 'bg-blue-600 text-white hover:bg-blue-700',
         ].join(' ')}
       >
         {pending

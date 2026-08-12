@@ -1,41 +1,30 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createSupplier, type CreateSupplierResult } from "./actions";
+import { createCategory, type CategoryResult } from "../actions";
 
 /**
- * Modal dialog for creating a new supplier.
+ * Modal dialog for creating a new category.
  *
- * The dialog mounts its own modal overlay once `open` is set, then submits via a
- * manual async handler that `await`s the raw `createSupplier` Server Action
- * directly. Server Actions are async functions that resolve to their declared
- * return type, so awaiting one gives us the result in the same tick — we close +
- * reset the form right there on success, no effect needed. (This is the
- * "Event Handlers" calling convention from the mutating-data docs.)
+ * Mirrors the inventory/suppliers `Add<…>Dialog` shells: a self-contained
+ * client island that owns its trigger + modal, submits via a manual async
+ * handler that `await`s the raw {@link createCategory} Server Action directly
+ * (the "Event Handlers" convention), and closes + resets the form on success.
+ * We deliberately don't use `useActionState` — reacting to its success would
+ * mean `setState` inside an effect keyed on state, which the
+ * `react-hooks/set-state-in-effect` lint flags as a derived-state cascade; calling
+ * the action ourselves lets the close/reset live in the submit handler, where
+ * side effects belong.
  *
- * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
- * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` — which
- * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
- * action ourselves sidesteps that entirely: the close/reset lives in the submit
- * handler, where side effects belong, not in a render-following effect.
- *
- * Note on progressive enhancement: the modal itself is gated behind `{open && …}`,
- * so a JS-disabled client can never reach the form to submit it. `<form action>`
- * would therefore buy nothing real here, and a manual JS submit is the honest
- * shape. Self-contained client island that owns the trigger + modal together so
- * the parent page stays a pure Server Component — the same structure as the
- * inventory `AddProductDialog`.
+ * `name` is `@unique` on `Category`, so a duplicate is caught server-side (P2002)
+ * and surfaced inline here. On success the action revalidates `/inventory/categories`
+ * (this table) and `/inventory` (the product-form dropdown + filter depend on the
+ * category set), so both pages stream the new row on the next render.
  */
-export default function AddSupplierDialog() {
+export default function AddCategoryDialog() {
   const [open, setOpen] = useState(false);
-  // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` — same UX (inputs + buttons lock
-  // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the insert succeeds — the next
-  // time the dialog opens it's a blank form rather than the just-submitted row.
   const formRef = useRef<HTMLFormElement>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,7 +32,7 @@ export default function AddSupplierDialog() {
     const formData = new FormData(e.currentTarget);
     setPending(true);
     setError(null);
-    const result: CreateSupplierResult = await createSupplier(formData);
+    const result: CategoryResult = await createCategory(formData);
     setPending(false);
     if (result.ok) {
       setOpen(false);
@@ -81,7 +70,7 @@ export default function AddSupplierDialog() {
             d="M12 4.5v15m7.5-7.5h-15"
           />
         </svg>
-        Add New Supplier
+        Add Category
       </button>
 
       {open && (
@@ -91,10 +80,10 @@ export default function AddSupplierDialog() {
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">
-                Add New Supplier
+                Add Category
               </h2>
               <button
                 type="button"
@@ -131,63 +120,21 @@ export default function AddSupplierDialog() {
                 </p>
               )}
 
-              <Field label="Supplier name" htmlFor="name" required>
+              <Field label="Category name" htmlFor="name" required>
                 <input
                   id="name"
                   name="name"
                   type="text"
                   required
                   disabled={pending}
-                  placeholder="e.g. Acme Distribution Co."
+                  placeholder="e.g. Electronics"
                   className={inputCls}
                 />
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Contact name" htmlFor="contactName">
-                  <input
-                    id="contactName"
-                    name="contactName"
-                    type="text"
-                    disabled={pending}
-                    placeholder="e.g. Jordan Rivera"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Email" htmlFor="email">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    disabled={pending}
-                    placeholder="e.g. orders@acme.co"
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Phone" htmlFor="phone">
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    disabled={pending}
-                    placeholder="e.g. +1 555 0100"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Address" htmlFor="address">
-                  <input
-                    id="address"
-                    name="address"
-                    type="text"
-                    disabled={pending}
-                    placeholder="e.g. 100 Warehouse Rd, NV 89101"
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
+              <p className="text-xs text-slate-500">
+                A new category starts with the default low-stock threshold (10). Tune it per-category from the row once it exists.
+              </p>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
@@ -203,7 +150,7 @@ export default function AddSupplierDialog() {
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {pending ? "Saving…" : "Save supplier"}
+                  {pending ? "Saving…" : "Add category"}
                 </button>
               </div>
             </form>
@@ -217,7 +164,7 @@ export default function AddSupplierDialog() {
 const inputCls =
   "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50";
 
-/** Labeled field wrapper — keeps the form DRY. */
+/** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
 function Field({
   label,
   htmlFor,

@@ -2,31 +2,31 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Welcome Back, Manager
         </h1>
-        <p className="text-sm text-zinc-500">Here is what is happening today.</p>
+        <p className="text-sm text-slate-500">Here is what is happening today.</p>
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Today&apos;s Sales</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">$1,240.50</p>
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Today&apos;s Sales</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">₱1,240.50</p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Weekly Sales</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">$8,920.00</p>
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Weekly Sales</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">₱8,920.00</p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Total Products</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">1,420</p>
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Total Products</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">1,420</p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Active Registers</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">3</p>
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Active Registers</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">3</p>
         </div>
       </div>
 
@@ -64,21 +64,21 @@ const transactions: Transaction[] = [
   {
     orderId: "ORD-1042",
     customer: "Elena Carter",
-    amount: "$32.40",
+    amount: "₱32.40",
     method: "Card",
     status: "Completed",
   },
   {
     orderId: "ORD-1041",
     customer: "Marcus Lee",
-    amount: "$8.75",
+    amount: "₱8.75",
     method: "Cash",
     status: "Completed",
   },
   {
     orderId: "ORD-1040",
     customer: "Priya Nair",
-    amount: "$54.20",
+    amount: "₱54.20",
     method: "Card",
     status: "Refunded",
   },
@@ -86,16 +86,16 @@ const transactions: Transaction[] = [
 
 function RecentTransactions() {
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-zinc-900">
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h2 className="text-base font-semibold text-slate-900">
           Recent Transactions
         </h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
               <th className="px-5 py-3 font-medium">Order ID</th>
               <th className="px-5 py-3 font-medium">Customer</th>
               <th className="px-5 py-3 font-medium">Amount</th>
@@ -103,15 +103,15 @@ function RecentTransactions() {
               <th className="px-5 py-3 font-medium">Order Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100">
+          <tbody className="divide-y divide-slate-100">
             {transactions.map((t) => (
-              <tr key={t.orderId} className="hover:bg-zinc-50">
-                <td className="px-5 py-3 font-medium text-zinc-900">
+              <tr key={t.orderId} className="hover:bg-slate-50">
+                <td className="px-5 py-3 font-medium text-slate-900">
                   {t.orderId}
                 </td>
-                <td className="px-5 py-3 text-zinc-600">{t.customer}</td>
-                <td className="px-5 py-3 text-zinc-900">{t.amount}</td>
-                <td className="px-5 py-3 text-zinc-600">{t.method}</td>
+                <td className="px-5 py-3 text-slate-600">{t.customer}</td>
+                <td className="px-5 py-3 text-slate-900">{t.amount}</td>
+                <td className="px-5 py-3 text-slate-600">{t.method}</td>
                 <td className="px-5 py-3">
                   <StatusBadge status={t.status} />
                 </td>
@@ -127,7 +127,7 @@ function RecentTransactions() {
 function StatusBadge({ status }: { status: Transaction["status"] }) {
   if (status === "Completed") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
         Completed
       </span>
     );

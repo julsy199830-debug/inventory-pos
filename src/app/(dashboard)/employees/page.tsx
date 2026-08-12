@@ -54,7 +54,7 @@ type EmployeeRow = {
  *  format consistently. Mirrors the `TAX_RATE`-style local constant note in the
  *  `StoreSetting` schema comment (these are externalized there, but the
  *  Employees summary predates wiring it in). */
-const CURRENCY = "$";
+const CURRENCY = "₱";
 
 export default async function EmployeesPage() {
   // Fetched in parallel: the roster, every shift (with totals for performance),
@@ -128,13 +128,13 @@ export default async function EmployeesPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Employees
           </h1>
-          <p className="text-sm text-zinc-500">
-            <span className="font-medium text-zinc-900">{activeCount}</span> active
+          <p className="text-sm text-slate-500">
+            <span className="font-medium text-slate-900">{activeCount}</span> active
             of{" "}
-            <span className="font-medium text-zinc-900">
+            <span className="font-medium text-slate-900">
               {employees.length.toLocaleString()}
             </span>{" "}
             employees
@@ -187,11 +187,11 @@ export default async function EmployeesPage() {
       <ShiftWidget employees={clockedInList} />
 
       {/* Employee management table */}
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Email</th>
                 <th className="px-5 py-3 font-medium">Role</th>
@@ -203,20 +203,20 @@ export default async function EmployeesPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-slate-100">
               {employees.map((e) => (
-                <tr key={e.id} className="hover:bg-zinc-50">
-                  <td className="px-5 py-3 font-medium text-zinc-900">
+                <tr key={e.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-3 font-medium text-slate-900">
                     {e.name}
                     {/* Inactive employees are dimmed so the roster reads at a
                         glance — visual only, the raw state drives the toggle. */}
                     {!e.active && (
-                      <span className="ml-2 text-xs font-normal text-zinc-400">
+                      <span className="ml-2 text-xs font-normal text-slate-400">
                         (offboarded)
                       </span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-zinc-600">{e.email}</td>
+                  <td className="px-5 py-3 text-slate-600">{e.email}</td>
                   <td className="px-5 py-3">
                     <RoleSelect id={e.id} role={e.role} />
                   </td>
@@ -227,8 +227,8 @@ export default async function EmployeesPage() {
                       name={e.name}
                     />
                   </td>
-                  <td className="px-5 py-3 text-zinc-600">
-                    <span className="font-medium text-zinc-900">
+                  <td className="px-5 py-3 text-slate-600">
+                    <span className="font-medium text-slate-900">
                       {e.lifetimeCount.toLocaleString()}
                     </span>{" "}
                     sales ·{" "}
@@ -266,7 +266,7 @@ export default async function EmployeesPage() {
         </div>
 
         {employees.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-zinc-500">
+          <div className="px-5 py-12 text-center text-sm text-slate-500">
             No employees yet.
           </div>
         )}
@@ -292,14 +292,14 @@ function SummaryTile({
 }) {
   const accent =
     tone === "emerald"
-      ? "bg-emerald-50 text-emerald-700"
-      : "bg-zinc-100 text-zinc-700";
+      ? "bg-blue-50 text-blue-700"
+      : "bg-slate-100 text-slate-700";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+    <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
         {value}
       </p>
       <p className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${accent}`}>
@@ -319,12 +319,12 @@ function SummaryTile({
  */
 function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 px-5 py-3">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+    <section className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-3">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
           On the clock
         </h2>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-slate-500">
           {employees.length === 0
             ? "No active shifts right now."
             : `${employees.length} employee${employees.length === 1 ? "" : "s"} clocked in.`}
@@ -332,28 +332,28 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
       </div>
 
       {employees.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-zinc-500">
+        <div className="px-5 py-8 text-center text-sm text-slate-500">
           Everyone is clocked out. Use a row&rsquo;s “Clock In” control to open a
           shift.
         </div>
       ) : (
-        <ul className="divide-y divide-zinc-100">
+        <ul className="divide-y divide-slate-100">
           {employees.map((e) => (
             <li
               key={e.id}
               className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-zinc-900">
+                <p className="truncate text-sm font-medium text-slate-900">
                   {e.name}
                 </p>
-                <p className="truncate text-xs text-zinc-500">
+                <p className="truncate text-xs text-slate-500">
                   {e.email} · {e.role}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-zinc-500">
-                  <span className="font-medium text-zinc-900">
+                <span className="text-xs text-slate-500">
+                  <span className="font-medium text-slate-900">
                     {CURRENCY}
                     {e.liveSalesTotal.toLocaleString(undefined, {
                       minimumFractionDigits: 2,

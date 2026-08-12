@@ -1,6 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { asRole, type Role } from "@/lib/types";
 
 /**
  * Cashier session persistence.
@@ -46,7 +48,7 @@ const MAX_AGE_SECONDS = 12 * 60 * 60;
 export type CashierSession = {
   id: string;
   name: string;
-  role: string;
+  role: Role;
 };
 
 /**
@@ -66,7 +68,7 @@ export async function setCashierCookie(userId: string): Promise<void> {
   cookieStore.set(COOKIE, userId, {
     httpOnly: true,
     sameSite: "lax",
-    path: "/pos",
+    path: "/",
     maxAge: MAX_AGE_SECONDS,
   });
 }
@@ -104,7 +106,8 @@ export async function getCashier(): Promise<CashierSession | null> {
     where: { id, active: true },
     select: { id: true, name: true, role: true },
   });
-  return user ?? null;
+  if (!user) return null;
+  return { id: user.id, name: user.name, role: asRole(user.role) };
 }
 
 /**
@@ -130,4 +133,42 @@ export async function requireCashierSession(): Promise<CashierSession> {
   const cashier = await getCashier();
   if (!cashier) throw new NoCashierError();
   return cashier;
+}
+
+/**
+ * Server-Component auth gate: resolve the current user, or `redirect` to
+ * `/login` (preserving the intended destination as `?next=` so the sign-in
+ * screen can send the user back where they were headed).
+ *
+ * Call from a layout or page that requires *any* signed-in actor:
+ *
+ *   const user = await requirePageAuth();
+ *   if (user.role === "CASHIER") redirect("/pos");
+ */
+export async function requirePageAuth(): Promise<CashierSession> {
+  const user = await getCashier();
+  if (!user) redirect("/login");
+  return user;
+}
+
+/**
+ * Role check for Server Actions that must return a structured error instead of
+ * redirecting (a Server Action can't `redirect()` its own caller's page
+ * reliably — the client renders the returned `error` inline instead).
+ *
+ * Returns a message when the current user is missing or lacks one of `allowed`,
+ * else `null`. Pair with the branch:
+ *
+ *   const denied = await roleGuardError(["ADMIN", "MANAGER"]);
+ *   if (denied) return { ok: false, error: denied };
+ */
+export async function roleGuardError(
+  allowed: readonly Role[],
+): Promise<string | null> {
+  const user = await getCashier();
+  if (!user) return "You must be signed in to do that.";
+  if (!allowed.includes(user.role)) {
+    return "You don't have permission to do that.";
+  }
+  return null;
 }

@@ -51,7 +51,7 @@ function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
 
 /** Format a number as currency using the store's symbol. We read the symbol
  * from StoreSetting (the settings page externalizes it for exactly this
- * reason); if no settings row exists yet we fall back to "$" rather than
+ * reason); if no settings row exists yet we fall back to "₱" rather than
  * refusing to render. The amount is formatted with grouping and two decimals,
  * independent of the glyph — yen etc. still get the symbol prepended. */
 function money(amount: number, symbol: string): string {
@@ -60,7 +60,7 @@ function money(amount: number, symbol: string): string {
     maximumFractionDigits: 2,
   });
   const sign = amount < 0 ? "-" : "";
-  const glyph = symbol || "$";
+  const glyph = symbol || "₱";
   return `${sign}${glyph}${body}`;
 }
 
@@ -87,7 +87,7 @@ export default async function AccountingPage({
   // `now` anchors the window at request time. Both the window and the summary
   // are derived from it so the date label and the figures can never disagree.
   // The store's currency symbol is read in parallel so the page renders with
-  // the manager's chosen glyph rather than a hardcoded "$".
+  // the manager's chosen glyph rather than a hardcoded "₱".
   const now = new Date();
   const { start, end } = windowFor(preset, now);
 
@@ -95,7 +95,7 @@ export default async function AccountingPage({
     getFinancialSummary({ startDate: start, endDate: end }),
     getStoreSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "$";
+  const symbol = settings?.currencySymbol ?? "₱";
 
   const { revenue, cogs, tax, profit, margin, productBreakdown } = summary;
   const unitsSold = productBreakdown.reduce(
@@ -108,12 +108,12 @@ export default async function AccountingPage({
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Accounting
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-slate-500">
             Financial summary for{" "}
-            <span className="font-medium text-zinc-900">
+            <span className="font-medium text-slate-900">
               {PRESET_LABELS[preset]}
             </span>{" "}
             — completed sales only.
@@ -154,15 +154,15 @@ export default async function AccountingPage({
       {/* Secondary strip: COGS and units sold. Context-only — COGS backs the
           Net Profit figure above, and units sold summarizes volume. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Cost of Goods Sold</p>
-          <p className="mt-2 text-xl font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Cost of Goods Sold</p>
+          <p className="mt-2 text-xl font-semibold text-slate-900">
             {money(cogs, symbol)}
           </p>
         </div>
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <p className="text-sm font-medium text-zinc-500">Units Sold</p>
-          <p className="mt-2 text-xl font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+          <p className="text-sm font-medium text-slate-500">Units Sold</p>
+          <p className="mt-2 text-xl font-semibold text-slate-900">
             {unitsSold.toLocaleString()}
           </p>
         </div>
@@ -171,19 +171,19 @@ export default async function AccountingPage({
       {/* Per-product profitability breakdown. Sorted by profit desc inside
           getFinancialSummary, so the biggest contributors surface first. The
           margin column colors by sign so a loss can't masquerade as a win. */}
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-zinc-900">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <h2 className="text-base font-semibold text-slate-900">
             Profit by Product
           </h2>
-          <p className="mt-0.5 text-sm text-zinc-500">
+          <p className="mt-0.5 text-sm text-slate-500">
             Ranked by gross profit over the selected range.
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
@@ -192,7 +192,7 @@ export default async function AccountingPage({
                 <th className="px-5 py-3 text-right font-medium">Margin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-slate-100">
               {productBreakdown.map((row) => (
                 <ProductRow
                   key={row.productId}
@@ -205,7 +205,7 @@ export default async function AccountingPage({
         </div>
 
         {productBreakdown.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-zinc-500">
+          <div className="px-5 py-12 text-center text-sm text-slate-500">
             No completed sales in this range yet.
           </div>
         )}
@@ -228,13 +228,13 @@ function KpiCard({
 }) {
   const color =
     tone === "positive"
-      ? "text-emerald-700"
+      ? "text-blue-700"
       : tone === "negative"
         ? "text-red-700"
-        : "text-zinc-900";
+        : "text-slate-900";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5">
-      <p className="text-sm font-medium text-zinc-500">{label}</p>
+    <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className={`mt-2 text-2xl font-semibold ${color}`}>{value}</p>
     </div>
   );
@@ -249,20 +249,20 @@ function ProductRow({
   row: ProductBreakdownRow;
   symbol: string;
 }) {
-  const profitTone = row.profit >= 0 ? "text-emerald-700" : "text-red-700";
-  const marginTone = row.margin >= 0 ? "text-emerald-700" : "text-red-700";
+  const profitTone = row.profit >= 0 ? "text-blue-700" : "text-red-700";
+  const marginTone = row.margin >= 0 ? "text-blue-700" : "text-red-700";
   return (
-    <tr className="hover:bg-zinc-50">
-      <td className="px-5 py-3 font-medium text-zinc-900">
+    <tr className="hover:bg-slate-50">
+      <td className="px-5 py-3 font-medium text-slate-900">
         {row.productName}
       </td>
-      <td className="px-5 py-3 text-right text-zinc-600">
+      <td className="px-5 py-3 text-right text-slate-600">
         {row.quantitySold.toLocaleString()}
       </td>
-      <td className="px-5 py-3 text-right text-zinc-900">
+      <td className="px-5 py-3 text-right text-slate-900">
         {money(row.revenue, symbol)}
       </td>
-      <td className="px-5 py-3 text-right text-zinc-500">
+      <td className="px-5 py-3 text-right text-slate-500">
         {money(row.cogs, symbol)}
       </td>
       <td className={`px-5 py-3 text-right font-medium ${profitTone}`}>

@@ -36,7 +36,7 @@ export default function RangeSelector({ active }: { active: RangePreset }) {
 
   return (
     <div
-      className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1"
+      className="inline-flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white shadow-sm p-1"
       role="group"
       aria-label="Date range"
     >
@@ -58,8 +58,8 @@ export default function RangeSelector({ active }: { active: RangePreset }) {
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               "disabled:cursor-not-allowed disabled:opacity-60",
               isActive
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+                ? "bg-blue-600 text-white"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
             ].join(" ")}
           >
             {preset.label}

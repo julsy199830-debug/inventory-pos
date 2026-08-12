@@ -16,8 +16,8 @@ export default function InventoryLoading() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <div className="h-7 w-56 rounded-md bg-zinc-200 animate-pulse" />
-          <div className="h-4 w-40 rounded bg-zinc-200 animate-pulse" />
+          <div className="h-7 w-56 rounded-md bg-slate-200 animate-pulse" />
+          <div className="h-4 w-40 rounded bg-slate-200 animate-pulse" />
         </div>
       </header>
 
@@ -25,20 +25,20 @@ export default function InventoryLoading() {
       <div className="flex flex-wrap items-center gap-3">
         {/* search input */}
         <div className="flex-1">
-          <div className="h-10 w-full rounded-lg border border-zinc-200 bg-white animate-pulse" />
+          <div className="h-10 w-full rounded-xl border border-slate-200/80 bg-white shadow-sm animate-pulse" />
         </div>
         {/* Filter button */}
-        <div className="h-10 w-28 rounded-lg border border-zinc-200 bg-white animate-pulse" />
+        <div className="h-10 w-28 rounded-xl border border-slate-200/80 bg-white shadow-sm animate-pulse" />
         {/* Add New Product button */}
-        <div className="h-10 w-44 rounded-lg bg-zinc-900 animate-pulse" />
+        <div className="h-10 w-44 rounded-lg bg-blue-600 animate-pulse" />
       </div>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">SKU / Barcode</th>
                 <th className="px-5 py-3 font-medium">Product Name</th>
                 <th className="px-5 py-3 font-medium">Category</th>
@@ -48,29 +48,29 @@ export default function InventoryLoading() {
                 <th className="px-5 py-3 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-slate-100">
               {ROWS.map((row) => (
                 <tr key={row}>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-20 rounded bg-zinc-200 animate-pulse" />
+                    <div className="h-3.5 w-20 rounded bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-44 rounded bg-zinc-200 animate-pulse" />
+                    <div className="h-3.5 w-44 rounded bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-20 rounded bg-zinc-200 animate-pulse" />
+                    <div className="h-3.5 w-20 rounded bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-16 rounded bg-zinc-200 animate-pulse" />
+                    <div className="h-3.5 w-16 rounded bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-16 rounded bg-zinc-200 animate-pulse" />
+                    <div className="h-3.5 w-16 rounded bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-5 w-20 rounded-full bg-zinc-200 animate-pulse" />
+                    <div className="h-5 w-20 rounded-full bg-slate-200 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-5 w-24 rounded-full bg-zinc-200 animate-pulse" />
+                    <div className="h-5 w-24 rounded-full bg-slate-200 animate-pulse" />
                   </td>
                 </tr>
               ))}

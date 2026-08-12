@@ -36,6 +36,69 @@ export function asRole(value: string | null | undefined): Role {
 // `schema.prisma` so a freshly seeded DB and the TS fallback agree.
 export const LOW_STOCK_THRESHOLD = 10;
 
+/**
+ * Derive a product's low-stock cutoff from its category: a category may
+ * override the app-wide default by setting `Category.lowStockThreshold`; a
+ * product whose category has none (or is uncategorized) falls back to
+ * {@link LOW_STOCK_THRESHOLD}. Modeled as a plain function on a nullable
+ * threshold so the inventory page, the category management page, and any
+ * alert surface all agree on a single rule.
+ */
+export function lowStockThresholdFor(categoryThreshold: number | null | undefined): number {
+  return categoryThreshold == null ? LOW_STOCK_THRESHOLD : categoryThreshold;
+}
+
+/** Coarse stock status used by the inventory badges and any restock surface. */
+export type StockStatus = "out" | "low" | "ok";
+
+/**
+ * Classify a product's `stock` against its effective low-stock threshold. 0 is
+ * always Out of Stock; otherwise Low Stock when `stock` is strictly below the
+ * cutoff, In Stock when at or above it. Pairs with
+ * {@link lowStockThresholdFor} so the same per-category rule powers the label
+ * and the color across views.
+ */
+export function stockStatusAt(
+  stock: number,
+  categoryThreshold: number | null | undefined,
+): StockStatus {
+  if (stock <= 0) return "out";
+  return stock < lowStockThresholdFor(categoryThreshold) ? "low" : "ok";
+}
+
+/**
+ * The kind of {@link StockMovement} recorded for a stock change. Mirrors the
+ * plain-`String` `StockMovement.type` column in `schema.prisma`: the column
+ * holds the literal, and the allowed set is enforced here at the TypeScript
+ * layer (SQLite has no native enum — same convention as {@link Role} and
+ * `Sale.status`).
+ */
+export type StockMovementType = "RESTOCK" | "SALE" | "ADJUSTMENT" | "DAMAGE";
+
+/** All valid movement-type literals — useful for validation. */
+export const STOCK_MOVEMENT_TYPES: readonly StockMovementType[] = [
+  "RESTOCK",
+  "SALE",
+  "ADJUSTMENT",
+  "DAMAGE",
+] as const;
+
+/**
+ * Narrows an arbitrary value (e.g. a raw `StockMovement.type` string from
+ * Prisma, or client input) to a {@link StockMovementType}. Falls back to
+ * `ADJUSTMENT` when the value is missing or unrecognized — `ADJUSTMENT` is the
+ * safest generic bucket for an unknown cause, since it carries no implication
+ * of direction (unlike `RESTOCK`/`SALE`/`DAMAGE`), so a stray string can never
+ * mislabel a movement as a restock or a write-off. Mirrors {@link asRole}.
+ */
+export function asStockMovementType(
+  value: string | null | undefined,
+): StockMovementType {
+  return STOCK_MOVEMENT_TYPES.includes(value as StockMovementType)
+    ? (value as StockMovementType)
+    : "ADJUSTMENT";
+}
+
 // ── Server Action result shapes ─────────────────────────────────────────────
 //
 // Every Server Action in the app resolves to one of these rather than throwing

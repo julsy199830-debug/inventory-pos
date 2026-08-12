@@ -17,7 +17,7 @@ import { runFastTask } from "@/lib/ai";
  * `success`.
  */
 const FALLBACK_SUMMARY =
-  "AI insights are unavailable (Jan AI offline at port 1337). Showing a static fallback: today's completed sales cover Espresso Beans and Paper Cups for a combined ~$195.50.";
+  "AI insights are unavailable (Jan AI offline at port 1337). Showing a static fallback: today's completed sales cover Espresso Beans and Paper Cups for a combined ~₱195.50.";
 
 export async function generateSalesInsightsAction() {
   try {

@@ -1,31 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { deleteProduct, type DeleteProductResult } from "./actions";
+import { deleteCategory, type DeleteCategoryResult } from "../actions";
 
 /**
- * Per-row trash button that deletes a product by ID.
+ * Per-row trash button that deletes a category by ID.
  *
- * Drives the {@link deleteProduct} Server Action through a manual async
- * `onSubmit` handler rather than the `<form action={...}>` prop. The confirm
- * gate needs client JS, so this is a Client Component: we intercept `onSubmit`
- * to confirm; cancelling the event stops the call before it ever fires. We
- * `await` the action ourselves and act on its `{ ok, ... }` result — on success
- * `revalidatePath` swaps the page and the row vanishes on its own (no local
- * pending state to clear), and on a failure (e.g. a `SaleItem`/`TransactionItem`
- * FK Restrict, surfaced leak-free by the action) we render the message inline
- * under the button rather than silently rejecting to the nearest error boundary.
+ * Unlike the sibling `DeleteProductButton`/`DeleteSupplierButton`, this drives
+ * the {@link deleteCategory} Server Action through a manual async `onSubmit`
+ * handler rather than the `<form action={...}>` prop. Two reasons: (1) it lets
+ * us surface a leak-free error inline on failure (a `<form action>` POST
+ * silently rejects to the nearest error boundary, with no per-row feedback),
+ * and (2) it sidesteps the typing wrinkle where a server action returning a
+ * non-void {@link DeleteCategoryResult} isn't assignable to the `action` prop's
+ * `void`-returning signature. The confirm gate still gates the submit: a
+ * cancelled confirm `preventDefault`s before we ever call the action.
  *
- * Calling the action ourselves (vs. `<form action>`) also sidesteps the typing
- * wrinkle where a server action returning a non-void {@link DeleteProductResult}
- * isn't assignable to the `action` prop's `void`-returning signature.
+ * `Product.categoryId` is `onDelete: SetNull`, so a category with products is
+ * *not* blocked — those products just become uncategorized (the audit trail of
+ * their sales is untouched). The confirm copy says so, so the user isn't
+ * surprised when formerly-categorized products drop to Uncategorized.
  */
-export default function DeleteProductButton({
+export default function DeleteCategoryButton({
   id,
   name,
+  productCount,
 }: {
   id: string;
   name: string;
+  /** How many products reference this category — shown in the confirm prompt so
+   * the user knows deletion will uncategorize that many rows (SetNull). */
+  productCount: number;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,18 +38,22 @@ export default function DeleteProductButton({
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    if (!window.confirm(`Delete "${name}"?`)) {
+    const withProducts =
+      productCount > 0
+        ? `\n${productCount} product${productCount === 1 ? "" : "s"} will become uncategorized.`
+        : "";
+    if (!window.confirm(`Delete category "${name}"?${withProducts}`)) {
       return;
     }
     setPending(true);
     const fd = new FormData();
     fd.set("id", id);
-    const result: DeleteProductResult = await deleteProduct(fd);
+    const result: DeleteCategoryResult = await deleteCategory(fd);
     setPending(false);
     if (!result.ok) {
       setError(result.error ?? null);
     }
-    // On success the action revalidates /inventory, so the row vanishes on its
+    // On success the action revalidates both pages, so the row vanishes on its
     // own — no local state to clear beyond the error.
   }
 

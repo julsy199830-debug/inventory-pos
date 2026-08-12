@@ -43,7 +43,7 @@ export default function RoleSelect({
           // current value, since the select is also a named form control.
           e.currentTarget.form?.requestSubmit()
         }}
-        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
       >
         <option value="ADMIN">Admin</option>
         <option value="MANAGER">Manager</option>

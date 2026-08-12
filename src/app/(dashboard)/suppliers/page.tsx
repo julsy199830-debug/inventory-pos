@@ -70,16 +70,16 @@ export default async function SuppliersPage({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Suppliers
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-slate-500">
             Showing{" "}
-            <span className="font-medium text-zinc-900">
+            <span className="font-medium text-slate-900">
               {suppliers.length.toLocaleString()}
             </span>{" "}
             of{" "}
-            <span className="font-medium text-zinc-900">
+            <span className="font-medium text-slate-900">
               {total.toLocaleString()}
             </span>{" "}
             suppliers
@@ -93,7 +93,7 @@ export default async function SuppliersPage({
       <form className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1">
           <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -109,7 +109,7 @@ export default async function SuppliersPage({
             name="q"
             defaultValue={query}
             placeholder="Search suppliers..."
-            className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+            className="w-full rounded-xl border border-slate-200/80 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
           />
         </div>
 
@@ -120,11 +120,11 @@ export default async function SuppliersPage({
       </form>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Supplier Name</th>
                 <th className="px-5 py-3 font-medium">Contact</th>
                 <th className="px-5 py-3 font-medium">Email</th>
@@ -134,14 +134,14 @@ export default async function SuppliersPage({
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-slate-100">
               {suppliers.map((s) => (
-                <tr key={s.id} className="hover:bg-zinc-50">
-                  <td className="px-5 py-3 font-medium text-zinc-900">{s.name}</td>
-                  <td className="px-5 py-3 text-zinc-600">{s.contactName ?? "—"}</td>
-                  <td className="px-5 py-3 text-zinc-600">{s.email ?? "—"}</td>
-                  <td className="px-5 py-3 text-zinc-600">{s.phone ?? "—"}</td>
-                  <td className="px-5 py-3 text-zinc-600">{s.address ?? "—"}</td>
+                <tr key={s.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-3 font-medium text-slate-900">{s.name}</td>
+                  <td className="px-5 py-3 text-slate-600">{s.contactName ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">{s.email ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">{s.phone ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">{s.address ?? "—"}</td>
                   <td className="px-5 py-3">
                     <ProductCountPill count={s.productCount} />
                   </td>
@@ -170,7 +170,7 @@ export default async function SuppliersPage({
         </div>
 
         {suppliers.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-zinc-500">
+          <div className="px-5 py-12 text-center text-sm text-slate-500">
             No suppliers found.
           </div>
         )}
@@ -183,8 +183,8 @@ export default async function SuppliersPage({
 function ProductCountPill({ count }: { count: number }) {
   const color =
     count === 0
-      ? "bg-zinc-100 text-zinc-600"
-      : "bg-emerald-50 text-emerald-700";
+      ? "bg-slate-100 text-slate-600"
+      : "bg-blue-50 text-blue-700";
   const label = count === 1 ? "1 product" : `${count} products`;
   return (
     <span

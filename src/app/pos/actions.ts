@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { setCashierCookie, clearCashierCookie } from "@/lib/session";
 import { PIN_PATTERN } from "@/lib/pin";
-import type { ActionResult } from "@/lib/types";
+import { asRole, type Role, type ActionResult } from "@/lib/types";
 
 /**
  * Cashier sign-in / sign-out for the POS register.
@@ -32,7 +32,7 @@ import type { ActionResult } from "@/lib/types";
  * cookie is set and the page revalidates, so the signed-in UI streams in on its
  * own.
  */
-export type SignInResult = ActionResult<void>;
+export type SignInResult = ActionResult<{ role: Role }>;
 
 /**
  * Constant-time comparison of two strings of equal length, so a wrong PIN
@@ -80,7 +80,7 @@ export async function signInCashierPin(input: {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, pin: true, active: true },
+    select: { id: true, pin: true, active: true, role: true },
   });
 
   // The shape of "wrong PIN" and "no such user" and "offboarded" are deliberately
@@ -92,7 +92,7 @@ export async function signInCashierPin(input: {
   }
 
   await setCashierCookie(user.id);
-  return { ok: true };
+  return { ok: true, role: asRole(user.role) };
 }
 
 /**
