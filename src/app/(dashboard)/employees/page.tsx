@@ -242,7 +242,6 @@ export default async function EmployeesPage() {
                     <ClockButton
                       userId={e.id}
                       clockedIn={e.clockedIn}
-                      name={e.name}
                     />
                   </td>
                   <td className="px-5 py-3 text-right">
@@ -365,7 +364,6 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
                 <ClockButton
                   userId={e.id}
                   clockedIn={e.clockedIn}
-                  name={e.name}
                 />
               </div>
             </li>

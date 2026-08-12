@@ -51,7 +51,13 @@ export function useBarcodeScanner(
   // hook lives for the lifetime of the POS screen, so this ref is the only
   // channel that stays fresh across cart updates, modal opens, etc.
   const onScanRef = useRef(onScan)
-  onScanRef.current = onScan
+  // The callback is refreshed inside an effect, not during render — writing
+  // `ref.current` while rendering violates the Rules of React (the write can be
+  // dropped or double-run by concurrent rendering). The keydown listener stays
+  // registered exactly once and reads the freshest callback at event time.
+  useEffect(() => {
+    onScanRef.current = onScan
+  }, [onScan])
 
   const minLength = opts?.minLength ?? DEFAULT_MIN_LENGTH
 

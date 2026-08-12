@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
-import { asRole, ROLES, type Role, type ActionResult } from "@/lib/types";
+import { asRole, type Role, type ActionResult } from "@/lib/types";
 import { PIN_PATTERN } from "@/lib/pin";
 
 /**
@@ -52,6 +52,7 @@ async function hashPassword(password: string): Promise<string> {
  * timing oracle. Returns `false` for any malformed stored value rather than
  * throwing, so unknown/legacy hashes simply don't authenticate.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- retained deliberately: see the NOTE at the foot of this file (re-enable when a login flow needs it)
 async function verifyPassword(cleartext: string, stored: string): Promise<boolean> {
   const sep = stored.indexOf(":");
   if (sep <= 0 || sep >= stored.length - 1) return false;

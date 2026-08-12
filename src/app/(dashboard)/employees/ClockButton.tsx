@@ -21,13 +21,10 @@ import { clockIn, clockOut } from './actions'
 export default function ClockButton({
   userId,
   clockedIn,
-  name,
 }: {
   userId: string
   /** Whether this employee currently has an open (`end IS NULL`) shift. */
   clockedIn: boolean
-  /** Optional display name for the button label. */
-  name?: string
 }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)

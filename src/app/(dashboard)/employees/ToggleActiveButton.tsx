@@ -27,7 +27,6 @@ export default function ToggleActiveButton({
   const label = name ?? id
   // Deactivating is the destructive direction (revokes login), so we confirm it;
   // reactivating is trivial and needs no prompt.
-  const verb = active ? 'Deactivate' : 'Activate'
 
   return (
     <form
