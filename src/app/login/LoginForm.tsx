@@ -69,7 +69,7 @@ export function LoginForm({
                 }}
                 className={`flex items-center justify-between rounded-md border px-3 py-2.5 text-left text-sm transition ${
                   active
-                    ? "border-blue-600 bg-blue-600 text-white"
+                    ? "border-indigo-600 bg-indigo-600 text-white"
                     : "border-slate-200 bg-white text-slate-900 hover:border-slate-400"
                 }`}
               >
@@ -103,14 +103,14 @@ export function LoginForm({
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           placeholder={selected ? "Your 4–6 digit PIN" : "Select your name first"}
-          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50"
+          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 disabled:bg-slate-50"
         />
       </div>
 
       <button
         type="submit"
         disabled={!selected || pin.length < 4 || busy}
-        className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? "Signing in…" : "Open register"}
       </button>

@@ -127,7 +127,7 @@ function RecentTransactions() {
 function StatusBadge({ status }: { status: Transaction["status"] }) {
   if (status === "Completed") {
     return (
-      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+      <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
         Completed
       </span>
     );

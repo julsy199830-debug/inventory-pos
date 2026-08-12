@@ -291,7 +291,7 @@ function SummaryTile({
 }) {
   const accent =
     tone === "emerald"
-      ? "bg-blue-50 text-blue-700"
+      ? "bg-emerald-50 text-emerald-700"
       : "bg-slate-100 text-slate-700";
   return (
     <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-4">
