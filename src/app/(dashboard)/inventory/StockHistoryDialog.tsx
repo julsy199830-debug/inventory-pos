@@ -170,7 +170,7 @@ export default function StockHistoryDialog({
  * `@/lib/types`, which is the narrowed type the server ships.
  */
 const TYPE_STYLES: Record<StockMovementType, string> = {
-  RESTOCK: "bg-blue-100 text-blue-700 border-blue-200",
+  RESTOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
   SALE: "bg-red-100 text-red-700 border-red-200",
   ADJUSTMENT: "bg-amber-100 text-amber-700 border-amber-200",
   DAMAGE: "bg-orange-100 text-orange-700 border-orange-200",
@@ -215,7 +215,7 @@ function signedQuantity(quantity: number): string {
 
 /** Green for increases, red for decreases, neutral gray for a zero delta. */
 function quantityColor(quantity: number): string {
-  if (quantity > 0) return "text-blue-600";
+  if (quantity > 0) return "text-emerald-600";
   if (quantity < 0) return "text-red-600";
   return "text-slate-500";
 }

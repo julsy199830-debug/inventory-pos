@@ -120,7 +120,7 @@ export default async function ReportsPage({
                 type="date"
                 defaultValue={isoDate}
                 max={toISODate(new Date())}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600/10"
               />
               <button
                 type="submit"
@@ -187,7 +187,7 @@ function KpiCard({
 }) {
   const color =
     tone === "positive"
-      ? "text-blue-700"
+      ? "text-emerald-700"
       : tone === "negative"
         ? "text-red-700"
         : "text-slate-900";
@@ -236,7 +236,7 @@ function ZReportSheet({
   return (
     <div className="p-6 sm:p-8">
       {/* Header */}
-      <header className="flex items-start justify-between border-b-2 border-blue-600 pb-4">
+      <header className="flex items-start justify-between border-b-2 border-indigo-600 pb-4">
         <div>
           <p className="text-xl font-bold tracking-tight text-slate-900">
             {storeName}
@@ -288,7 +288,7 @@ function ZReportSheet({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-blue-600">
+                <tr className="border-t-2 border-indigo-600">
                   <td className="py-1.5 font-semibold text-slate-900">
                     Gross Revenue
                   </td>
@@ -317,7 +317,7 @@ function ZReportSheet({
                 <dt className="text-slate-600">Cost of Goods Sold</dt>
                 <dd className="text-slate-900">− {fmt(cogs, symbol)}</dd>
               </div>
-              <div className="flex justify-between border-t-2 border-blue-600 py-2 font-semibold text-slate-900">
+              <div className="flex justify-between border-t-2 border-indigo-600 py-2 font-semibold text-slate-900">
                 <dt>Net Profit</dt>
                 <dd className={netProfit >= 0 ? "" : "text-red-700"}>
                   {fmt(netProfit, symbol)}

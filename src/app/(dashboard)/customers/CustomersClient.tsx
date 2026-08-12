@@ -22,9 +22,9 @@ const fd = (d: Date) =>
     minute: "2-digit",
   });
 const input =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none";
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none";
 const primary =
-  "rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50";
+  "rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50";
 const ghost =
   "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50";
 
@@ -280,7 +280,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                     <td className="py-2">
                       <span className={e.type === "SALE"
                         ? "rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600"
-                        : "rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600"}>
+                        : "rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600"}>
                         {e.type === "SALE" ? "On Account" : "Payment"} · {e.paymentMethod}
                       </span>
                     </td>

@@ -58,7 +58,7 @@ export default function RangeSelector({ active }: { active: RangePreset }) {
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               "disabled:cursor-not-allowed disabled:opacity-60",
               isActive
-                ? "bg-blue-600 text-white"
+                ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
             ].join(" ")}
           >

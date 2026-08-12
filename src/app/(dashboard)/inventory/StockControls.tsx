@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { adjustStock, type StockAdjustResult } from "./actions";
 
 /**
@@ -16,8 +17,10 @@ import { adjustStock, type StockAdjustResult } from "./actions";
  * On success the action `revalidatePath('/inventory')` swaps the table, so the
  * authoritative stock re-streams in on its own; we additionally mirror the
  * returned `stock` into a local optimistic label so the count updates instantly
- * before the revalidated rows land. On failure we surface the leak-free error
- * message inline under the buttons.
+ * before the revalidated rows land. Each adjustment also fires a sonner toast
+ * (per-row id, so a rapid +/- run updates the same notification in place). On
+ * failure we surface the leak-free error message both inline under the buttons
+ * and as a toast.
  *
  * `pending` locks the buttons during the in-flight call so a double click can't
  * fan out two competing adjustments (and the transaction inside the action resists
@@ -26,9 +29,11 @@ import { adjustStock, type StockAdjustResult } from "./actions";
 export default function StockControls({
   id,
   stock,
+  name,
 }: {
   id: string;
   stock: number;
+  name: string;
 }) {
   const [displayed, setDisplayed] = useState(stock);
   const [pending, setPending] = useState(false);
@@ -44,8 +49,15 @@ export default function StockControls({
       // Optimistically reflect the server-confirmed new stock; the revalidated
       // table will confirm it as soon as the rows stream back in.
       if (result.stock != null) setDisplayed(result.stock);
+      // One live toast per row: a stable id means a rapid +/- click run updates
+      // the same toast in place instead of stacking a pile of notifications.
+      toast.success(`${name} — ${result.stock ?? "?"} in stock`, {
+        id: `stock-${id}`,
+      });
     } else {
-      setError(result.error ?? null);
+      const message = result.error ?? "Could not update stock.";
+      setError(message);
+      toast.error(message, { id: `stock-${id}` });
     }
   }
 

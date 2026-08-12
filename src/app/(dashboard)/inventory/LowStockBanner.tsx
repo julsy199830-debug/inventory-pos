@@ -41,12 +41,12 @@ export default function LowStockBanner({
   return (
     <div
       role="alert"
-      className="overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-50 shadow-sm"
+      className="overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 shadow-sm"
     >
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Warning icon */}
         <svg
-          className="mt-0.5 h-5 w-5 shrink-0 text-blue-600"
+          className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -62,7 +62,7 @@ export default function LowStockBanner({
         </svg>
 
         <div className="min-w-0 flex-1 space-y-2.5">
-          <p className="text-sm font-semibold text-blue-900">
+          <p className="text-sm font-semibold text-indigo-900">
             {items.length.toLocaleString()}{" "}
             {items.length === 1 ? "product needs" : "products need"} attention
           </p>
@@ -111,7 +111,7 @@ export default function LowStockBanner({
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-100 hover:text-blue-600"
+          className="rounded p-1 text-indigo-400 transition-colors hover:bg-indigo-100 hover:text-indigo-600"
           aria-label="Dismiss low-stock alert"
         >
           <svg
