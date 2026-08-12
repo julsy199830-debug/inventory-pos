@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { NoCashierError, requireCashierSession } from "@/lib/session";
+import {
+  NoCashierError,
+  requireCashierSession,
+  type CashierSession,
+} from "@/lib/session";
 import type { MutationResult } from "@/lib/types";
 
 export type SaleItemInput = {
@@ -26,7 +30,9 @@ export type CreateSaleResult = MutationResult<{ id: string }>;
  * Create a Sale header + its SaleItem rows, decrement product stock, bump the
  * customer's loyalty points, and (for STORE_CREDIT) verify + raise the
  * customer's outstanding balance — all inside a single `prisma.$transaction`
- * so the ledger can never be left half-written.
+ * so the ledger can never be left half-written. The signed-in cashier (from
+ * `requireCashierSession`) is stamped onto the row as `cashierId` so the
+ * Employees shift ledger can attribute this sale to the right employee.
  */
 export async function createSale(
   input: CreateSaleInput,
@@ -39,8 +45,12 @@ export async function createSale(
   const items = Array.isArray(input.items) ? input.items : [];
 
   // ── Session gate ──────────────────────────────────────────────────────
+  // Resolve the signed-in cashier and keep their id — it's written onto the
+  // Sale row as `cashierId` below, which is what the Employees shift ledger
+  // ("sales this ledger") keys on to attribute this sale to its cashier.
+  let cashier: CashierSession;
   try {
-    await requireCashierSession();
+    cashier = await requireCashierSession();
   } catch (err) {
     if (err instanceof NoCashierError) {
       return { ok: false, error: "Sign in to the register to complete this sale." };
@@ -91,6 +101,7 @@ export async function createSale(
       const created = await tx.sale.create({
         data: {
           customerId,
+          cashierId: cashier.id,
           subtotal,
           tax,
           totalAmount,

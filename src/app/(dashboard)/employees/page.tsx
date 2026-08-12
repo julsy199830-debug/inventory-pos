@@ -44,9 +44,11 @@ type EmployeeRow = {
   lifetimeSales: number;
   /** Sum of `Shift.salesCount` snapshots for closed shifts. */
   lifetimeCount: number;
-  /** Live completed-sale total rung up by this cashier (read fresh here so the
-   *  current open shift's sales count in the summary). */
+  /** This shift's ledger: completed sales rung up since the employee's current
+   *  clock-in (`[shift.start, now)`), read fresh here so the live number needs
+   *  no clock-out snapshot. 0 when the employee isn't clocked in. */
   liveSalesTotal: number;
+  /** Count of completed sales in the current open-shift ledger. */
   liveSalesCount: number;
 };
 
@@ -58,8 +60,11 @@ const CURRENCY = "₱";
 
 export default async function EmployeesPage() {
   // Fetched in parallel: the roster, every shift (with totals for performance),
-  // and the cashiered live-sale aggregates. All Server Component Prisma queries.
-  const [users, shifts, liveAgg] = await Promise.all([
+  // and the store-wide completed-sale aggregate (feeds the "Live sales (all
+  // cashiers)" summary tile — the per-employee shift ledgers are windowed
+  // separately below, so they can't share this all-time aggregate). All Server
+  // Component Prisma queries.
+  const [users, shifts, storeAgg] = await Promise.all([
     prisma.user.findMany({ orderBy: [{ active: "desc" }, { name: "asc" }] }),
     prisma.shift.findMany({
       orderBy: { start: "desc" },
@@ -72,11 +77,9 @@ export default async function EmployeesPage() {
         salesCount: true,
       },
     }),
-    prisma.sale.groupBy({
-      by: ["cashierId"],
-      where: { status: "Completed" },
+    prisma.sale.aggregate({
       _sum: { totalAmount: true },
-      _count: true,
+      where: { status: "Completed" },
     }),
   ]);
 
@@ -92,15 +95,35 @@ export default async function EmployeesPage() {
     lifetimeCount.set(s.userId, (lifetimeCount.get(s.userId) ?? 0) + s.salesCount);
   }
 
-  // Live cashiered sales, keyed by cashierId (null buckets are irrelevant here).
-  // `groupBy` types `_sum` as `... | null` (see `GetSaleGroupByPayload`), so we
-  // null-chain it; `_count: true` resolves to a bare `number` there.
-  const liveTotal = new Map<string, number>();
-  const liveCount = new Map<string, number>();
-  for (const a of liveAgg) {
-    if (a.cashierId == null) continue;
-    liveTotal.set(a.cashierId, a._sum?.totalAmount ?? 0);
-    liveCount.set(a.cashierId, a._count);
+  // "Sales this ledger" — each currently clocked-in employee's completed sales
+  // rung up since their open shift began (`createdAt >= shift.start`; the upper
+  // bound is implicit — `Sale.createdAt` defaults to server now() at insert, so
+  // no row can be dated in the future). The window is per-employee, so we run
+  // one aggregate per open shift (a user has at most one — `clockIn` auto-closes
+  // a dangling prior one); a single `groupBy` can't express a per-bucket time
+  // window. `_sum` types as `... | null`, so we null-chain it; `_count: true`
+  // resolves to a bare `number` there (same shapes as the closed-shift snapshot
+  // in `employees/actions.ts` `closeShift`).
+  const openShifts = shifts.filter((s) => s.end == null);
+  const ledgerAggs = await Promise.all(
+    openShifts.map((s) =>
+      prisma.sale.aggregate({
+        _sum: { totalAmount: true },
+        _count: true,
+        where: {
+          cashierId: s.userId,
+          status: "Completed",
+          createdAt: { gte: s.start },
+        },
+      }),
+    ),
+  );
+  const ledgerTotal = new Map<string, number>();
+  const ledgerCount = new Map<string, number>();
+  for (const [i, s] of openShifts.entries()) {
+    const agg = ledgerAggs[i];
+    ledgerTotal.set(s.userId, Math.round((agg._sum.totalAmount ?? 0) * 100) / 100);
+    ledgerCount.set(s.userId, agg._count);
   }
 
   const employees: EmployeeRow[] = users.map((u) => ({
@@ -112,8 +135,8 @@ export default async function EmployeesPage() {
     clockedIn: openByUserId.has(u.id),
     lifetimeSales: lifetimeSales.get(u.id) ?? 0,
     lifetimeCount: lifetimeCount.get(u.id) ?? 0,
-    liveSalesTotal: liveTotal.get(u.id) ?? 0,
-    liveSalesCount: liveCount.get(u.id) ?? 0,
+    liveSalesTotal: ledgerTotal.get(u.id) ?? 0,
+    liveSalesCount: ledgerCount.get(u.id) ?? 0,
   }));
 
   // ── Shift-management widget roll-up ────────────────────────────────────
@@ -121,7 +144,9 @@ export default async function EmployeesPage() {
   const activeCount = employees.filter((e) => e.active).length;
   // Lifetime total sales across all employees — a store-wide sales-volume read.
   const totalLifetimeSales = employees.reduce((sum, e) => sum + e.lifetimeSales, 0);
-  const totalLiveSales = employees.reduce((sum, e) => sum + e.liveSalesTotal, 0);
+  // Store-wide completed-sale volume across all time — independent of who's
+  // clocked in, so it must not be derived from the shift-ledger figures above.
+  const totalLiveSales = Math.round((storeAgg._sum.totalAmount ?? 0) * 100) / 100;
 
   return (
     <div className="space-y-6">

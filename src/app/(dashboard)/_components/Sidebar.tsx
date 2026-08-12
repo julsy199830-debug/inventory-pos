@@ -49,7 +49,6 @@ const navItems: NavItem[] = [
     section: "management",
   },
   // REPORTS & SALES
-  { label: "Point of Sale", href: "/pos", icon: ShoppingCart, section: "reports" },
   { label: "Reports", href: "/reports", icon: BarChart3, section: "reports" },
   {
     label: "Analytics",
@@ -112,6 +111,20 @@ export default function Sidebar({
             Inventory & Point of Sale
           </p>
         </div>
+      </div>
+
+      {/* Primary action: Point of Sale — the register is the app's core module,
+          so it gets a dedicated top-level CTA instead of a plain nav row. `/pos`
+          renders outside the (dashboard) layout (no sidebar there), so there's
+          no on-route active state to track here. */}
+      <div className="mx-4 mb-4">
+        <Link
+          href="/pos"
+          className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition-colors hover:bg-indigo-700"
+        >
+          <ShoppingCart className="h-5 w-5 shrink-0" />
+          Point of Sale
+        </Link>
       </div>
 
       {/* User profile card: avatar, name, role badge */}
