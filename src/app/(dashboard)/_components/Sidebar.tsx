@@ -11,6 +11,7 @@ import {
   UserCog,
   Calculator,
   BarChart3,
+  PieChart,
   Settings,
   Tags,
   Lock,
@@ -51,6 +52,12 @@ const navItems: NavItem[] = [
   { label: "Point of Sale", href: "/pos", icon: ShoppingCart, section: "reports" },
   { label: "Reports", href: "/reports", icon: BarChart3, section: "reports" },
   {
+    label: "Analytics",
+    href: "/reports/analytics",
+    icon: PieChart,
+    section: "reports",
+  },
+  {
     label: "Accounting",
     href: "/accounting",
     icon: Calculator,
@@ -78,10 +85,13 @@ export default function Sidebar({
   // Active-link test. `/` is exact-only (otherwise every route "starts with"
   // it). `/inventory` is also exact-only: it now has a dedicated child route
   // (`/inventory/categories`), so a `startsWith` check would highlight both
-  // Inventory and Categories when the child is open. Every other item falls
-  // back to `startsWith`, which matches its own page plus any deeper sub-routes.
+  // Inventory and Categories when the child is open. `/reports` is exact-only
+  // too now that `/reports/analytics` has its own nav item — a `startsWith`
+  // check would light up both Reports and Analytics when the latter is open.
+  // Every other item falls back to `startsWith`, which matches its own page
+  // plus any deeper sub-routes.
   const isActive = (href: string) =>
-    href === "/" || href === "/inventory"
+    href === "/" || href === "/inventory" || href === "/reports"
       ? pathname === href
       : pathname.startsWith(href);
 

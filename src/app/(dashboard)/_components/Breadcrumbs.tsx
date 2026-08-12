@@ -8,6 +8,7 @@ const labelByPath: Record<string, string> = {
   "/inventory": "Inventory",
   "/inventory/categories": "Categories",
   "/reports": "Reports",
+  "/reports/analytics": "Analytics",
   "/customers": "Customers",
   "/suppliers": "Suppliers",
   "/employees": "Employees",
