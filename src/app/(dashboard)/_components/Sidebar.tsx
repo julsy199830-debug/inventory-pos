@@ -91,7 +91,7 @@ export default function Sidebar({
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
       {/* Branding */}
       <div className="flex items-center gap-3 px-6 pb-5 pt-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20">
           <ShoppingCart className="h-5 w-5" />
         </div>
         <div className="leading-tight">
@@ -106,7 +106,7 @@ export default function Sidebar({
 
       {/* User profile card: avatar, name, role badge */}
       <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
           {user.name
             .split(" ")
             .map((n) => n[0])
@@ -118,7 +118,7 @@ export default function Sidebar({
           <p className="truncate text-sm font-medium text-slate-900">
             {user.name}
           </p>
-          <span className="mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100">
+          <span className="mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-100">
             {user.role === "ADMIN" ? "Administrator" : "Manager"}
           </span>
         </div>
@@ -145,7 +145,7 @@ export default function Sidebar({
                       className={[
                         "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         active
-                          ? "bg-blue-50 font-medium text-blue-600"
+                          ? "bg-indigo-50 font-medium text-indigo-600"
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                       ].join(" ")}
                     >
@@ -153,13 +153,13 @@ export default function Sidebar({
                         className={[
                           "h-5 w-5 shrink-0 transition-colors",
                           active
-                            ? "text-blue-600"
+                            ? "text-indigo-600"
                             : "text-slate-400 group-hover:text-slate-900",
                         ].join(" ")}
                       />
                       {item.label}
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600" />
                       )}
                     </Link>
                   );
