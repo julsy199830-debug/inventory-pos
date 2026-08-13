@@ -90,7 +90,7 @@ export default function PosLoading() {
               <div className="h-3.5 w-1/2 rounded bg-slate-200 animate-pulse" />
             </div>
             <div className="mt-4 h-14 rounded-xl bg-slate-900/10 animate-pulse" />
-            <div className="mt-3 h-12 w-full rounded-xl bg-emerald-600/40 animate-pulse" />
+            <div className="mt-3 h-12 w-full rounded-xl bg-blue-600/40 animate-pulse" />
           </div>
         </aside>
       </div>

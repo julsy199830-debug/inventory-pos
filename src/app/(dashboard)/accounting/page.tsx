@@ -228,7 +228,7 @@ function KpiCard({
 }) {
   const color =
     tone === "positive"
-      ? "text-emerald-700"
+      ? "text-blue-700"
       : tone === "negative"
         ? "text-red-700"
         : "text-slate-900";
@@ -249,8 +249,8 @@ function ProductRow({
   row: ProductBreakdownRow;
   symbol: string;
 }) {
-  const profitTone = row.profit >= 0 ? "text-emerald-700" : "text-red-700";
-  const marginTone = row.margin >= 0 ? "text-emerald-700" : "text-red-700";
+  const profitTone = row.profit >= 0 ? "text-blue-700" : "text-red-700";
+  const marginTone = row.margin >= 0 ? "text-blue-700" : "text-red-700";
   return (
     <tr className="hover:bg-slate-50">
       <td className="px-5 py-3 font-medium text-slate-900">

@@ -45,7 +45,7 @@ export default function Breadcrumbs() {
           ) : (
             <Link
               href={c.href}
-              className="font-medium text-slate-500 transition-colors hover:text-emerald-600"
+              className="font-medium text-slate-500 transition-colors hover:text-blue-600"
             >
               {c.label}
             </Link>

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { asRole } from "@/lib/types";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Sign in — JuLs POS" };
+export const metadata = { title: "Sign in — JuLs POS SYSTEM" };
 
 /** Open route: tap your name + enter PIN to open the register. */
 export default async function LoginPage({

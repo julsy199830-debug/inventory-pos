@@ -25,7 +25,7 @@ export default function DashboardLoading() {
           <div className="h-7 w-56 rounded-md bg-slate-200 animate-pulse" />
           <div className="h-4 w-40 rounded bg-slate-200 animate-pulse" />
         </div>
-        <div className="h-10 w-40 rounded-xl bg-emerald-600/60 animate-pulse" />
+        <div className="h-10 w-40 rounded-xl bg-blue-600/60 animate-pulse" />
       </header>
 
       {/* Controls row */}

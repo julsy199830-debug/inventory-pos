@@ -7,7 +7,7 @@ import { formatMoney } from "./chart-theme";
  * renders with zero client JavaScript.
  *
  * Thumbnail column: the Product model has no image column today, so each row
- * falls back to an emerald-gradient initials avatar. `imageUrl` is typed on the
+ * falls back to an blue-gradient initials avatar. `imageUrl` is typed on the
  * action payload anyway; the moment a product carries one, the avatar swaps
  * to the photo (CSS background-image, no `<img>` to configure or lint).
  */
@@ -48,7 +48,7 @@ export default function TopProductsTable({
               {products.map((product, i) => (
                 <tr key={product.productId} className="hover:bg-slate-50">
                   <td className="px-5 py-3">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
                       {i + 1}
                     </span>
                   </td>
@@ -74,7 +74,7 @@ export default function TopProductsTable({
                   <td className="px-5 py-3 text-right font-medium text-slate-900">
                     {product.unitsSold.toLocaleString()}
                   </td>
-                  <td className="px-5 py-3 text-right font-semibold text-emerald-700">
+                  <td className="px-5 py-3 text-right font-semibold text-blue-700">
                     {formatMoney(product.revenue, currencySymbol)}
                   </td>
                 </tr>
@@ -98,7 +98,7 @@ function ProductThumb({ product }: { product: AnalyticsTopProduct }) {
       .toUpperCase() || "?";
   return (
     <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 text-xs font-semibold text-white"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-semibold text-white"
       style={
         product.imageUrl
           ? {

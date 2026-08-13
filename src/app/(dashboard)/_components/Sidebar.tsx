@@ -17,6 +17,7 @@ import {
   Lock,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { lockRegister } from "@/lib/actions/auth-actions";
 import type { Role } from "@/lib/types";
 
@@ -100,12 +101,16 @@ export default function Sidebar({
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
       {/* Branding */}
       <div className="flex items-center gap-3 px-6 pb-5 pt-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
-          <ShoppingCart className="h-5 w-5" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="JuLs POS SYSTEM"
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-xl object-cover"
+        />
         <div className="leading-tight">
           <p className="text-base font-semibold tracking-tight text-slate-900">
-            JuLs POS
+            JuLs POS SYSTEM
           </p>
           <p className="text-xs font-medium text-slate-400">
             Inventory & Point of Sale
@@ -120,7 +125,7 @@ export default function Sidebar({
       <div className="mx-4 mb-4">
         <Link
           href="/pos"
-          className="group flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-emerald-600/25 transition-colors hover:bg-emerald-700"
+          className="group flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition-colors hover:bg-blue-700"
         >
           <ShoppingCart className="h-5 w-5 shrink-0" />
           Point of Sale
@@ -129,7 +134,7 @@ export default function Sidebar({
 
       {/* User profile card: avatar, name, role badge */}
       <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
           {user.name
             .split(" ")
             .map((n) => n[0])
@@ -141,7 +146,7 @@ export default function Sidebar({
           <p className="truncate text-sm font-medium text-slate-900">
             {user.name}
           </p>
-          <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
+          <span className="mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100">
             {user.role === "ADMIN" ? "Administrator" : "Manager"}
           </span>
         </div>
@@ -168,7 +173,7 @@ export default function Sidebar({
                       className={[
                         "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         active
-                          ? "bg-emerald-50 font-medium text-emerald-600"
+                          ? "bg-blue-50 font-medium text-blue-600"
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                       ].join(" ")}
                     >
@@ -176,13 +181,13 @@ export default function Sidebar({
                         className={[
                           "h-5 w-5 shrink-0 transition-colors",
                           active
-                            ? "text-emerald-600"
+                            ? "text-blue-600"
                             : "text-slate-400 group-hover:text-slate-900",
                         ].join(" ")}
                       />
                       {item.label}
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600" />
                       )}
                     </Link>
                   );

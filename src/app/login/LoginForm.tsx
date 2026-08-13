@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInCashierPin } from "@/app/pos/actions";
 import { ShoppingCart } from "lucide-react";
+import Image from "next/image";
 import type { Role } from "@/lib/types";
 
 type LoginUser = { id: string; name: string; role: Role };
@@ -48,12 +49,16 @@ export function LoginForm({
     <div className="space-y-6">
       {/* Branding */}
       <div className="flex items-center justify-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
-          <ShoppingCart className="h-6 w-6" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="JuLs POS SYSTEM"
+          width={48}
+          height={48}
+          className="h-12 w-12 rounded-2xl object-cover shadow-sm shadow-blue-600/20"
+        />
         <div className="leading-tight">
           <p className="text-lg font-semibold tracking-tight text-slate-900">
-            JuLs POS
+            JuLs POS SYSTEM
           </p>
         </div>
       </div>
@@ -83,7 +88,7 @@ export function LoginForm({
                 }}
                 className={`flex items-center justify-between rounded-md border px-3 py-2.5 text-left text-sm transition ${
                   active
-                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    ? "border-blue-600 bg-blue-600 text-white"
                     : "border-slate-200 bg-white text-slate-900 hover:border-slate-400"
                 }`}
               >
@@ -117,14 +122,14 @@ export function LoginForm({
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           placeholder={selected ? "Your 4–6 digit PIN" : "Select your name first"}
-          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 disabled:bg-slate-50"
+          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50"
         />
       </div>
 
       <button
         type="submit"
         disabled={!selected || pin.length < 4 || busy}
-        className="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? "Signing in…" : "Open register"}
       </button>

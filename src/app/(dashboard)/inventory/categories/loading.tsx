@@ -22,7 +22,7 @@ export default function CategoriesLoading() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="h-4 w-64 rounded bg-slate-200 animate-pulse" />
         {/* Add Category button */}
-        <div className="h-10 w-36 rounded-lg bg-emerald-600 animate-pulse" />
+        <div className="h-10 w-36 rounded-lg bg-blue-600 animate-pulse" />
       </div>
 
       {/* Data table */}

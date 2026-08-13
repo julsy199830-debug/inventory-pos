@@ -178,7 +178,7 @@ export default async function EmployeesPage() {
           label="On the clock"
           value={clockedInList.length.toLocaleString()}
           hint={clockedInList.length === 0 ? "No active shifts" : "Active shifts"}
-          tone="emerald"
+          tone="blue"
         />
         <SummaryTile
           label="Active employees"
@@ -312,11 +312,11 @@ function SummaryTile({
   value: string;
   hint: string;
   /** Tailwind palette family; only the accent chips differ. */
-  tone: "emerald" | "zinc";
+  tone: "blue" | "zinc";
 }) {
   const accent =
-    tone === "emerald"
-      ? "bg-emerald-50 text-emerald-700"
+    tone === "blue"
+      ? "bg-blue-50 text-blue-700"
       : "bg-slate-100 text-slate-700";
   return (
     <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-4">

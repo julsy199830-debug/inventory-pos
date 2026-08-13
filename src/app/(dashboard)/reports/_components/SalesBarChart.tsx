@@ -12,8 +12,8 @@ import {
 } from "recharts";
 import type { SalesVolumePoint } from "../actions";
 import {
-  EMERALD_600,
-  EMERALD,
+  BLUE_600,
+  SKY_400,
   SLATE_300,
   SLATE_500,
   formatMoney,
@@ -23,8 +23,8 @@ import {
 /**
  * Stacked sales-volume bar chart — the centrepiece of the analytics page.
  *
- * Two stacked series per bucket: **Cash** (emerald-600) vs **Card / Credit**
- * (emerald-500), with the top segment's corners rounded. The Month / Week
+ * Two stacked series per bucket: **Cash** (blue-600) vs **Card / Credit**
+ * (blue-500), with the top segment's corners rounded. The Month / Week
  * toggle is client-side state over the two datasets the server action already
  * computed, so switching periods never refetches. Both series share a
  * `stackId` so a zero Cash month still shows the Card / Credit segment (and
@@ -64,8 +64,8 @@ export default function SalesBarChart({
       </div>
 
       <div className="mt-4 flex items-center gap-5 text-sm text-slate-600">
-        <LegendChip color={EMERALD_600} label="Cash" />
-        <LegendChip color={EMERALD} label="Card / Credit" />
+        <LegendChip color={BLUE_600} label="Cash" />
+        <LegendChip color={SKY_400} label="Card / Credit" />
       </div>
 
       <div className="mt-4 h-72">
@@ -108,14 +108,14 @@ export default function SalesBarChart({
                 dataKey="cash"
                 name="Cash"
                 stackId="sales"
-                fill={EMERALD_600}
+                fill={BLUE_600}
                 maxBarSize={42}
               />
               <Bar
                 dataKey="cardCredit"
                 name="Card / Credit"
                 stackId="sales"
-                fill={EMERALD}
+                fill={SKY_400}
                 maxBarSize={42}
                 radius={[6, 6, 0, 0]}
               />
@@ -150,7 +150,7 @@ function PeriodButton({
       className={[
         "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
         active
-          ? "bg-white text-emerald-600 shadow-sm"
+          ? "bg-white text-blue-600 shadow-sm"
           : "text-slate-500 hover:text-slate-700",
       ].join(" ")}
     >
