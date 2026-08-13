@@ -15,7 +15,6 @@ import {
   Settings,
   Tags,
   Lock,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { lockRegister } from "@/lib/actions/auth-actions";

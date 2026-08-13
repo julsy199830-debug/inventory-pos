@@ -3,10 +3,9 @@
 import { useId } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { OrderTrendPoint } from "../actions";
-import { EMERALD, INDIGO, SLATE_300 } from "./chart-theme";
+import { EMERALD, SLATE_300 } from "./chart-theme";
 
 const strokeByColor = {
-  indigo: INDIGO,
   emerald: EMERALD,
 } as const;
 
@@ -18,11 +17,11 @@ const strokeByColor = {
  */
 export default function OrdersSparkline({
   data,
-  color = "indigo",
+  color = "emerald",
   height = 64,
 }: {
   data: OrderTrendPoint[];
-  color?: "indigo" | "emerald";
+  color?: "emerald";
   height?: number;
 }) {
   const gradientId = useId().replace(/:/g, "");

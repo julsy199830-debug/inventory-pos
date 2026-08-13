@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInCashierPin } from "@/app/pos/actions";
-import { ShoppingCart, Sparkles } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import type { Role } from "@/lib/types";
 
 type LoginUser = { id: string; name: string; role: Role };
@@ -129,5 +129,6 @@ export function LoginForm({
         {busy ? "Signing in…" : "Open register"}
       </button>
     </form>
+    </div>
   );
 }

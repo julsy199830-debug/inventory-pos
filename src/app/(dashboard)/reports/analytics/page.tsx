@@ -53,7 +53,7 @@ export default async function SalesAnalyticsPage() {
           label="Revenue · 30 days"
           value={formatMoney(totals.revenue30d, symbol)}
           sparkline={
-            <OrdersSparkline data={data.orderTrend} color="indigo" height={56} />
+            <OrdersSparkline data={data.orderTrend} color="emerald" height={56} />
           }
         />
         <KpiTile
@@ -75,7 +75,7 @@ export default async function SalesAnalyticsPage() {
               ? `${totals.topCategory.percent.toFixed(1)}% of sales`
               : "No sales yet"
           }
-          badgeTone={totals.topCategory ? "indigo" : "slate"}
+          badgeTone={totals.topCategory ? "emerald" : "slate"}
         />
       </div>
 
@@ -117,17 +117,17 @@ function KpiTile({
   label,
   value,
   badge,
-  badgeTone = "indigo",
+  badgeTone = "emerald",
   sparkline,
 }: {
   label: string;
   value: string;
   badge?: string;
-  badgeTone?: "indigo" | "slate";
+  badgeTone?: "emerald" | "slate";
   sparkline?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         {value}
@@ -136,7 +136,7 @@ function KpiTile({
         <span
           className={[
             "mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-            badgeTone === "indigo"
+            badgeTone === "emerald"
               ? "bg-emerald-50 text-emerald-700"
               : "bg-slate-100 text-slate-500",
           ].join(" ")}

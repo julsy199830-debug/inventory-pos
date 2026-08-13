@@ -376,9 +376,17 @@ export default function PosCheckout({
             No items yet. Tap a product to add it.
           </p>
         ) : (
-          <ul className="space-y-3">
-            {cart.map((line) => (
-              <li key={line.product.id} className="flex items-start gap-3">
+          <AnimatePresence initial={false}>
+            <ul className="space-y-3">
+              {cart.map((line) => (
+                <motion.li
+                  key={line.product.id}
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  className="flex items-start gap-3"
+                >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">
                     {line.product.name}
@@ -425,9 +433,10 @@ export default function PosCheckout({
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </li>
-            ))}
-          </ul>
+                </motion.li>
+              ))}
+            </ul>
+          </AnimatePresence>
         )}
       </div>
     </>
@@ -528,7 +537,7 @@ export default function PosCheckout({
             // register title + operator badge instead of a dead link.
             <div className="flex min-w-0 items-center gap-3">
               <span className="truncate text-base font-semibold tracking-tight text-slate-900">
-                'JuLs POS Register'
+                &apos;JuLs POS Register&apos;
               </span>
               <span className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100 md:inline-flex">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -729,14 +738,25 @@ export default function PosCheckout({
       {/* Sale-completion modal — receipt preview + print action. The receipt
           itself carries `.print-receipt`, the ONLY element the @media print
           rules in globals.css expose. */}
-      {completed && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setCompleted(null)
-          }}
-        >
-          <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+      <AnimatePresence>
+        {completed && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setCompleted(null)
+            }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+          >
+            <motion.div
+              className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+            >
             <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-100">
@@ -792,16 +812,17 @@ export default function PosCheckout({
                 Print Receipt
               </button>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 /**
  * Category filter chip for the catalog toolbar. `active` renders the filled
- * indigo state; inactive chips are white with a slate hairline. Touch-sized
+ * emerald state; inactive chips are white with a slate hairline. Touch-sized
  * (rounded-full) for the register's tap-first workflow.
  */
 function CategoryChip({

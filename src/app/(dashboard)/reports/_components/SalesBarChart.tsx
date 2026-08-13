@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import type { SalesVolumePoint } from "../actions";
 import {
-  INDIGO,
+  EMERALD_600,
   EMERALD,
   SLATE_300,
   SLATE_500,
@@ -64,7 +64,7 @@ export default function SalesBarChart({
       </div>
 
       <div className="mt-4 flex items-center gap-5 text-sm text-slate-600">
-        <LegendChip color={INDIGO} label="Cash" />
+        <LegendChip color={EMERALD_600} label="Cash" />
         <LegendChip color={EMERALD} label="Card / Credit" />
       </div>
 
@@ -108,7 +108,7 @@ export default function SalesBarChart({
                 dataKey="cash"
                 name="Cash"
                 stackId="sales"
-                fill={INDIGO}
+                fill={EMERALD_600}
                 maxBarSize={42}
               />
               <Bar

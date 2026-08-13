@@ -1,7 +1,7 @@
 /**
  * Shared color palette + money formatters for the Recharts widgets in
- * `_components/`. The hex values mirror the Tailwind slate/indigo/emerald
- * tokens used across the dashboard (indigo-600 `#4f46e5`, emerald-500
+ * `_components/`. The hex values mirror the Tailwind emerald/mint/slate
+ * tokens used across the dashboard (emerald-600 `#059669`, emerald-500
  * `#10b981`, …) so the SVG charts and the Tailwind UI agree on color.
  *
  * Plain module (no `"use client"`): it's only ever imported from chart
@@ -10,22 +10,22 @@
  * formatters.
  */
 
-export const INDIGO = "#4f46e5"; // indigo-600
-export const INDIGO_SOFT = "#818cf8"; // indigo-400
+export const EMERALD_600 = "#059669"; // emerald-600
 export const EMERALD = "#10b981"; // emerald-500
 export const EMERALD_SOFT = "#34d399"; // emerald-400
+export const MINT = "#6ee7b7"; // emerald-300
 export const SLATE_300 = "#cbd5e1";
 export const SLATE_400 = "#94a3b8";
 export const SLATE_500 = "#64748b";
 
-/** Donut slice palette — indigo/emerald/slate family only, cycled for stores
+/** Donut slice palette — emerald/mint/slate family only, cycled for stores
  * with more categories than colors (three seeded categories fit exactly). */
 export const DONUT_PALETTE = [
-  INDIGO,
+  EMERALD_600,
   EMERALD,
   SLATE_400,
-  INDIGO_SOFT,
   EMERALD_SOFT,
+  MINT,
   SLATE_500,
 ] as const;
 
