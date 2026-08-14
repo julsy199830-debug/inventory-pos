@@ -46,22 +46,17 @@ export function LoginForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-transparent">
       {/* Branding */}
-      <div className="flex flex-col items-center justify-center gap-3">
+      <div className="flex flex-col items-center justify-center gap-3 bg-transparent">
         <Image
           src="/Logo.png"
           alt="JuLs POS SYSTEM"
           width={224}
           height={224}
           priority
-          className="w-48 h-auto object-contain"
+          className="w-72 h-auto object-contain"
         />
-        <div className="leading-tight text-center">
-          <p className="text-xl font-semibold tracking-tight text-slate-900">
-            JuLs POS SYSTEM
-          </p>
-        </div>
       </div>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
