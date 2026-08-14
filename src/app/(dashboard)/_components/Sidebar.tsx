@@ -100,14 +100,14 @@ export default function Sidebar({
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
       {/* Branding */}
-      <div className="flex items-center justify-center px-6 pb-5 pt-6 bg-transparent">
+      <div className="w-full flex items-center justify-center px-4 pt-6 pb-3 bg-transparent">
         <Image
           src="/Logo.png"
           alt="JuLs POS SYSTEM"
           width={120}
           height={120}
           priority
-          className="h-14 w-auto object-contain"
+          className="w-full h-auto max-h-24 object-contain mx-auto"
         />
       </div>
 
