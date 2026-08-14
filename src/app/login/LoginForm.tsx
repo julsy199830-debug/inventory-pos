@@ -48,14 +48,14 @@ export function LoginForm({
   return (
     <div className="space-y-6 bg-transparent">
       {/* Branding */}
-      <div className="flex flex-col items-center justify-center gap-3 bg-transparent">
+      <div className="flex flex-col items-center justify-center bg-transparent">
         <Image
           src="/Logo.png"
           alt="JuLs POS SYSTEM"
           width={224}
           height={224}
           priority
-          className="w-72 h-auto object-contain"
+          className="w-28 h-28 object-contain mx-auto mb-4"
         />
       </div>
 
