@@ -48,16 +48,17 @@ export function LoginForm({
   return (
     <div className="space-y-6">
       {/* Branding */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex flex-col items-center justify-center gap-3">
         <Image
-          src="/logo.png"
+          src="/Logo.png"
           alt="JuLs POS SYSTEM"
-          width={48}
-          height={48}
-          className="h-12 w-12 rounded-2xl object-cover shadow-sm shadow-blue-600/20"
+          width={224}
+          height={224}
+          priority
+          className="w-48 h-auto object-contain"
         />
-        <div className="leading-tight">
-          <p className="text-lg font-semibold tracking-tight text-slate-900">
+        <div className="leading-tight text-center">
+          <p className="text-xl font-semibold tracking-tight text-slate-900">
             JuLs POS SYSTEM
           </p>
         </div>

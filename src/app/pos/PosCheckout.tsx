@@ -1,7 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ArrowLeft,
   Banknote,
@@ -507,6 +508,14 @@ export default function PosCheckout({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between gap-3 border-b border-slate-200/80 bg-white px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <Image
+            src="/Logo.png"
+            alt="JuLs POS SYSTEM"
+            width={120}
+            height={120}
+            priority
+            className="h-10 w-auto object-contain"
+          />
           {cashier.role === 'ADMIN' || cashier.role === 'MANAGER' ? (
             <>
               <Link
