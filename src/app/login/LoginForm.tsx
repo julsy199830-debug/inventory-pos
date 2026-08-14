@@ -55,7 +55,7 @@ export function LoginForm({
           width={224}
           height={224}
           priority
-          className="w-28 h-28 object-contain mx-auto mb-4"
+          className="w-64 h-64 object-contain mx-auto mb-6"
         />
       </div>
 
