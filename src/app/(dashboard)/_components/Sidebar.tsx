@@ -100,13 +100,13 @@ export default function Sidebar({
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
       {/* Branding */}
       <div className="mb-4 px-2 text-center">
-        <p className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
+        <p className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
           Since 2026
         </p>
-        <p className="text-2xl font-black tracking-wider text-white py-0.5">
+        <p className="text-2xl font-black tracking-wider text-blue-600 py-0.5">
           JULS POS
         </p>
-        <p className="text-[9px] font-medium tracking-tight text-slate-400">
+        <p className="text-[9px] font-medium tracking-tight text-slate-500">
           Seamless Transactions Every Time
         </p>
       </div>
