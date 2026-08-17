@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInCashierPin } from "@/app/pos/actions";
-import { ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import type { Role } from "@/lib/types";
 

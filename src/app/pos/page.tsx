@@ -46,6 +46,7 @@ export default async function POSPage() {
     address: settings?.address ?? null,
     phone: settings?.phone ?? null,
     currencySymbol: settings?.currencySymbol ?? '₱',
+    taxRate: settings?.taxRate ?? 0,
   }
 
 

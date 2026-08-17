@@ -55,6 +55,8 @@ export type PosStore = {
   address: string | null
   phone: string | null
   currencySymbol: string
+  /** Sales-tax percentage as a number, e.g. `8.5` means 8.5%. 0 = tax disabled. */
+  taxRate: number
 }
 
 /** Signed-in operator driving the register — passed down from `page.tsx`. */
@@ -68,8 +70,6 @@ type CartLine = {
   product: PosProduct
   qty: number
 }
-
-const TAX_RATE = 0.08
 
 /** Snapshot of a completed sale — drives the receipt, captured at checkout. */
 type CompletedSale = {
@@ -169,7 +169,8 @@ export default function PosCheckout({
     (sum, line) => sum + line.product.price * line.qty,
     0,
   )
-  const tax = subtotal * TAX_RATE
+  const taxRatePercent = store.taxRate ?? 0
+  const tax = subtotal * (taxRatePercent / 100)
   const total = subtotal + tax
 
   const selectedCustomer = customers.find((c) => c.id === customerId)
