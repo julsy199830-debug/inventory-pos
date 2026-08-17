@@ -17,7 +17,6 @@ import {
   Lock,
   type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import { lockRegister } from "@/lib/actions/auth-actions";
 import type { Role } from "@/lib/types";
 
@@ -100,15 +99,16 @@ export default function Sidebar({
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
       {/* Branding */}
-      <div className="w-full flex items-center justify-center p-2 bg-transparent">
-        <Image
-          src="/Logo.png"
-          alt="JuLs POS SYSTEM"
-          width={120}
-          height={120}
-          priority
-          className="w-full h-auto max-h-28 object-contain rounded-lg px-2 mb-3 mx-auto"
-        />
+      <div className="mb-4 px-2 text-center">
+        <p className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
+          Since 2026
+        </p>
+        <p className="text-2xl font-black tracking-wider text-white py-0.5">
+          JULS POS
+        </p>
+        <p className="text-[9px] font-medium tracking-tight text-slate-400">
+          Seamless Transactions Every Time
+        </p>
       </div>
 
       {/* Primary action: Point of Sale — the register is the app's core module,
