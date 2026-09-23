@@ -67,7 +67,7 @@ export async function getFinancialSummary({
   // includes is materially simpler than raw SQL and avoids drift with the
   // schema. The parent sale's tax is a per-sale quantity, so we sum it
   // separately over sales in range (avoids multiplying tax across line items).
-  const [lineItems, saleTaxAgg] = await Promise.all([
+  const [lineItems, saleAgg] = await Promise.all([
     prisma.saleItem.findMany({
       where: {
         sale: {
@@ -78,7 +78,7 @@ export async function getFinancialSummary({
       include: { product: { select: { id: true, name: true, cost: true } } },
     }),
     prisma.sale.aggregate({
-      _sum: { tax: true },
+      _sum: { tax: true, totalAmount: true },
       where: {
         status: "Completed",
         createdAt: { gte: start, lte: end },
@@ -88,7 +88,6 @@ export async function getFinancialSummary({
 
   void totals; // quantity total kept available for future use; not part of KPIs today.
 
-  let revenue = 0;
   let cogs = 0;
   const perProduct = new Map<
     string,
@@ -106,7 +105,6 @@ export async function getFinancialSummary({
     const unitCost = line.product?.cost ?? 0;
     const lineCogs = unitCost * quantity;
 
-    revenue += lineRevenue;
     cogs += lineCogs;
 
     const existing = perProduct.get(line.productId);
@@ -124,7 +122,12 @@ export async function getFinancialSummary({
     }
   }
 
-  const tax = Number(saleTaxAgg._sum.tax ?? 0);
+  // Headline revenue is NET of discounts: it comes straight off the completed
+  // sales' `totalAmount`, which the POS stores post-discount. The per-product
+  // breakdown below still uses line-item revenue (`priceAtSale` snapshots the
+  // catalog unit price), so product rows approximate pre-discount revenue.
+  const revenue = Number(saleAgg._sum.totalAmount ?? 0);
+  const tax = Number(saleAgg._sum.tax ?? 0);
   const profit = revenue - cogs;
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
 

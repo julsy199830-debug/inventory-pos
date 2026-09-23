@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent } from "react";
 import {
@@ -8,15 +8,15 @@ import {
 } from "@/app/actions/settings";
 
 /**
- * The store settings form — the interactive island on the Settings page.
+ * The store settings form â€” the interactive island on the Settings page.
  *
  * Sibling in spirit to the supplier dialogs: same hand-rolled Tailwind field
  * shell, `inputCls`, and `Field` wrapper. The biggest difference is that this is
- * a *page-level* form (not a modal), so there's no open/close state — just the
+ * a *page-level* form (not a modal), so there's no open/close state â€” just the
  * submit/error/pending trio.
  *
  * Like `EditSupplierDialog`, we submit via a manual async handler that `await`s
- * the raw `saveSettings` Server Action directly — `saveSettings` takes only the
+ * the raw `saveSettings` Server Action directly â€” `saveSettings` takes only the
  * `formData` (no `prevState`, since it's invoked from the event handler, not
  * `useActionState`). Server Actions are async functions that resolve to their
  * declared return type, so awaiting one gives us the result in the same tick.
@@ -24,21 +24,21 @@ import {
  *
  * We deliberately don't use `useActionState` here. Its `(state, action,
  * pending)` triple is built for `<form action={...}>` wiring, and the idiomatic
- * way to react to its success is `setState` inside an effect keyed on `state` —
+ * way to react to its success is `setState` inside an effect keyed on `state` â€”
  * which `react-hooks/set-state-in-effect` flags as a derived-state cascade.
  * Calling the action ourselves sidesteps that entirely: the success UI lives in
  * the submit handler, where side effects belong, not in a render-following effect.
  *
- * `settings` may be `null` (no row yet — first visit). In that case we prefill
+ * `settings` may be `null` (no row yet â€” first visit). In that case we prefill
  * the inputs with sensible defaults rather than blanks, so the manager isn't
  * forced to retype everything to create the first row. The em-dash convention
- * from the supplier table doesn't apply here — these are form fields, so we
- * coalesce `null → ""` at the input layer (`defaultValue={settings?.address ?? ""}`)
+ * from the supplier table doesn't apply here â€” these are form fields, so we
+ * coalesce `null â†’ ""` at the input layer (`defaultValue={settings?.address ?? ""}`)
  * exactly like the supplier edit dialog.
  *
  * The tax-rate and currency-symbol fields are *controlled* (the rest are
  * uncontrolled `defaultValue`) so the form can show live, client-side guards
- * before the round-trip — but the server action remains the source of truth and
+ * before the round-trip â€” but the server action remains the source of truth and
  * re-validates everything, since a Server Action is just a POST endpoint to
  * anyone who can craft one.
  */
@@ -49,7 +49,7 @@ export default function SettingsForm({
   settings: StoreSettingsData | null;
 }) {
   // Drive `pending`/`error`/`saved` ourselves from the awaited action result
-  // rather than reading them out of `useActionState` — same UX (inputs lock and
+  // rather than reading them out of `useActionState` â€” same UX (inputs lock and
   // a confirmation shows while/after submitting), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,16 +57,16 @@ export default function SettingsForm({
 
   // Tax rate + currency symbol are controlled so we can mirror live guards. The
   // defaults here mirror the schema (`taxRate` defaults to 0, `currencySymbol`
-  // to "₱") for the no-row-yet case.
+  // to "â‚±") for the no-row-yet case.
   const [taxRate, setTaxRate] = useState<string>(
     settings ? String(settings.taxRate) : "0",
   );
   const [currencySymbol, setCurrencySymbol] = useState<string>(
-    settings?.currencySymbol ?? "₱",
+    settings?.currencySymbol ?? "â‚±",
   );
 
-  // Live client-side guards. These are advisory UX only — the server action
-  // re-checks authoritatively — but they keep the submit button honest and give
+  // Live client-side guards. These are advisory UX only â€” the server action
+  // re-checks authoritatively â€” but they keep the submit button honest and give
   // the manager immediate feedback on a typo.
   const taxRateNum = Number(taxRate);
   const taxRateValid =
@@ -98,7 +98,7 @@ export default function SettingsForm({
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
         >
           {error}
         </p>
@@ -106,7 +106,7 @@ export default function SettingsForm({
       {saved && !pending && (
         <p
           role="status"
-          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700"
+          className="rounded-lg border border-blue-200 bg-indigo-500/15 px-3 py-2 text-sm text-indigo-300"
         >
           Settings saved.
         </p>
@@ -166,7 +166,7 @@ export default function SettingsForm({
             className={inputCls}
           />
           {!taxRateValid && (
-            <p className="mt-1 text-xs text-red-600">
+            <p className="mt-1 text-xs text-red-400">
               Enter a number between 0 and 100.
             </p>
           )}
@@ -186,7 +186,7 @@ export default function SettingsForm({
             className={inputCls}
           />
           {!currencySymbolValid && (
-            <p className="mt-1 text-xs text-red-600">
+            <p className="mt-1 text-xs text-red-400">
               Must be 8 characters or fewer.
             </p>
           )}
@@ -197,9 +197,9 @@ export default function SettingsForm({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
         >
-          {pending ? "Saving…" : "Save settings"}
+          {pending ? "Savingâ€¦" : "Save settings"}
         </button>
       </div>
     </form>
@@ -207,9 +207,9 @@ export default function SettingsForm({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50";
+  "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper — keeps the form DRY (matches the supplier dialogs). */
+/** Labeled field wrapper â€” keeps the form DRY (matches the supplier dialogs). */
 function Field({
   label,
   htmlFor,

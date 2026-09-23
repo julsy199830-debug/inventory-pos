@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 /**
  * "Print Report" button.
  *
  * Reports are Z-Read / Z-Report documents: the manager closes the register and
  * prints the day's totals. This tiny client component just calls
- * `window.print()` — the browser then applies the `.print-report`-only
+ * `window.print()` â€” the browser then applies the `.print-report`-only
  * `@media print` layout in `globals.css`, so exactly the report sheet prints
  * with no navigation chrome. The button itself lives inside `.no-print` (a
  * sibling of `.print-report`) so it never appears on paper.
@@ -15,7 +15,7 @@ export default function PrintReportButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500"
     >
       <svg
         className="h-4 w-4"

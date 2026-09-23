@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { getStockMovements, type StockMovementView } from "./actions";
@@ -14,16 +14,16 @@ import type { StockMovementType } from "@/lib/types";
  * consistent with the rest of the inventory table.
  *
  * Unlike the edit/add dialogs this is a read-only view. History is fetched on
- * open via the `getStockMovements` Server Action — invoked from the open
+ * open via the `getStockMovements` Server Action â€” invoked from the open
  * handler (the "Event Handlers" convention), not an effect, so the fetch is a
  * genuine side effect of a user action rather than a render-following cascade.
  * The lazy fetch is deliberate: movements grow without bound for the lifetime
- * of a row, so the page never `include`s them per product — only the one
+ * of a row, so the page never `include`s them per product â€” only the one
  * product's recent slice (max 50) loads when the user actually opens history.
  *
  * While loading, an animated skeleton is shown. Once loaded, each movement
  * renders as a row with a type badge (color-coded by movement kind), a signed
- * quantity (+N green / −N red), a formatted timestamp, and the optional
+ * quantity (+N green / âˆ’N red), a formatted timestamp, and the optional
  * reason/notes.
  */
 export default function StockHistoryDialog({
@@ -39,7 +39,7 @@ export default function StockHistoryDialog({
   const [movements, setMovements] = useState<StockMovementView[]>([]);
 
   // Fetch on open, in the click handler (the codebase's "Event Handlers"
-  // convention — see the docblock on `getStockMovements` in actions.ts). Each
+  // convention â€” see the docblock on `getStockMovements` in actions.ts). Each
   // open refetches so the modal always shows the freshest audit slice; the
   // previous list is cleared first so a stale list never lingers under the
   // skeleton.
@@ -64,13 +64,13 @@ export default function StockHistoryDialog({
 
   return (
     <>
-      {/* Trigger — small clock/history icon button in the row's Actions cell */}
+      {/* Trigger â€” small clock/history icon button in the row's Actions cell */}
       <button
         type="button"
         onClick={onOpen}
         aria-label={`Stock history for ${productName}`}
         title={`Stock history for ${productName}`}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
       >
         <svg
           className="h-4 w-4"
@@ -91,15 +91,15 @@ export default function StockHistoryDialog({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
+            <div className="flex items-start justify-between border-b border-slate-700 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold tracking-tight text-slate-900">
+                <h2 className="text-base font-semibold tracking-tight text-slate-100">
                   Stock History
                 </h2>
                 <p className="mt-0.5 max-w-sm truncate text-sm text-slate-500">
@@ -110,7 +110,7 @@ export default function StockHistoryDialog({
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
                 aria-label="Close"
               >
                 <svg
@@ -137,7 +137,7 @@ export default function StockHistoryDialog({
               ) : error ? (
                 <p
                   role="alert"
-                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
                 >
                   {error}
                 </p>
@@ -160,7 +160,7 @@ export default function StockHistoryDialog({
   );
 }
 
-// ── Movement row & helpers ──────────────────────────────────────────────────
+// â”€â”€ Movement row & helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Badge treatment by movement type. RESTOCK (stock arriving, including the
@@ -170,16 +170,17 @@ export default function StockHistoryDialog({
  * `@/lib/types`, which is the narrowed type the server ships.
  */
 const TYPE_STYLES: Record<StockMovementType, string> = {
-  RESTOCK: "bg-blue-100 text-blue-700 border-blue-200",
-  SALE: "bg-red-100 text-red-700 border-red-200",
-  ADJUSTMENT: "bg-amber-100 text-amber-700 border-amber-200",
+  RESTOCK: "bg-indigo-500/20 text-indigo-300 border-blue-200",
+  SALE: "bg-red-500/100/20 text-red-300 border-red-500/30",
+  ADJUSTMENT: "bg-amber-500/100/15 text-amber-300 border-amber-500/30",
   DAMAGE: "bg-orange-100 text-orange-700 border-orange-200",
+  VOID: "bg-slate-500/20 text-slate-300 border-slate-400",
 };
 
 /** One movement: type badge + signed quantity on top, timestamp + note below. */
 function MovementRow({ movement }: { movement: StockMovementView }) {
   return (
-    <li className="rounded-lg border border-slate-200/80 p-4">
+    <li className="rounded-lg border border-slate-800 p-4">
       <div className="flex items-center justify-between">
         <span
           className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${TYPE_STYLES[movement.type]}`}
@@ -208,15 +209,15 @@ function MovementRow({ movement }: { movement: StockMovementView }) {
   );
 }
 
-/** Sign the quantity for display: +10 for increases, −5 for decreases. */
+/** Sign the quantity for display: +10 for increases, âˆ’5 for decreases. */
 function signedQuantity(quantity: number): string {
   return quantity > 0 ? `+${quantity}` : `${quantity}`;
 }
 
 /** Green for increases, red for decreases, neutral gray for a zero delta. */
 function quantityColor(quantity: number): string {
-  if (quantity > 0) return "text-blue-600";
-  if (quantity < 0) return "text-red-600";
+  if (quantity > 0) return "text-indigo-300";
+  if (quantity < 0) return "text-red-400";
   return "text-slate-500";
 }
 
@@ -242,10 +243,10 @@ function LoadingSkeleton() {
           className="animate-pulse rounded-lg border border-slate-100 p-4"
         >
           <div className="flex items-center justify-between">
-            <div className="h-5 w-24 rounded-full bg-slate-200" />
-            <div className="h-4 w-10 rounded bg-slate-200" />
+            <div className="h-5 w-24 rounded-full bg-slate-800" />
+            <div className="h-4 w-10 rounded bg-slate-800" />
           </div>
-          <div className="mt-3 h-3 w-2/3 rounded bg-slate-100" />
+          <div className="mt-3 h-3 w-2/3 rounded bg-slate-800" />
         </div>
       ))}
     </div>

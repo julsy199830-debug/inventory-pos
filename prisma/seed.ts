@@ -16,6 +16,7 @@
 // re-seeding will rebind products without orphaning them.
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { hashPin } from "@/lib/pin";
 
 /** One row per physical product we stock. `cost` < `price` (intended margin),
  *  SKUs follow `<CAT>-####` so they sort and read well. `category` is the
@@ -296,7 +297,7 @@ async function main() {
       await prisma.storeSetting.create({
         data: {
           id: "default-store",
-          storeName: "JuLs POS Store",
+          storeName: "InvPos Store",
           address: "123 Main Street, Manila",
           phone: "+63-2-555-0100",
           taxRate: 8,
@@ -325,14 +326,29 @@ async function main() {
         role: "CASHIER",
       },
     ];
+    // The PIN literals above are the documented seed/test inputs ONLY — they
+    // never reach the database as plaintext. `hashPin()` runs at seed time so
+    // `pinHash` (the account's only credential) is always a valid versioned
+    // scrypt hash. Seeding stays deterministic in behavior: same accounts,
+    // same working PINs, same roles/active states on every run — only the
+    // randomly salted hash bytes differ between runs, which nothing depends
+    // on. No PIN or hash value is ever printed.
     let usersCreated = 0;
     let usersUpdated = 0;
     for (const u of seedUsers) {
+      const pinHash = await hashPin(u.pin);
       const before = await prisma.user.findUnique({ where: { email: u.email } });
       await prisma.user.upsert({
         where: { email: u.email },
-        update: { name: u.name, pin: u.pin, role: u.role, active: true },
-        create: { ...u, active: true },
+        update: { name: u.name, pinHash, role: u.role, active: true },
+        create: {
+          name: u.name,
+          email: u.email,
+          passwordHash: u.passwordHash,
+          pinHash,
+          role: u.role,
+          active: true,
+        },
       });
       if (before) usersUpdated++;
       else usersCreated++;

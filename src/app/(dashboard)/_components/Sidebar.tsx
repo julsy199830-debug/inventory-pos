@@ -7,6 +7,7 @@ import {
   Package,
   ShoppingCart,
   Truck,
+  ShoppingBasket,
   Users,
   UserCog,
   Calculator,
@@ -39,7 +40,8 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard, section: "management" },
   { label: "Inventory", href: "/inventory", icon: Package, section: "management" },
   { label: "Categories", href: "/inventory/categories", icon: Tags, section: "management" },
-  { label: "Suppliers", href: "/suppliers", icon: Truck, section: "management" },
+    { label: "Suppliers", href: "/suppliers", icon: Truck, section: "management" },
+  { label: "Purchasing", href: "/purchasing", icon: ShoppingBasket, section: "management" },
   { label: "Customers", href: "/customers", icon: Users, section: "management" },
   {
     label: "Employees",
@@ -97,18 +99,12 @@ export default function Sidebar({
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-200/80 bg-white">
+    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
       {/* Branding */}
       <div className="mb-4 px-2 text-center">
-        <p className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
-          Since 2026
-        </p>
-        <p className="text-2xl font-black tracking-wider text-blue-600 py-0.5">
-          JULS POS
-        </p>
-        <p className="text-[9px] font-medium tracking-tight text-slate-500">
-          Seamless Transactions Every Time
-        </p>
+        <Link href="/" className="block" aria-label="InvPos Home">
+          <span className="block text-2xl font-bold tracking-tight text-white">InvPos</span>
+        </Link>
       </div>
 
       {/* Primary action: Point of Sale — the register is the app's core module,
@@ -118,7 +114,7 @@ export default function Sidebar({
       <div className="mx-4 mb-4">
         <Link
           href="/pos"
-          className="group flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition-colors hover:bg-blue-700"
+          className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/30 transition-colors hover:bg-indigo-500"
         >
           <ShoppingCart className="h-5 w-5 shrink-0" />
           Point of Sale
@@ -126,8 +122,8 @@ export default function Sidebar({
       </div>
 
       {/* User profile card: avatar, name, role badge */}
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+      <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-semibold text-white">
           {user.name
             .split(" ")
             .map((n) => n[0])
@@ -136,10 +132,10 @@ export default function Sidebar({
             .toUpperCase()}
         </div>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-medium text-slate-900">
+          <p className="truncate text-sm font-medium text-slate-100">
             {user.name}
           </p>
-          <span className="mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100">
+          <span className="mt-1 inline-block rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-300 ring-1 ring-indigo-500/30">
             {user.role === "ADMIN" ? "Administrator" : "Manager"}
           </span>
         </div>
@@ -166,21 +162,21 @@ export default function Sidebar({
                       className={[
                         "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         active
-                          ? "bg-blue-50 font-medium text-blue-600"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                          ? "bg-indigo-500/10 font-medium text-indigo-300"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100",
                       ].join(" ")}
                     >
                       <Icon
                         className={[
                           "h-5 w-5 shrink-0 transition-colors",
                           active
-                            ? "text-blue-600"
-                            : "text-slate-400 group-hover:text-slate-900",
+                            ? "text-indigo-300"
+                            : "text-slate-500 group-hover:text-slate-200",
                         ].join(" ")}
                       />
                       {item.label}
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
                       )}
                     </Link>
                   );
@@ -192,13 +188,13 @@ export default function Sidebar({
       </nav>
 
       {/* Sticky register lock */}
-      <div className="border-t border-slate-200/80 px-4 py-4">
+      <div className="border-t border-slate-800 px-4 py-4">
         <button
           type="button"
           onClick={() => lockRegister()}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
         >
-          <Lock className="h-5 w-5 shrink-0 text-slate-400" />
+          <Lock className="h-5 w-5 shrink-0 text-slate-500" />
           Lock Register
         </button>
       </div>

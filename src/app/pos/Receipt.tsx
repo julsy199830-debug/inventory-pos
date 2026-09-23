@@ -42,7 +42,9 @@ export default function Receipt({
   total,
   discount = 0,
   paymentMethod,
-  thanks = 'Thank you for your purchase!',
+  tendered = null,
+  change = null,
+  thanks = 'Thank you for shopping with InvPos!',
 }: {
   store: ReceiptStore
   /** Complete (not truncated) sale id — the POS shows short ids elsewhere. */
@@ -56,6 +58,10 @@ export default function Receipt({
   /** Optional discount amount; a 0 value renders no Discount row. */
   discount?: number
   paymentMethod: string
+  /** Cash only: amount the customer handed over (renders a Tendered row). */
+  tendered?: number | null
+  /** Cash only: change due (renders a Change row when non-negative). */
+  change?: number | null
   thanks?: string
 }) {
   const money = (value: number) =>
@@ -138,6 +144,18 @@ export default function Receipt({
           <span>Total</span>
           <span>{money(total)}</span>
         </div>
+        {tendered != null && (
+          <div className="flex justify-between">
+            <span>Tendered</span>
+            <span>{money(tendered)}</span>
+          </div>
+        )}
+        {change != null && change >= 0 && (
+          <div className="flex justify-between">
+            <span>Change</span>
+            <span>{money(change)}</span>
+          </div>
+        )}
       </div>
 
       <div className="my-2 border-t border-dashed border-black" />

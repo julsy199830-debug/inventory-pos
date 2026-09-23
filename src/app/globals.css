@@ -1,6 +1,100 @@
 @import "tailwindcss";
 
 /*
+ * InvPos Enterprise Theme
+ *
+ * Custom palette and design tokens. We lean on Tailwind v4's CSS-first
+ * configuration so most design decisions live here rather than in
+ * tailwind.config.ts.
+ */
+@theme {
+  /* ── Color Palette ─────────────────────────────────────────────────── */
+  /* Slate scale — the neutral backbone. Deeper 950 for dark chrome, 50
+     for the soft canvas used behind cards. */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  /* Blue scale — primary brand accent. */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+
+  /* Semantic colors for status badges. */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-700: #047857;
+  --color-amber-50: #fffbeb;
+  --color-amber-800: #92400e;
+  --color-red-50: #fef2f2;
+  --color-red-700: #b91c1c;
+
+  /* ── Radius Scale ──────────────────────────────────────────────────── */
+  --radius-lg: 0.625rem;   /* 10px — compact controls, buttons */
+  --radius-xl: 0.875rem;   /* 14px — cards, inputs, modals */
+
+  /* ── Animation ─────────────────────────────────────────────────────── */
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-pop-in: pop-in 0.18s ease-out both;
+
+  /* ── Dark theme semantic aliases ───────────────────────────────────── */
+  /* The app-wide dark shell (see tailwind.config.ts for the JS mirror):
+     slate-950 page canvas, slate-900 card surfaces, slate-800 hairlines,
+     slate-100 headings, indigo-500/violet-500 accents. The semantic classes
+     (bg-surface, bg-card, border-line) alias the slate scale so a future
+     re-theme has one place to change; most components use the slate
+     utilities directly to stay in lockstep with the dashboard. */
+  --color-surface: #020617; /* slate-950 — page canvas */
+  --color-card: #0f172a;    /* slate-900 — card containers */
+  --color-line: #1e293b;    /* slate-800 — hairline borders */
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Dark theme defaults ─────────────────────────────────────────────────
+ * Every route renders the dashboard's charcoal aesthetic: slate-950 canvas,
+ * slate-900 cards, slate-800 hairlines, slate-100 headings, indigo/violet
+ * accents. These body-level defaults mean any surface that forgets its own
+ * background still lands on the dark canvas instead of flashing white.
+ * Printable surfaces (the 80mm thermal .print-receipt and the .print-report
+ * Z-Report sheet) opt back into light paper via their own bg-white plus the
+ * @media print rules below — printed output stays black-on-white. */
+body {
+  background-color: var(--color-slate-950);
+  color: var(--color-slate-200);
+}
+
+/*
  * Printing.
  *
  * Both printable surfaces (the 80mm thermal .print-receipt from POS checkout

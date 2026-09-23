@@ -46,8 +46,17 @@ next-env.d.ts
 # are the source of truth, not this checked-in binary)
 /dev.db
 /dev.db-journal
+/dev.db-wal
+/dev.db-shm
+# local database snapshots written by the scheduled backup in src/lib/db.ts
+/backups
 
 # local stray logs / scratch HTML exports
 /dev.log
 /.dev-out.log
 /*.html
+/test-results/
+/playwright-report/
+/backups/
+/public/Logo final.png
+/NEW DASHBOARD DESIGN 1.png

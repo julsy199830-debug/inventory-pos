@@ -11,6 +11,7 @@ const labelByPath: Record<string, string> = {
   "/reports/analytics": "Analytics",
   "/customers": "Customers",
   "/suppliers": "Suppliers",
+  "/purchasing": "Purchasing",
   "/employees": "Employees",
   "/accounting": "Accounting",
   "/settings": "Settings",
@@ -38,14 +39,14 @@ export default function Breadcrumbs() {
       {crumbs.map((c, i) => (
         <span key={c.href} className="flex items-center gap-2">
           {i > 0 && (
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-600" aria-hidden />
           )}
           {c.current ? (
-            <span className="font-semibold text-slate-900">{c.label}</span>
+            <span className="font-semibold text-slate-100">{c.label}</span>
           ) : (
             <Link
               href={c.href}
-              className="font-medium text-slate-500 transition-colors hover:text-blue-600"
+              className="font-medium text-slate-400 transition-colors hover:text-indigo-300"
             >
               {c.label}
             </Link>

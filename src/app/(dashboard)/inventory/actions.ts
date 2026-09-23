@@ -8,6 +8,14 @@ import {
   type MutationResult,
   type StockMovementType,
 } from "@/lib/types";
+import { roleGuardError } from "@/lib/session";
+
+/** Staff-only guard shared by every mutating action in this module. */
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
+
+async function staffGuardError(): Promise<string | null> {
+  return roleGuardError(STAFF_ROLES);
+}
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -127,6 +135,8 @@ export async function createProduct(
   // there is no client state to merge anyway.
   formData: FormData,
 ): Promise<CreateProductResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const name = load(formData, "name");
   const sku = load(formData, "sku")?.toUpperCase();
   const categoryIdRaw = load(formData, "categoryId");
@@ -221,6 +231,8 @@ export async function updateProduct(
   // in the same payload.
   formData: FormData,
 ): Promise<UpdateProductResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   const name = load(formData, "name");
   const sku = load(formData, "sku")?.toUpperCase();
@@ -326,6 +338,8 @@ export async function adjustStock(
   id: string,
   delta: number,
 ): Promise<StockAdjustResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const safeId = typeof id === "string" ? id.trim() : "";
   const safeDelta = Number(delta);
   if (!safeId) return { ok: false, error: "Missing product id." };
@@ -384,6 +398,8 @@ export async function setStock(
   id: string,
   stockRaw: number,
 ): Promise<StockAdjustResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const safeId = typeof id === "string" ? id.trim() : "";
   const stock = Number(stockRaw);
   if (!safeId) return { ok: false, error: "Missing product id." };
@@ -512,6 +528,8 @@ export async function getStockMovements(
  * gone from the cached table on the next render.
  */
 export async function deleteProduct(formData: FormData): Promise<DeleteProductResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   if (!id) {
     // No id means the form was tampered or malformed — nothing to delete.
@@ -555,6 +573,8 @@ export async function deleteProduct(formData: FormData): Promise<DeleteProductRe
 export async function createCategory(
   formData: FormData,
 ): Promise<CategoryResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const name = load(formData, "name");
   if (!name) return { ok: false, error: "Category name is required." };
 
@@ -582,6 +602,8 @@ export async function createCategory(
 export async function renameCategory(
   formData: FormData,
 ): Promise<CategoryResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   const name = load(formData, "name");
   if (!id) return { ok: false, error: "Missing category id." };
@@ -616,6 +638,8 @@ export async function renameCategory(
 export async function setCategoryThreshold(
   formData: FormData,
 ): Promise<CategoryResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   const thresholdStr = load(formData, "threshold");
   if (!id) return { ok: false, error: "Missing category id." };
@@ -661,6 +685,8 @@ export async function setCategoryThreshold(
 export async function deleteCategory(
   formData: FormData,
 ): Promise<DeleteCategoryResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   if (!id) return { ok: false, error: "Nothing to delete." };
 

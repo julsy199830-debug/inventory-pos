@@ -1,4 +1,4 @@
-import { getStoreSettings } from "@/app/actions/settings";
+﻿import { getStoreSettings } from "@/app/actions/settings";
 import {
   getFinancialSummary,
   type ProductBreakdownRow,
@@ -10,7 +10,7 @@ import RangeSelector from "./RangeSelector";
  * `RangeSelector` client island writes into the URL (`?range=<preset>`), so the
  * two stay in sync by sharing this one source of truth. "custom" is a placeholder
  * for a future date-picker and currently collapses to the same window as "30d"
- * — but we still accept the token so the URL stays meaningful when the picker
+ * â€” but we still accept the token so the URL stays meaningful when the picker
  * lands, and so an unknown or missing token has a deterministic fallback.
  */
 type RangePreset = "today" | "7d" | "30d" | "custom";
@@ -27,7 +27,7 @@ const PRESET_LABELS: Record<RangePreset, string> = {
 };
 
 /** Normalize an arbitrary `?range=` query value into a known preset, falling
- * back to the default on anything unrecognized (including array values —
+ * back to the default on anything unrecognized (including array values â€”
  * `?range=today&range=7d` would otherwise slip a string[] through). */
 function resolvePreset(value: string | string[] | undefined): RangePreset {
   const token = Array.isArray(value) ? value[0] : value;
@@ -38,7 +38,7 @@ function resolvePreset(value: string | string[] | undefined): RangePreset {
 
 /** Compute the [start, end] date window for a preset, inclusive of both
  * endpoints. `end` is always today; `start` steps back from today. We pass
- * naive date-only values — `getFinancialSummary` re-normalizes the hours to a
+ * naive date-only values â€” `getFinancialSummary` re-normalizes the hours to a
  * full-day `[00:00:00.000, 23:59:59.999]` bound itself, so the helper owns the
  * edge semantics and this stays a pure calendar computation. */
 function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
@@ -51,16 +51,16 @@ function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
 
 /** Format a number as currency using the store's symbol. We read the symbol
  * from StoreSetting (the settings page externalizes it for exactly this
- * reason); if no settings row exists yet we fall back to "₱" rather than
+ * reason); if no settings row exists yet we fall back to "â‚±" rather than
  * refusing to render. The amount is formatted with grouping and two decimals,
- * independent of the glyph — yen etc. still get the symbol prepended. */
+ * independent of the glyph â€” yen etc. still get the symbol prepended. */
 function money(amount: number, symbol: string): string {
   const body = Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
   const sign = amount < 0 ? "-" : "";
-  const glyph = symbol || "₱";
+  const glyph = symbol || "â‚±";
   return `${sign}${glyph}${body}`;
 }
 
@@ -74,7 +74,7 @@ function percent(value: number): string {
 export default async function AccountingPage({
   searchParams,
 }: {
-  // searchParams is a Promise in this Next.js version — see the page file
+  // searchParams is a Promise in this Next.js version â€” see the page file
   // convention docs. The RangeSelector deliberately avoids `useSearchParams`
   // (which would force the route to client-render under a Suspense boundary
   // during prerender); instead the server reads the active preset here and
@@ -87,7 +87,7 @@ export default async function AccountingPage({
   // `now` anchors the window at request time. Both the window and the summary
   // are derived from it so the date label and the figures can never disagree.
   // The store's currency symbol is read in parallel so the page renders with
-  // the manager's chosen glyph rather than a hardcoded "₱".
+  // the manager's chosen glyph rather than a hardcoded "â‚±".
   const now = new Date();
   const { start, end } = windowFor(preset, now);
 
@@ -95,7 +95,7 @@ export default async function AccountingPage({
     getFinancialSummary({ startDate: start, endDate: end }),
     getStoreSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "₱";
+  const symbol = settings?.currencySymbol ?? "â‚±";
 
   const { revenue, cogs, tax, profit, margin, productBreakdown } = summary;
   const unitsSold = productBreakdown.reduce(
@@ -108,15 +108,15 @@ export default async function AccountingPage({
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
             Accounting
           </h1>
           <p className="text-sm text-slate-500">
             Financial summary for{" "}
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-slate-100">
               {PRESET_LABELS[preset]}
             </span>{" "}
-            — completed sales only.
+            â€” completed sales only.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export default async function AccountingPage({
 
       {/* KPI cards. Mirrors the dashboard home stat tiles; the Positive/negative
           coloring on Net Profit and the margin communicate health at a glance.
-          COGS isn't a headline card here — it's the difference between Total
+          COGS isn't a headline card here â€” it's the difference between Total
           Revenue and Net Profit, and it's already surfaced per-product in the
           breakdown below (and in `getFinancialSummary`), so the four cards stay
           to the four figures a manager reads first. */}
@@ -151,18 +151,18 @@ export default async function AccountingPage({
         />
       </div>
 
-      {/* Secondary strip: COGS and units sold. Context-only — COGS backs the
+      {/* Secondary strip: COGS and units sold. Context-only â€” COGS backs the
           Net Profit figure above, and units sold summarizes volume. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
           <p className="text-sm font-medium text-slate-500">Cost of Goods Sold</p>
-          <p className="mt-2 text-xl font-semibold text-slate-900">
+          <p className="mt-2 text-xl font-semibold text-slate-100">
             {money(cogs, symbol)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
           <p className="text-sm font-medium text-slate-500">Units Sold</p>
-          <p className="mt-2 text-xl font-semibold text-slate-900">
+          <p className="mt-2 text-xl font-semibold text-slate-100">
             {unitsSold.toLocaleString()}
           </p>
         </div>
@@ -171,9 +171,9 @@ export default async function AccountingPage({
       {/* Per-product profitability breakdown. Sorted by profit desc inside
           getFinancialSummary, so the biggest contributors surface first. The
           margin column colors by sign so a loss can't masquerade as a win. */}
-      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-900">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+        <div className="border-b border-slate-700 px-5 py-4">
+          <h2 className="text-base font-semibold text-slate-100">
             Profit by Product
           </h2>
           <p className="mt-0.5 text-sm text-slate-500">
@@ -183,7 +183,7 @@ export default async function AccountingPage({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
@@ -192,7 +192,7 @@ export default async function AccountingPage({
                 <th className="px-5 py-3 text-right font-medium">Margin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800">
               {productBreakdown.map((row) => (
                 <ProductRow
                   key={row.productId}
@@ -215,7 +215,7 @@ export default async function AccountingPage({
 }
 
 /** A single KPI stat tile. `tone` optionally tints the value text so profit /
- * margin read at a glance — neutral by default, green for positive, red for
+ * margin read at a glance â€” neutral by default, green for positive, red for
  * negative. Kept as a tiny presentational helper to keep the table above flat. */
 function KpiCard({
   label,
@@ -228,12 +228,12 @@ function KpiCard({
 }) {
   const color =
     tone === "positive"
-      ? "text-blue-700"
+      ? "text-indigo-300"
       : tone === "negative"
-        ? "text-red-700"
-        : "text-slate-900";
+        ? "text-red-300"
+        : "text-slate-100";
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-5">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className={`mt-2 text-2xl font-semibold ${color}`}>{value}</p>
     </div>
@@ -249,17 +249,17 @@ function ProductRow({
   row: ProductBreakdownRow;
   symbol: string;
 }) {
-  const profitTone = row.profit >= 0 ? "text-blue-700" : "text-red-700";
-  const marginTone = row.margin >= 0 ? "text-blue-700" : "text-red-700";
+  const profitTone = row.profit >= 0 ? "text-indigo-300" : "text-red-300";
+  const marginTone = row.margin >= 0 ? "text-indigo-300" : "text-red-300";
   return (
-    <tr className="hover:bg-slate-50">
-      <td className="px-5 py-3 font-medium text-slate-900">
+    <tr className="hover:bg-slate-950">
+      <td className="px-5 py-3 font-medium text-slate-100">
         {row.productName}
       </td>
-      <td className="px-5 py-3 text-right text-slate-600">
+      <td className="px-5 py-3 text-right text-slate-300">
         {row.quantitySold.toLocaleString()}
       </td>
-      <td className="px-5 py-3 text-right text-slate-900">
+      <td className="px-5 py-3 text-right text-slate-100">
         {money(row.revenue, symbol)}
       </td>
       <td className="px-5 py-3 text-right text-slate-500">

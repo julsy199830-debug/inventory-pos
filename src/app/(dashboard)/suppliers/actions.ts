@@ -3,6 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { ActionResult } from "@/lib/types";
+import { roleGuardError } from "@/lib/session";
+
+/** Staff-only guard shared by every mutating action in this module. */
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
+
+async function staffGuardError(): Promise<string | null> {
+  return roleGuardError(STAFF_ROLES);
+}
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -49,6 +57,8 @@ export async function createSupplier(
   // is no client state to merge anyway.
   formData: FormData,
 ): Promise<CreateSupplierResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const name = load(formData, "name");
   const contactName = load(formData, "contactName");
   const email = load(formData, "email");
@@ -119,6 +129,8 @@ export async function updateSupplier(
   // revalidatePath, nothing to merge.
   formData: FormData,
 ): Promise<UpdateSupplierResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const id = load(formData, "id");
   const name = load(formData, "name");
   const contactName = load(formData, "contactName");
@@ -173,6 +185,11 @@ export async function updateSupplier(
  * from the cached table on the next render.
  */
 export async function deleteSupplier(formData: FormData): Promise<void> {
+  const denied = await staffGuardError();
+  // Unauthorized/wrong-role POSTs are a no-op — the action can't render an
+  // error back into the caller's page, so the safest behavior is to simply
+  // not delete anything (the client's form still revalidates the table).
+  if (denied) return;
   const id = load(formData, "id");
   if (!id) {
     // No id means the form was tampered or malformed — nothing to delete.

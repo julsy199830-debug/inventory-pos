@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
-import { PIN_PATTERN } from "@/lib/pin";
+import { PIN_PATTERN, hashPin } from "@/lib/pin";
+import { getCashier } from "@/lib/session";
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -25,8 +26,8 @@ function load(formData: FormData, key: string): string | undefined {
 /**
  * The login PIN validation rule. Re-exported here from `@/lib/pin` (the shared
  * single source of truth) so this module reads the same way the POS sign-in
- * action does — see the `User.pin` schema comment for why the string form
- * (not a number) preserves leading zeros.
+ * action does — the string form (not a number) preserves leading zeros
+ * ("0000" must never collapse to "123").
  */
 
 /**
@@ -34,12 +35,13 @@ function load(formData: FormData, key: string): string | undefined {
  * dependency) and return `salt:hash` so verification can recompute against the
  * stored salt.
  *
- * `passwordHash` is a non-null column on `User`, but PIN is the actual login
- * mechanism in this app (see the `User.pin` schema comment). When no password is
- * supplied we store a deterministic placeholder-derived hash so the column is
- * always populated without pretending a usable password exists — login still
- * keys off `pin` + `active`.
+ * `passwordHash` is a non-null column on `User`, but the PIN hash is the actual
+ * login credential in this app. When no password is supplied we store a
+ * deterministic placeholder-derived hash so the column is always populated
+ * without pretending a usable password exists — login keys off `pinHash` +
+ * `active`.
  */
+
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -100,10 +102,11 @@ export type ShiftResult = ActionResult<{ shiftId?: string }>;
  * `(dashboard)` route group is folder-only, so the public path is `/employees`.
  *
  * `role` is narrowed via `asRole` (defaults to CASHIER if absent/unknown), and
- * `pin` must match the hand-rolled {@link PIN_PATTERN}. `passwordHash` is
- * always populated (see {@link hashPassword}); when the optional `password`
- * field is blank it's derived from a placeholder so the non-null column is
- * satisfied while PIN remains the real gate.
+ * `pin` must match the hand-rolled {@link PIN_PATTERN}. The PIN is stored ONLY
+ * hashed: `hashPin(pin)` → `pinHash`, the account's only login credential.
+ * `passwordHash` is always populated (see {@link hashPassword}); when the
+ * optional `password` field is blank it's derived from a placeholder so the
+ * non-null column is satisfied while the PIN hash remains the real gate.
  */
 export async function createEmployee(
   // No `prevState` here — the dialog invokes this directly via an event
@@ -134,28 +137,34 @@ export async function createEmployee(
   // ── Insert ─────────────────────────────────────────────────────────────
   // `active` is omitted so SQLite applies its DEFAULT true; `passwordHash`
   // carries a real hash when a password is given, else a placeholder hash so
-  // the non-null column is satisfied. PIN (string) preserves leading zeros.
+  // the non-null column is satisfied.
   //
-  // Both the password hashing AND the Prisma `create` live inside this try so a
+  // PIN storage: the login credential is stored ONLY as a scrypt hash —
+  // `hashPin(pin)` → `pinHash` (plaintext retirement complete; no plaintext
+  // PIN is ever persisted).
+  //
+  // Both the hashing AND the Prisma `create` live inside this try so a
   // throw from either resolves to a { ok:false } result the dialog can show —
   // rather than rejecting the Server Action and freezing the client's "Saving…"
-  // pending state. `scryptSync` failing is exotic, but the action must never
+  // pending state. Hashing failing is exotic, but the action must never
   // reject on an unexpected path.
   try {
     const passwordHash = await hashPassword(password ?? `nopass:${email}`);
+    const pinHash = await hashPin(pin);
     await prisma.user.create({
       data: {
         name,
         email,
-        pin,
+        pinHash,
         role,
         passwordHash,
       },
     });
   } catch (err) {
     // P2002 = unique-constraint violation. `email` is the only `@unique` column
-    // on `User` in the schema (`pin` is a plain `String` — duplicates are legal,
-    // two cashiers may share a PIN); so today only a duplicate email lands here.
+    // on `User` in the schema (PIN hashes never collide on value — each carries
+    // a unique random salt — and PIN reuse across employees is legal); so today
+    // only a duplicate email lands here.
     // The target-details inspection still guards generically so a future
     // unique-on-pin migration would surface a sensible message rather than the
     // generic fallback — pin conflicts would otherwise read as "could not save".
@@ -234,6 +243,15 @@ export async function updateEmployee(
   }
   const role: Role = asRole(roleRaw);
 
+// ── RBAC Protection Guards ────────────────────────────────────────────────
+  // Prevent self-demotion / self-deactivation
+  const selfModError = await checkSelfModification(id);
+  if (selfModError) return { ok: false, error: selfModError };
+
+  // Prevent demoting the last ADMIN
+  const lastAdminError = await checkLastAdminProtection(id, role);
+  if (lastAdminError) return { ok: false, error: lastAdminError };
+
   // ── Update ─────────────────────────────────────────────────────────────
   // Only include `pin`/`passwordHash` when the form actually sent them; otherwise
   // the column is left untouched (a name/email/role-only edit keeps the PIN and
@@ -241,9 +259,14 @@ export async function updateEmployee(
   // the try below so a hashing throw resolves to { ok:false } — same defensive
   // reason as in `createEmployee` — rather than rejecting the action.
   const data: Record<string, unknown> = { name, email, role };
-  if (pin !== undefined) data.pin = pin;
 
   try {
+    // PIN change: the new credential is hashed into `pinHash` (the account's
+    // only credential). No PIN supplied → the hash is left untouched, so a
+    // name/email/role-only edit never regenerates or clears it.
+    if (pin !== undefined) {
+      data.pinHash = await hashPin(pin);
+    }
     if (password !== undefined) data.passwordHash = await hashPassword(password);
     await prisma.user.update({ where: { id }, data });
   } catch (err) {
@@ -283,14 +306,24 @@ export async function updateEmployee(
  * `revalidatePath('/employees')` refreshes the cached table so the badge flips
  * on the next render.
  */
-export async function toggleEmployeeStatus(formData: FormData): Promise<void> {
+export async function toggleEmployeeStatus(formData: FormData): Promise<ActionResult<void>> {
   const id = load(formData, "id");
   const next = load(formData, "active");
   if (!id) {
-    // No id means the form was tampered or malformed — nothing to toggle.
-    return;
+    return { ok: false, error: "Missing employee. Please refresh and try again." };
   }
   const active = next === "true";
+
+  // ── RBAC Protection Guards ──────────────────────────────────────────────
+  // Prevent self-deactivation
+  const selfModError = await checkSelfModification(id);
+  if (selfModError) return { ok: false, error: selfModError };
+
+  // Prevent deactivating the last ADMIN
+  if (!active) {
+    const lastAdminError = await checkLastAdminProtection(id, undefined, false);
+    if (lastAdminError) return { ok: false, error: lastAdminError };
+  }
 
   try {
     await prisma.user.update({ where: { id }, data: { active } });
@@ -303,12 +336,13 @@ export async function toggleEmployeeStatus(formData: FormData): Promise<void> {
       "code" in err &&
       (err as { code: string }).code === "P2025"
     ) {
-      return;
+      return { ok: false, error: "This employee no longer exists. Refresh and try again." };
     }
     throw err;
   }
 
   revalidatePath("/employees");
+  return { ok: true };
 }
 
 /**
@@ -321,14 +355,22 @@ export async function toggleEmployeeStatus(formData: FormData): Promise<void> {
  * the least-privileged CASHIER. `revalidatePath('/employees')` refreshes the
  * table so the role badge updates.
  */
-export async function assignRole(formData: FormData): Promise<void> {
+export async function assignRole(formData: FormData): Promise<ActionResult<void>> {
   const id = load(formData, "id");
   const roleRaw = load(formData, "role");
   if (!id) {
-    // No id means the form was tampered or malformed — nothing to assign.
-    return;
+    return { ok: false, error: "Missing employee. Please refresh and try again." };
   }
   const role: Role = asRole(roleRaw);
+
+  // ── RBAC Protection Guards ──────────────────────────────────────────────
+  // Prevent self-demotion
+  const selfModError = await checkSelfModification(id);
+  if (selfModError) return { ok: false, error: selfModError };
+
+  // Prevent demoting the last ADMIN
+  const lastAdminError = await checkLastAdminProtection(id, role);
+  if (lastAdminError) return { ok: false, error: lastAdminError };
 
   try {
     await prisma.user.update({ where: { id }, data: { role } });
@@ -341,12 +383,13 @@ export async function assignRole(formData: FormData): Promise<void> {
       "code" in err &&
       (err as { code: string }).code === "P2025"
     ) {
-      return;
+      return { ok: false, error: "This employee no longer exists. Refresh and try again." };
     }
     throw err;
   }
 
   revalidatePath("/employees");
+  return { ok: true };
 }
 
 /**
@@ -369,6 +412,15 @@ export async function deleteEmployee(formData: FormData): Promise<void> {
     // No id means the form was tampered or malformed — nothing to delete.
     return;
   }
+
+  // ── RBAC Protection Guards ──────────────────────────────────────────────
+  // Prevent self-deletion
+  const selfModError = await checkSelfModification(id);
+  if (selfModError) return;
+
+  // Prevent deleting the last ADMIN
+  const lastAdminError = await checkLastAdminProtection(id, undefined, true);
+  if (lastAdminError) return;
 
   try {
     await prisma.user.delete({ where: { id } });
@@ -554,3 +606,66 @@ async function closeShift(shiftId: string, start: Date): Promise<string> {
 // private async helper (still legal: non-exported, used for the comment in
 // pos/actions.ts); re-enable it as a real action later if a login flow needs
 // it.
+
+// ── RBAC Protection Guards ────────────────────────────────────────────────
+
+/**
+ * Get the current authenticated user's session, or throw if not authenticated.
+ * Used internally by RBAC guards to identify the actor.
+ */
+async function getActorId(): Promise<string> {
+  const cashier = await getCashier();
+  if (!cashier) {
+    throw new Error("NOT_AUTHENTICATED");
+  }
+  return cashier.id;
+}
+
+/**
+ * Check if the actor is attempting to modify their own account.
+ * Returns an error message if self-modification is detected, null otherwise.
+ */
+async function checkSelfModification(targetEmployeeId: string): Promise<string | null> {
+  const actorId = await getActorId();
+  if (actorId === targetEmployeeId) {
+    return "You cannot change your own role or deactivate your own account.";
+  }
+  return null;
+}
+
+/**
+ * Check if demoting/deleting the last ADMIN.
+ * Returns an error message if this would leave zero ADMIN users, null otherwise.
+ */
+async function checkLastAdminProtection(
+  targetEmployeeId: string,
+  newRole?: Role,
+  isDeletion = false
+): Promise<string | null> {
+  // Only relevant if target is currently an ADMIN and we're demoting or deleting
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetEmployeeId },
+    select: { role: true },
+  });
+
+  if (!targetUser || targetUser.role !== "ADMIN") {
+    return null; // Not an ADMIN, no protection needed
+  }
+
+  // If deleting an ADMIN, or changing role from ADMIN to something else
+  const isDemotion = newRole !== undefined && newRole !== "ADMIN";
+  if (!isDeletion && !isDemotion) {
+    return null; // Not a demotion or deletion
+  }
+
+  // Count active ADMIN users
+  const adminCount = await prisma.user.count({
+    where: { role: "ADMIN", active: true },
+  });
+
+  if (adminCount <= 1) {
+    return "Cannot demote or remove the last remaining Administrator.";
+  }
+
+  return null;
+}

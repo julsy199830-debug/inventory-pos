@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import { createCategory, type CategoryResult } from "../actions";
@@ -6,11 +6,11 @@ import { createCategory, type CategoryResult } from "../actions";
 /**
  * Modal dialog for creating a new category.
  *
- * Mirrors the inventory/suppliers `Add<…>Dialog` shells: a self-contained
+ * Mirrors the inventory/suppliers `Add<â€¦>Dialog` shells: a self-contained
  * client island that owns its trigger + modal, submits via a manual async
  * handler that `await`s the raw {@link createCategory} Server Action directly
  * (the "Event Handlers" convention), and closes + resets the form on success.
- * We deliberately don't use `useActionState` — reacting to its success would
+ * We deliberately don't use `useActionState` â€” reacting to its success would
  * mean `setState` inside an effect keyed on state, which the
  * `react-hooks/set-state-in-effect` lint flags as a derived-state cascade; calling
  * the action ourselves lets the close/reset live in the submit handler, where
@@ -53,7 +53,7 @@ export default function AddCategoryDialog() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500"
       >
         <svg
           className="h-4 w-4"
@@ -75,21 +75,21 @@ export default function AddCategoryDialog() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+              <h2 className="text-base font-semibold tracking-tight text-slate-100">
                 Add Category
               </h2>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+                className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
                 aria-label="Close"
               >
                 <svg
@@ -114,7 +114,7 @@ export default function AddCategoryDialog() {
               {error && (
                 <p
                   role="alert"
-                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
                 >
                   {error}
                 </p>
@@ -141,16 +141,16 @@ export default function AddCategoryDialog() {
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-200/80 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Saving…" : "Add category"}
+                  {pending ? "Savingâ€¦" : "Add category"}
                 </button>
               </div>
             </form>
@@ -162,9 +162,9 @@ export default function AddCategoryDialog() {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200/80 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50";
+  "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
+/** Labeled field wrapper â€” keeps the form DRY (matches the sibling dialogs). */
 function Field({
   label,
   htmlFor,

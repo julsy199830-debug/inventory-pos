@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import type { StockStatus } from "@/lib/types";
@@ -12,8 +12,8 @@ import type { StockStatus } from "@/lib/types";
  * as props rather than the banner re-querying Prisma. The component stays
  * purely presentational and dismissible.
  *
- * The banner splits the alert into two groups — Out of Stock (worse) and Low
- * Stock — each listing the offending SKUs so a manager can restock at a
+ * The banner splits the alert into two groups â€” Out of Stock (worse) and Low
+ * Stock â€” each listing the offending SKUs so a manager can restock at a
  * glance. `dismissed` is local state only; the banner returns naturally on the
  * next server render once the rows are restocked, and the dismiss affordance
  * simply hides it for the current client session.
@@ -41,12 +41,12 @@ export default function LowStockBanner({
   return (
     <div
       role="alert"
-      className="overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-50 shadow-sm"
+      className="overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-slate-900 to-indigo-500/10 shadow-sm"
     >
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Warning icon */}
         <svg
-          className="mt-0.5 h-5 w-5 shrink-0 text-blue-600"
+          className="mt-0.5 h-5 w-5 shrink-0 text-indigo-300"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -62,20 +62,20 @@ export default function LowStockBanner({
         </svg>
 
         <div className="min-w-0 flex-1 space-y-2.5">
-          <p className="text-sm font-semibold text-blue-900">
+          <p className="text-sm font-semibold text-indigo-200">
             {items.length.toLocaleString()}{" "}
             {items.length === 1 ? "product needs" : "products need"} attention
           </p>
 
           {out.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-red-700">
+              <p className="text-xs font-medium uppercase tracking-wide text-red-300">
                 Out of stock
               </p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {out.map((item) => (
                   <li key={item.id}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs text-red-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-300">
                       <span className="font-medium">{item.name}</span>
                       <span className="font-mono text-red-500">({item.sku})</span>
                     </span>
@@ -87,16 +87,16 @@ export default function LowStockBanner({
 
           {low.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
-                Low on stock — below {low[0].threshold === 1 ? "1 unit" : `${low[0].threshold} units`}
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
+                Low on stock â€” below {low[0].threshold === 1 ? "1 unit" : `${low[0].threshold} units`}
               </p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {low.map((item) => (
                   <li key={item.id}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white px-2.5 py-0.5 text-xs text-amber-800">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-slate-900 px-2.5 py-0.5 text-xs text-amber-300">
                       <span className="font-medium">{item.name}</span>
-                      <span className="font-mono text-amber-600">({item.sku})</span>
-                      <span className="text-amber-500">
+                      <span className="font-mono text-amber-400">({item.sku})</span>
+                      <span className="text-amber-400">
                         {item.stock.toLocaleString()} left
                       </span>
                     </span>
@@ -111,7 +111,7 @@ export default function LowStockBanner({
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="rounded p-1 text-blue-400 transition-colors hover:bg-blue-100 hover:text-blue-600"
+          className="rounded-lg p-1 text-blue-400 transition-colors hover:bg-indigo-500/20 hover:text-indigo-300"
           aria-label="Dismiss low-stock alert"
         >
           <svg

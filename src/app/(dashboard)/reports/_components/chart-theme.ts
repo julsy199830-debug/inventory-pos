@@ -10,24 +10,24 @@
  * formatters.
  */
 
-export const BLUE_600 = "#2563eb"; // blue-600
-export const blue = "#2563eb";      // alias for simple imports
-export const SKY_400 = "#38bdf8"; // sky-400
-export const BLUE_500 = "#3b82f6"; // blue-500
-export const BLUE_400 = "#60a5fa"; // blue-400
-export const SLATE_300 = "#cbd5e1";
-export const SLATE_400 = "#94a3b8";
-export const SLATE_500 = "#64748b";
+export const BLUE_600 = "#6366f1"; // indigo-500 — primary series (was blue-600)
+export const blue = "#6366f1";      // alias for simple imports
+export const SKY_400 = "#8b5cf6"; // violet-500 — secondary series (was sky-400)
+export const BLUE_500 = "#d946ef"; // fuchsia-500 — tertiary series
+export const BLUE_400 = "#22d3ee"; // cyan-400 — highlight / sparkline
+export const SLATE_300 = "#334155"; // slate-700 — grid / axis lines (dark)
+export const SLATE_400 = "#94a3b8"; // slate-400 — axis ticks / labels
+export const SLATE_500 = "#64748b"; // slate-500 — secondary text
 
 /** Donut slice palette — blue/sky/slate family only, cycled for stores
  * with more categories than colors (three seeded categories fit exactly). */
 export const DONUT_PALETTE = [
-  BLUE_600,
-  SKY_400,
-  SLATE_400,
-  BLUE_500,
-  BLUE_400,
-  SLATE_500,
+  BLUE_600, // indigo-500
+  SKY_400, // violet-500
+  BLUE_500, // fuchsia-500
+  BLUE_400, // cyan-400
+  "#a78bfa", // violet-400
+  "#818cf8", // indigo-400
 ] as const;
 
 /** Format a money value for tooltips and tables: ₱1,234.56. */

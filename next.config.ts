@@ -24,6 +24,38 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   /**
+   * Allow Server Actions from cross-origin requests (LAN access).
+   * Without this, Server Actions fail when accessing from other devices on the network.
+   * Includes localhost, LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x), and wildcard for flexibility.
+   */
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        'localhost:3000',
+        '127.0.0.1:3000',
+        // LAN ranges - use specific IP in production, wildcard for dev flexibility
+        '192.168.*.*',
+        '10.*.*.*',
+        '172.16.*.*',
+        '172.17.*.*',
+        '172.18.*.*',
+        '172.19.*.*',
+        '172.20.*.*',
+        '172.21.*.*',
+        '172.22.*.*',
+        '172.23.*.*',
+        '172.24.*.*',
+        '172.25.*.*',
+        '172.26.*.*',
+        '172.27.*.*',
+        '172.28.*.*',
+        '172.29.*.*',
+        '172.30.*.*',
+        '172.31.*.*',
+      ],
+    },
+  },
+  /**
    * Native/Node-only packages that must not be bundled into the Next.js
    * server build. Prisma 7 needs a driver adapter at runtime —
    * `@prisma/adapter-better-sqlite3` wraps the native `better-sqlite3` binary.

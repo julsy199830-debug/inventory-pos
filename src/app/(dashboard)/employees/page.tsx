@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+﻿import { prisma } from "@/lib/db";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
 import EditEmployeeDialog from "./EditEmployeeDialog";
@@ -8,20 +8,20 @@ import RoleSelect from "./RoleSelect";
 import ClockButton from "./ClockButton";
 
 /**
- * Employees page — a Server Component composes three concerns:
+ * Employees page â€” a Server Component composes three concerns:
  *
  *   1. A shift-management widget (who's currently clocked in, open-shift
  *      controls) backed by `clockIn` / `clockOut`.
  *   2. A performance summary derived from each employee's closed shifts
  *      (`Shift.totalSales` / `salesCount` snapshots) plus their live
- *      completed-sale total — the `Shift` model stamps totals at clock-out so
+ *      completed-sale total â€” the `Shift` model stamps totals at clock-out so
  *      historical performance is stable; the live figure is recomputed here so
  *      the current shift's in-progress sales count toward the summary too.
  *   3. The employee management table (CRUD, role assignment, active toggle)
  *      matching the customers/suppliers UI patterns.
  *
  * The `(dashboard)` route group is folder-only, so the public path is
- * `/employees` (no `(dashboard)` segment) — that's the path the actions
+ * `/employees` (no `(dashboard)` segment) â€” that's the path the actions
  * `revalidatePath` against.
  *
  * `role` arrives as a raw `String` from Prisma (SQLite has no native enum) and
@@ -29,9 +29,9 @@ import ClockButton from "./ClockButton";
  * islands; the column's allowed values live in `ROLES` / the `Role` union.
  */
 
-// ── Display shape passed to client islands ───────────────────────────────────
+// â”€â”€ Display shape passed to client islands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Carrying the narrowed `role` (not the raw string) keeps the client components
-// honest about which values exist — same trick the suppliers page uses with its
+// honest about which values exist â€” same trick the suppliers page uses with its
 // `Supplier` type.
 type EmployeeRow = {
   id: string;
@@ -52,20 +52,33 @@ type EmployeeRow = {
   liveSalesCount: number;
 };
 
-/** The currency used by the POS — kept as a constant here so the summary tiles
+/** The currency used by the POS â€” kept as a constant here so the summary tiles
  *  format consistently. Mirrors the `TAX_RATE`-style local constant note in the
  *  `StoreSetting` schema comment (these are externalized there, but the
  *  Employees summary predates wiring it in). */
-const CURRENCY = "₱";
+const CURRENCY = "â‚±";
 
 export default async function EmployeesPage() {
   // Fetched in parallel: the roster, every shift (with totals for performance),
   // and the store-wide completed-sale aggregate (feeds the "Live sales (all
-  // cashiers)" summary tile — the per-employee shift ledgers are windowed
+  // cashiers)" summary tile â€” the per-employee shift ledgers are windowed
   // separately below, so they can't share this all-time aggregate). All Server
   // Component Prisma queries.
   const [users, shifts, storeAgg] = await Promise.all([
-    prisma.user.findMany({ orderBy: [{ active: "desc" }, { name: "asc" }] }),
+    // Explicit select — deliberately NOT `findMany()`: a broad query would drag
+    // `User.pin` (plaintext credential) and `User.passwordHash` into server
+    // memory on every roster render. Only the roster-visible fields are needed;
+    // see `EmployeeRow` + the `EditEmployeeDialog` props below.
+    prisma.user.findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+      },
+    }),
     prisma.shift.findMany({
       orderBy: { start: "desc" },
       select: {
@@ -95,11 +108,11 @@ export default async function EmployeesPage() {
     lifetimeCount.set(s.userId, (lifetimeCount.get(s.userId) ?? 0) + s.salesCount);
   }
 
-  // "Sales this ledger" — each currently clocked-in employee's completed sales
+  // "Sales this ledger" â€” each currently clocked-in employee's completed sales
   // rung up since their open shift began (`createdAt >= shift.start`; the upper
-  // bound is implicit — `Sale.createdAt` defaults to server now() at insert, so
+  // bound is implicit â€” `Sale.createdAt` defaults to server now() at insert, so
   // no row can be dated in the future). The window is per-employee, so we run
-  // one aggregate per open shift (a user has at most one — `clockIn` auto-closes
+  // one aggregate per open shift (a user has at most one â€” `clockIn` auto-closes
   // a dangling prior one); a single `groupBy` can't express a per-bucket time
   // window. `_sum` types as `... | null`, so we null-chain it; `_count: true`
   // resolves to a bare `number` there (same shapes as the closed-shift snapshot
@@ -139,12 +152,12 @@ export default async function EmployeesPage() {
     liveSalesCount: ledgerCount.get(u.id) ?? 0,
   }));
 
-  // ── Shift-management widget roll-up ────────────────────────────────────
+  // â”€â”€ Shift-management widget roll-up â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const clockedInList = employees.filter((e) => e.clockedIn);
   const activeCount = employees.filter((e) => e.active).length;
-  // Lifetime total sales across all employees — a store-wide sales-volume read.
+  // Lifetime total sales across all employees â€” a store-wide sales-volume read.
   const totalLifetimeSales = employees.reduce((sum, e) => sum + e.lifetimeSales, 0);
-  // Store-wide completed-sale volume across all time — independent of who's
+  // Store-wide completed-sale volume across all time â€” independent of who's
   // clocked in, so it must not be derived from the shift-ledger figures above.
   const totalLiveSales = Math.round((storeAgg._sum.totalAmount ?? 0) * 100) / 100;
 
@@ -153,13 +166,13 @@ export default async function EmployeesPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
             Employees
           </h1>
           <p className="text-sm text-slate-500">
-            <span className="font-medium text-slate-900">{activeCount}</span> active
+            <span className="font-medium text-slate-100">{activeCount}</span> active
             of{" "}
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-slate-100">
               {employees.length.toLocaleString()}
             </span>{" "}
             employees
@@ -171,7 +184,7 @@ export default async function EmployeesPage() {
         <AddEmployeeDialog />
       </header>
 
-      {/* Performance summary tiles — quick KPIs derived from the shift + sale
+      {/* Performance summary tiles â€” quick KPIs derived from the shift + sale
           aggregates above. Mirrors the supplier header's compact stat style. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
@@ -206,70 +219,70 @@ export default async function EmployeesPage() {
         />
       </div>
 
-      {/* Shift management widget — who is currently clocked in, with clock-in
+      {/* Shift management widget â€” who is currently clocked in, with clock-in
           / clock-out controls. Reads from the same underlying shift data as the
           per-row ClockButton so the widget and table stay consistent. */}
       <ShiftWidget employees={clockedInList} />
 
       {/* Employee management table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">Role</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Sales</th>
-                <th className="px-5 py-3 font-medium">Shift</th>
-                <th className="px-5 py-3 text-right font-medium">
+              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Role</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Sales</th>
+                <th className="px-4 py-3 font-medium">Shift</th>
+                <th className="px-4 py-3 text-right font-medium">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800">
               {employees.map((e) => (
-                <tr key={e.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium text-slate-900">
+                <tr key={e.id} className="hover:bg-slate-950">
+                  <td className="px-4 py-3 font-medium text-slate-100">
                     {e.name}
                     {/* Inactive employees are dimmed so the roster reads at a
-                        glance — visual only, the raw state drives the toggle. */}
+                        glance â€” visual only, the raw state drives the toggle. */}
                     {!e.active && (
                       <span className="ml-2 text-xs font-normal text-slate-400">
                         (offboarded)
                       </span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{e.email}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3 text-slate-300">{e.email}</td>
+                  <td className="px-4 py-3">
                     <RoleSelect id={e.id} role={e.role} />
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <ToggleActiveButton
                       id={e.id}
                       active={e.active}
                       name={e.name}
                     />
                   </td>
-                  <td className="px-5 py-3 text-slate-600">
-                    <span className="font-medium text-slate-900">
+                  <td className="px-4 py-3 text-slate-300">
+                    <span className="font-medium text-slate-100">
                       {e.lifetimeCount.toLocaleString()}
                     </span>{" "}
-                    sales ·{" "}
+                    sales Â·{" "}
                     {CURRENCY}
                     {e.lifetimeSales.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <ClockButton
                       userId={e.id}
                       clockedIn={e.clockedIn}
                     />
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
                       <EditEmployeeDialog
                         employee={{
@@ -299,7 +312,7 @@ export default async function EmployeesPage() {
   );
 }
 
-// ── Sub-components (Server Components — no client state needed) ──────────────
+// â”€â”€ Sub-components (Server Components â€” no client state needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** A single KPI tile in the performance summary. Pure presentational, ke. */
 function SummaryTile({
@@ -316,14 +329,14 @@ function SummaryTile({
 }) {
   const accent =
     tone === "blue"
-      ? "bg-blue-50 text-blue-700"
-      : "bg-slate-100 text-slate-700";
+      ? "bg-indigo-500/15 text-indigo-300"
+      : "bg-slate-800 text-slate-200";
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-100">
         {value}
       </p>
       <p className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${accent}`}>
@@ -343,9 +356,9 @@ function SummaryTile({
  */
 function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-3">
-        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+    <section className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="border-b border-slate-700 px-4 py-3">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-100">
           On the clock
         </h2>
         <p className="text-xs text-slate-500">
@@ -357,34 +370,34 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
 
       {employees.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-slate-500">
-          Everyone is clocked out. Use a row&rsquo;s “Clock In” control to open a
+          Everyone is clocked out. Use a row&rsquo;s â€œClock Inâ€ control to open a
           shift.
         </div>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-800">
           {employees.map((e) => (
             <li
               key={e.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-900">
+                <p className="truncate text-sm font-medium text-slate-100">
                   {e.name}
                 </p>
                 <p className="truncate text-xs text-slate-500">
-                  {e.email} · {e.role}
+                  {e.email} Â· {e.role}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-slate-100">
                     {CURRENCY}
                     {e.liveSalesTotal.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>{" "}
-                  · {e.liveSalesCount.toLocaleString()} sales this ledger
+                  Â· {e.liveSalesCount.toLocaleString()} sales this ledger
                 </span>
                 <ClockButton
                   userId={e.id}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { deleteSupplier } from "./actions";
 
@@ -6,14 +6,14 @@ import { deleteSupplier } from "./actions";
  * Per-row trash button that deletes a supplier by ID.
  *
  * `deleteSupplier` is a Server Action invoked through the `<form action=...>`
- * prop, so submission works with progressive enhancement (JS off → plain
+ * prop, so submission works with progressive enhancement (JS off â†’ plain
  * POST). The confirm gate needs client JS, so this is a Client Component:
  * we intercept `onSubmit` to confirm; cancelling the event stops the POST.
  * On confirm, the action runs, deletes the row, and `revalidatePath` swaps
- * the page — the row vanishes on its own, so no local pending state is needed.
+ * the page â€” the row vanishes on its own, so no local pending state is needed.
  *
  * Note: deleting a supplier `SetNull`s `Product.supplierId`, so any products
- * that referenced it simply lose their link — no extra warning beyond this
+ * that referenced it simply lose their link â€” no extra warning beyond this
  * generic confirm is required.
  */
 export default function DeleteSupplierButton({
@@ -38,7 +38,7 @@ export default function DeleteSupplierButton({
         type="submit"
         aria-label={`Delete ${name}`}
         title={`Delete ${name}`}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-500/100/10 hover:text-red-400"
       >
         <svg
           className="h-4 w-4"

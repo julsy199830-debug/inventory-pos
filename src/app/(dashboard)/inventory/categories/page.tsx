@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { LOW_STOCK_THRESHOLD } from "@/lib/types";
 import AddCategoryDialog from "./AddCategoryDialog";
@@ -23,9 +23,9 @@ type CategoryRow = {
  * `<select>` draws from this set), and the page whose cutoff the inventory
  * badges honor (via {@link stockStatusAt} + the category's `lowStockThreshold`).
  *
- * Sibling in shape to the suppliers page (header → Add trigger → table), but
+ * Sibling in shape to the suppliers page (header â†’ Add trigger â†’ table), but
  * leaner: the category set is small, so there's no text-search box and no
- * `searchParams` plumbing — just a sorted table. Each row's Add/Edit/Delete are
+ * `searchParams` plumbing â€” just a sorted table. Each row's Add/Edit/Delete are
  * small client islands so the confirm + pending state have somewhere to live;
  * everything else stays a pure Server Component.
  *
@@ -36,7 +36,7 @@ type CategoryRow = {
 export default async function CategoriesPage() {
   // Fetched in parallel: the categories (with linked product counts) and the
   // total for the header. Direct server-side Prisma queries, safe in a Server
-  // Component — `_count` is the relation aggregate that gives us the N each
+  // Component â€” `_count` is the relation aggregate that gives us the N each
   // category's Products relation holds without an N+1.
   const [rows, total] = await Promise.all([
     prisma.category.findMany({
@@ -58,11 +58,11 @@ export default async function CategoriesPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
             Categories
           </h1>
           <p className="text-sm text-slate-500">
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-slate-100">
               {total.toLocaleString()}
             </span>{" "}
             categor{total === 1 ? "y" : "ies"}
@@ -70,13 +70,13 @@ export default async function CategoriesPage() {
         </div>
         <Link
           href="/inventory"
-          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-100"
         >
-          ← Back to inventory
+          â† Back to inventory
         </Link>
       </header>
 
-      {/* Controls row — just the "Add Category" trigger + modal here (no text
+      {/* Controls row â€” just the "Add Category" trigger + modal here (no text
           search: the category set is small and sorted by name). Client island
           manages open state and submits to the createCategory Server Action,
           which inserts via Prisma and revalidates this page so the new row
@@ -84,32 +84,32 @@ export default async function CategoriesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500">
           Each category sets its own low-stock threshold (default{" "}
-          <span className="font-medium text-slate-900">{LOW_STOCK_THRESHOLD}</span>
+          <span className="font-medium text-slate-100">{LOW_STOCK_THRESHOLD}</span>
           ); the inventory page uses it to flag Low/Out of Stock.
         </p>
         <AddCategoryDialog />
       </div>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Category Name</th>
                 <th className="px-5 py-3 font-medium">Products</th>
                 <th className="px-5 py-3 font-medium">Low-stock threshold</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800">
               {categories.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium text-slate-900">{c.name}</td>
+                <tr key={c.id} className="hover:bg-slate-950">
+                  <td className="px-5 py-3 font-medium text-slate-100">{c.name}</td>
                   <td className="px-5 py-3">
                     <ProductCountPill count={c.productCount} />
                   </td>
-                  <td className="px-5 py-3 text-slate-600">
+                  <td className="px-5 py-3 text-slate-300">
                     {c.lowStockThreshold}
                     {c.lowStockThreshold !== LOW_STOCK_THRESHOLD && (
                       <span className="ml-1.5 text-xs text-slate-400">
@@ -154,8 +154,8 @@ export default async function CategoriesPage() {
 function ProductCountPill({ count }: { count: number }) {
   const color =
     count === 0
-      ? "bg-slate-100 text-slate-600"
-      : "bg-blue-50 text-blue-700";
+      ? "bg-slate-800 text-slate-300"
+      : "bg-indigo-500/15 text-indigo-300";
   const label = count === 1 ? "1 product" : `${count} products`;
   return (
     <span

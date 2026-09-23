@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { adjustStock, type StockAdjustResult } from "./actions";
  * Inline +/- quick-adjust controls for one product row.
  *
  * Calls the {@link adjustStock} Server Action directly with the row id and a
- * signed delta (+1/-1 here — the action enforces the >= 0 floor server-side, so
+ * signed delta (+1/-1 here â€” the action enforces the >= 0 floor server-side, so
  * clicking -1 on a 0-stock row surfaces "Stock can't go below zero" rather than
  * corrupting the count). This is the "Event Handlers" calling convention: we
  * `await` the action ourselves and act on its result, no `useActionState`, so
@@ -51,7 +51,7 @@ export default function StockControls({
       if (result.stock != null) setDisplayed(result.stock);
       // One live toast per row: a stable id means a rapid +/- click run updates
       // the same toast in place instead of stacking a pile of notifications.
-      toast.success(`${name} — ${result.stock ?? "?"} in stock`, {
+      toast.success(`${name} â€” ${result.stock ?? "?"} in stock`, {
         id: `stock-${id}`,
       });
     } else {
@@ -68,7 +68,7 @@ export default function StockControls({
         onClick={() => adjust(-1)}
         disabled={pending}
         aria-label="Decrease stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -85,7 +85,7 @@ export default function StockControls({
       </button>
       {/* Compact numeric readout so the inline control doubles as a stock
           gauge without duplicating the dedicated count pill column. */}
-      <span className="min-w-[1.75rem] text-center font-mono text-xs font-medium text-slate-700">
+      <span className="min-w-[1.75rem] text-center font-mono text-xs font-medium text-slate-200">
         {displayed}
       </span>
       <button
@@ -93,7 +93,7 @@ export default function StockControls({
         onClick={() => adjust(1)}
         disabled={pending}
         aria-label="Increase stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -109,7 +109,7 @@ export default function StockControls({
         </svg>
       </button>
       {error && (
-        <span role="alert" className="ml-1 text-xs font-medium text-red-600">
+        <span role="alert" className="ml-1 text-xs font-medium text-red-400">
           {error}
         </span>
       )}

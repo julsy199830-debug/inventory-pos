@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { deleteEmployee } from './actions'
 
@@ -6,14 +6,14 @@ import { deleteEmployee } from './actions'
  * Per-row trash button that deletes an employee by ID.
  *
  * `deleteEmployee` is a Server Action invoked through the `<form action=...>`
- * prop, so submission works with progressive enhancement (JS off → plain
+ * prop, so submission works with progressive enhancement (JS off â†’ plain
  * POST). The confirm gate needs client JS, so this is a Client Component:
  * we intercept `onSubmit` to confirm; cancelling the event stops the POST.
  * On confirm, the action runs, deletes the row (cascading shifts; sales are
- * SetNull per the schema), and `revalidatePath` swaps the page — the row
+ * SetNull per the schema), and `revalidatePath` swaps the page â€” the row
  * vanishes on its own, so no local pending state is needed.
  *
- * Like `DeleteCustomerButton`, the row's `id` travels as a hidden field here —
+ * Like `DeleteCustomerButton`, the row's `id` travels as a hidden field here â€”
  * the action reads it via `load(formData, "id")`.
  */
 export default function DeleteEmployeeButton({
@@ -45,7 +45,7 @@ export default function DeleteEmployeeButton({
         type="submit"
         aria-label={`Delete ${label}`}
         title={`Delete ${label}`}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-500/100/10 hover:text-red-400"
       >
         <svg
           className="h-4 w-4"

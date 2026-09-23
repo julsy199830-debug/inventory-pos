@@ -73,7 +73,7 @@ export function stockStatusAt(
  * layer (SQLite has no native enum — same convention as {@link Role} and
  * `Sale.status`).
  */
-export type StockMovementType = "RESTOCK" | "SALE" | "ADJUSTMENT" | "DAMAGE";
+export type StockMovementType = "RESTOCK" | "SALE" | "ADJUSTMENT" | "DAMAGE" | "VOID";
 
 /** All valid movement-type literals — useful for validation. */
 export const STOCK_MOVEMENT_TYPES: readonly StockMovementType[] = [
@@ -81,6 +81,7 @@ export const STOCK_MOVEMENT_TYPES: readonly StockMovementType[] = [
   "SALE",
   "ADJUSTMENT",
   "DAMAGE",
+  "VOID",
 ] as const;
 
 /**

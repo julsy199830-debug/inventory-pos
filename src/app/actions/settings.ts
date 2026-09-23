@@ -4,6 +4,14 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { StoreSetting } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/types";
+import { roleGuardError } from "@/lib/session";
+
+/** Staff-only guard — settings are store-wide configuration. */
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
+
+async function staffGuardError(): Promise<string | null> {
+  return roleGuardError(STAFF_ROLES);
+}
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -91,6 +99,8 @@ export async function saveSettings(
   // refreshed by revalidatePath, so there is no client state to merge anyway.
   formData: FormData,
 ): Promise<SaveSettingsResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
   const storeName = load(formData, "storeName");
   const address = load(formData, "address");
   const phone = load(formData, "phone");

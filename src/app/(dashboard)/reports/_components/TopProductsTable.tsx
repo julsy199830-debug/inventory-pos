@@ -1,8 +1,8 @@
-import type { AnalyticsTopProduct } from "../actions";
+﻿import type { AnalyticsTopProduct } from "../actions";
 import { formatMoney } from "./chart-theme";
 
 /**
- * Top-selling products table — best movers by units sold over the last 30
+ * Top-selling products table â€” best movers by units sold over the last 30
  * days. A pure presentational Server Component (no state, no recharts), so it
  * renders with zero client JavaScript.
  *
@@ -13,19 +13,19 @@ import { formatMoney } from "./chart-theme";
  */
 export default function TopProductsTable({
   products,
-  currencySymbol = "₱",
+  currencySymbol = "â‚±",
 }: {
   products: AnalyticsTopProduct[];
   currencySymbol?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-900">
+    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="border-b border-slate-700 px-5 py-4">
+        <h2 className="text-base font-semibold text-slate-100">
           Top Selling Products
         </h2>
         <p className="text-sm text-slate-500">
-          Best movers by units sold — last 30 days.
+          Best movers by units sold â€” last 30 days.
         </p>
       </div>
 
@@ -37,18 +37,18 @@ export default function TopProductsTable({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-700 bg-slate-950/60 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Rank</th>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units Sold</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800">
               {products.map((product, i) => (
-                <tr key={product.productId} className="hover:bg-slate-50">
+                <tr key={product.productId} className="hover:bg-slate-950">
                   <td className="px-5 py-3">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300 ring-1 ring-indigo-500/30">
                       {i + 1}
                     </span>
                   </td>
@@ -56,14 +56,14 @@ export default function TopProductsTable({
                     <div className="flex items-center gap-3">
                       <ProductThumb product={product} />
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-900">
+                        <p className="truncate font-medium text-slate-100">
                           {product.name}
                         </p>
                         <p className="truncate text-xs text-slate-500">
                           {product.sku}
                           {product.category ? (
                             <>
-                              <span className="text-slate-300"> · </span>
+                              <span className="text-slate-300"> Â· </span>
                               {product.category}
                             </>
                           ) : null}
@@ -71,10 +71,10 @@ export default function TopProductsTable({
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-right font-medium text-slate-900">
+                  <td className="px-5 py-3 text-right font-medium text-slate-100">
                     {product.unitsSold.toLocaleString()}
                   </td>
-                  <td className="px-5 py-3 text-right font-semibold text-blue-700">
+                  <td className="px-5 py-3 text-right font-semibold text-indigo-300">
                     {formatMoney(product.revenue, currencySymbol)}
                   </td>
                 </tr>

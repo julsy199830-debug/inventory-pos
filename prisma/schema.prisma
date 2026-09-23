@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,75 +8,55 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  /// Numeric login PIN, 4–6 digits. Stored as a string so leading zeros are
-  /// preserved (a "0123" PIN must not collapse to "123"). Validated to match
-  /// `/^\d{4,6}$/` at the action layer; the schema only commits the shape.
-  pin          String
+  id               String            @id @default(uuid())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  /// Scrypt hash of the login PIN in the versioned wire format
+  /// `scrypt$v1$N$r$p$saltHex$hashHex` produced by `hashPin` in
+  /// `src/lib/pin.ts`, and verified with the dedicated `verifyPin`
+  /// (timing-safe recomputation — never plain equality). REQUIRED: every
+  /// account's only login credential since the plaintext retirement
+  /// (`retire_plaintext_pin`); the former plaintext `pin` column is gone.
+  /// The 4–6 digit shape rule lives at the action layer (`PIN_PATTERN`);
+  /// the string form preserves leading zeros ("0000", "0123").
+  /// No index: lookups are by `id`, never by hash.
+  pinHash          String
   /// Whether this employee can currently sign in / is staffed. Distinguished
   /// from hard delete so an offboarded cashier's audit trail survives while
   /// their login is revoked — `toggleEmployeeStatus` flips this bit.
-  active       Boolean  @default(true)
-  // Authorization role. Modeled as a plain `String` column (not a native SQLite
-  // enum) to mirror `Sale.status` / `Transaction.status`: the column holds the
-  // literal, and the set of allowed values is enforced at the TypeScript layer
-  // via the `Role` union in `src/lib/types.ts` ('ADMIN' | 'MANAGER' | 'CASHIER').
-  // The default seeds new accounts as the least-privileged 'CASHIER'.
-  role         String   @default("CASHIER")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Back-relations for the employee performance view. A user's completed sales
-  // (the cashier who rang them up) and their worked shifts. Cascade on shift
-  // delete is implicit (a User delete removes their shifts — there's no audit
-  // value in orphan shift clock-ins once the employee is gone); sales keep their
-  // audit trail via the Sale.cashier `onDelete: SetNull` below.
-  sales  Sale[]   // sales this cashier rang up (nullable on the Sale side)
-  shifts Shift[]  // clock-in/out records for this employee
-  // Debt payments this cashier logged against customer balances.
-  customerPayments CustomerPayment[]
+  active           Boolean           @default(true)
+  role             String            @default("CASHIER")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+     customerPayments CustomerPayment[]
+  sales            Sale[]
+  shifts           Shift[]
+  purchaseOrders   PurchaseOrder[]
+  receivedPurchaseOrders PurchaseReceipt[]
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  name      String
-  sku       String   @unique
-  price     Float
-  cost      Float
-  stock     Int
-  // Category link. `categoryId` is nullable so an archive/delete of a category
-  // clears the link (onDelete: SetNull) rather than dragging every product with
-  // it — see the `Category` model comment. Separated from the old free-text
-  // `category` column so the list of categories is now a first-class entity the
-  // management page can govern (counts, low-stock thresholds, rename/delete).
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // One product can appear on many transaction line items.
-  items TransactionItem[]
-
-  // A product can appear on many sale line items.
-  saleItems SaleItem[]
-
-  // Append-only audit trail of every stock change for this product (restocks,
-  // sales, edits, damage). `onDelete: Restrict` on the StockMovement side means
-  // a product with any movement history can't be hard-deleted until those rows
-  // are removed — same integrity the SaleItem/TransactionItem links enforce, so
-  // `deleteProduct`'s P2003 path covers stock movements too. See StockMovement.
-  movements StockMovement[]
-
-  // A product may optionally belong to a supplier (nullable). Cascade on
-  // delete so removing a supplier clears the link without dropping products.
-  supplierId String?
-  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-
-  @@index([supplierId])
-  @@index([categoryId])
+  id                 String              @id @default(uuid())
+  name               String
+  sku                String              @unique
+  price              Float
+  cost               Float
+  stock              Int
+  categoryId         String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  supplierId         String?
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  saleItems          SaleItem[]
+  movements          StockMovement[]
+  items              TransactionItem[]
+  // Phase 1 purchasing: the same Product row can be referenced by many POs; PO-level
+  // purchase cost is stored on PurchaseOrderItem.unitCost, not on Product.cost. We do
+  // not create a second Product↔Supplier relationship here — Product.supplierId remains
+  // the existing optional preferred-supplier link.
+  purchaseOrderItems PurchaseOrderItem[]
 }
 
 /// A product category. Replaces the old free-text `Product.category` string so
@@ -97,74 +72,54 @@ model Product {
 /// `Role`/`Sale.status` plain-column + TS-narrowing convention this schema uses
 /// throughout (SQLite has no native enum anyway).
 model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id                String    @id @default(uuid())
+  name              String    @unique
   /// Per-category "running low" cutoff: a product whose `stock` is strictly
   /// below this is flagged Low Stock (0 is Out of Stock). Defaults to 10, the
   /// app-wide default; raise it for loss-leader categories or lower it for
   /// slow-movers so the inventory alerts match how each line is actually run.
-  lowStockThreshold Int     @default(10)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  products Product[]
+  lowStockThreshold Int       @default(10)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  products          Product[]
 }
 
 model Supplier {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  contactName String?
-  email       String?
-  phone       String?
-  address     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // A supplier can provide many products.
-  products Product[]
+  id             String          @id @default(uuid())
+  name           String          @unique
+  contactName    String?
+  email          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  products       Product[]
+  // Phase 1 purchasing does not create a new relation here: Supplier is linked to POs
+  // through PurchaseOrder.supplierId. This model stays as the existing optional
+  // preferred-supplier anchor for Product.supplierId.
+  purchaseOrders PurchaseOrder[]
 }
 
 model Customer {
-  id            String   @id @default(uuid())
-  name          String
-  email         String?
-  phone         String?
-  address       String?
+  id             String            @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
   /// Max outstanding debt ("utang") this customer may carry. 0 = no credit
   /// (cash/loyalty only). Enforced at the action layer against `currentBalance`.
-  creditLimit   Float    @default(0)
+  creditLimit    Float             @default(0)
   /// Current outstanding balance. Increased by STORE_CREDIT sales, decreased
   /// by `CustomerPayment` records — kept in sync only inside `$transaction`s.
   /// Bottomed at 0 by the actions that decrement it (never negative).
-  currentBalance Float   @default(0)
+  currentBalance Float             @default(0)
   /// Free-text note: payment reminders, terms, ID notes, etc. Optional.
-  notes         String?
-  loyaltyPoints Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // NOTE: intentionally no `@unique` on `email` (or `name`). SQLite treats
-  // multiple NULLs as violating a unique constraint, so a unique-on-nullable
-  // column would reject the second walk-in customer with no email — clearly
-  // wrong. Name collisions are legitimate customer data too (two "John Smith"s).
-  //
-  // `loyaltyPoints` starts at 0 for new customers and is bumped later, e.g. by
-  // a checkout flow or an admin edit. It bottoms out at 0 — never negative.
-  //
-  // `creditLimit`/`currentBalance` gate the STORE_CREDIT payment method in POS
-  // checkout: a sale on account is only allowed when `currentBalance + newTotal
-  // <= creditLimit`. `currentBalance` is intentionally NOT derived (a computed
-  // read) because the ledger needs an atomic floor for the limit check inside
-  // `createSale`'s transaction.
-
-  // A customer's purchases. Optional relation so guest checkouts (no account)
-  // can create a Sale with a null customerId.
-  sales Sale[]
-
-  // Every debt settlement against this customer's balance. Cascade on customer
-  // delete: payments are transactional records of a specific account, not audit
-  // rows that must outlive the account (contrast Sale.customerId SetNull).
-  payments CustomerPayment[]
+  notes          String?
+  loyaltyPoints  Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  payments       CustomerPayment[]
+  sales          Sale[]
 }
 
 /// A debt settlement (payment) applied against a {@link Customer}'s outstanding
@@ -183,7 +138,6 @@ model Customer {
 model CustomerPayment {
   id            String   @id @default(uuid())
   customerId    String
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   /// Amount settled. Always positive.
   amount        Float
   /// How the payment was made — "CASH" | "CARD" | "GCASH" | "OTHER" (plain
@@ -192,10 +146,11 @@ model CustomerPayment {
   /// Cashier (User) who logged the payment. Optional + SetNull preserves the
   /// record if the cashier is later offboarded.
   cashierId     String?
-  cashier       User?    @relation(fields: [cashierId], references: [id], onDelete: SetNull)
   /// Free-text note (e.g. "Payment on account", "Weekly settle"). Optional.
   notes         String?
   createdAt     DateTime @default(now())
+  cashier       User?    @relation(fields: [cashierId], references: [id])
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
   @@index([cashierId])
@@ -203,76 +158,79 @@ model CustomerPayment {
 }
 
 model Sale {
-  id            String   @id @default(uuid())
-  totalAmount   Float
-  subtotal      Float
-  tax           Float
-  paymentMethod String
-  status        String   @default("Completed")
-  createdAt     DateTime @default(now())
-
-  // Optional link to a Customer — null for guest checkouts. SetNull keeps the
-  // sale record intact if the customer is later deleted (audit trail preserved).
-  customerId String?
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-
-  // Optional link to the cashier (User) who rang up this sale. Null for
-  // legacy/guest sales made before cashier attribution existed, and SetNull
-  // preserves an offboarded cashier's audit trail just like `customerId` — the
-  // User.* `active` comment calls this out explicitly. Drives per-employee
-  // sales metrics in the Employees module.
-  cashierId String?
-  cashier   User? @relation(fields: [cashierId], references: [id], onDelete: SetNull)
-
-  // A sale owns many line items; deleting a sale removes its items to keep the
-  // ledger consistent.
-  items SaleItem[]
+  id             String     @id @default(uuid())
+  totalAmount    Float
+  subtotal       Float
+  /// Total monetary discount applied at checkout — the sum of any per-item
+  /// and cart-wide discounts the cashier entered. Stored separately so the
+  /// ledger can always reconcile `subtotal − discountAmount → taxable →
+  /// totalAmount` and so receipts can print a line-item "Discount" row.
+  /// `priceAtSale` on `SaleItem` snapshots the *catalog* unit price, so
+  /// `subtotal` stays the undiscounted sum (this column carries the delta).
+  discountAmount Float      @default(0)
+  tax            Float
+  paymentMethod  String
+  status         String     @default("Completed")
+  createdAt      DateTime   @default(now())
+  customerId     String?
+  cashierId      String?
+  /// Free-text reason recorded when the sale was voided (e.g. "Customer cancellation").
+  /// Null for non-voided sales.
+  voidReason     String?
+  /// Timestamp when the sale was voided. Null for non-voided sales.
+  voidedAt       DateTime?
+  /// User ID of the staff member who processed the void. Null for non-voided sales.
+  voidedBy       String?
+  /// Loyalty points awarded from this sale. Stored so the void action can reverse
+  /// the exact amount originally awarded (rather than recalculating, which may differ
+  /// if the points formula changes later). 0 for sales with no customer or no points.
+  earnedPoints   Int        @default(0)
+  /// Cash-only: amount the customer handed over. Null for non-CASH payments and for
+  /// sales recorded before this field existed. Persisted so the void action and any
+  /// later cash-audit tooling can reconcile the drawer against the ledger.
+  tendered       Float?
+  /// Cash-only: change due back to the customer. Null for non-CASH payments.
+  change         Float?
+  cashier        User?      @relation(fields: [cashierId], references: [id])
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  items          SaleItem[]
 
   @@index([customerId])
   @@index([cashierId])
 }
 
 model SaleItem {
-  id      String @id @default(uuid())
-  saleId  String
-  productId String
-  quantity Int
+  id          String  @id @default(uuid())
+  saleId      String
+  productId   String
+  quantity    Int
   priceAtSale Float
-
-  // Snapshotted connection between a Sale and a Product. Cascade on sale
-  // delete; Restrict on product delete so product removal can't silently drop
-  // sale history.
-  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product     Product @relation(fields: [productId], references: [id])
+  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@index([saleId])
   @@index([productId])
 }
 
 model Transaction {
-  id            String   @id @default(uuid())
+  id            String            @id @default(uuid())
   totalAmount   Float
   subtotal      Float
   tax           Float
   paymentMethod String
-  status        String   @default("Completed")
-  createdAt     DateTime @default(now())
-
-  // A transaction owns many line items; deleting a transaction
-  // removes its items to keep the ledger consistent.
-  items TransactionItem[]
+  status        String            @default("Completed")
+  createdAt     DateTime          @default(now())
+  items         TransactionItem[]
 }
 
 model TransactionItem {
-  id            String @id @default(uuid())
+  id            String      @id @default(uuid())
   transactionId String
   productId     String
   quantity      Int
   priceAtSale   Float
-
-  // Snapshotted connection between a Transaction and a Product.
-  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product       Product     @relation(fields: [productId], references: [id])
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@index([transactionId])
   @@index([productId])
@@ -308,8 +266,7 @@ model StockMovement {
   /// inventory", a damage reason). Optional — automated movements may omit it.
   reason         String?
   createdAt      DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product        Product  @relation(fields: [productId], references: [id])
 
   @@index([productId])
   @@index([createdAt])
@@ -325,15 +282,15 @@ model StockMovement {
 /// explicit write — the action bumps it manually, and we can read "last edited"
 /// from it without Prisma touching it on every unrelated transaction.
 model StoreSetting {
-  id        String @id @default(uuid())
-  storeName String
-  address   String?
-  phone     String?
+  id             String   @id @default(uuid())
+  storeName      String
+  address        String?
+  phone          String?
   /// Sales-tax percentage as a number, e.g. `8.5` means 8.5%. 0 = tax disabled.
-  taxRate   Float  @default(0)
+  taxRate        Float    @default(0)
   /// Short currency glyph, e.g. "₱", "€", "¥". Kept tiny on purpose.
-  currencySymbol String @default("₱")
-  updatedAt DateTime
+  currencySymbol String   @default("₱")
+  updatedAt      DateTime
 }
 
 /// A work shift for an employee (User). Opened by `clockIn` (sets `start`,
@@ -347,19 +304,117 @@ model StoreSetting {
 /// `@default(0)` so a clock-in insert needs no values, matching the
 /// plain-column + TS-narrowing convention (no native enum for a "shiftStatus").
 model Shift {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Shift start. `@default(now())` so `clockIn` only sends `userId`.
-  start      DateTime @default(now())
+  start      DateTime  @default(now())
   /// Shift end. NULL = the employee is still on the clock. Set by `clockOut`.
   end        DateTime?
   /// Snapshot of total sales $ rung up during this shift, filled at clock-out.
-  totalSales Float   @default(0)
+  totalSales Float     @default(0)
   /// Snapshot of the count of completed sales during this shift, at clock-out.
-  salesCount Int     @default(0)
-  createdAt  DateTime @default(now())
+  salesCount Int       @default(0)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([start])
+}
+
+// Purchase Orders (Phase 1). A PO ties a Supplier to one or more Products with a
+// per-line purchase cost snapshot. Phase 1 implements creation, edit, ordering,
+// and cancellation only; receiving (stock/movement/receivedQty growth) is Phase 2.
+//
+// Status vocabulary (stored as a plain String column to match the existing Role /
+// Sale.status / Transaction.status convention — SQLite has no native enum):
+//   DRAFT              - created, editable
+//   ORDERED           - approved/issued to supplier, editable only for expected date + notes
+//   PARTIALLY_RECEIVED - future Phase 2 receiving state
+//   RECEIVED          - future Phase 2 receiving state
+//   CANCELLED         - voided PO; editable only by cancellation path in future phases
+//
+// PO numbers are allocated atomically from PoNumberCounter and are unique human-
+// readable values like "PO-202609-000001". They are generated server-side inside
+// the creation transaction, never client-side, and never from a MAX() + 1 read.
+
+model PurchaseOrder {
+  id           String              @id @default(uuid())
+  poNumber     String              @unique
+  supplierId   String
+  supplier     Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  status       String              @default("DRAFT")
+  orderDate    DateTime            @default(now())
+  expectedDate DateTime?
+  notes        String?
+  createdById  String
+  createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+    items        PurchaseOrderItem[]
+  receipts     PurchaseReceipt[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orderedQty      Int
+  unitCost        Float
+    receivedQty     Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  receiptItems    PurchaseReceiptItem[]
+}
+
+model PoNumberCounter {
+  month      String @id // "YYYYMM"
+  lastNumber Int    @default(0)
+}
+
+// ── Phase 2: Purchase Receiving ────────────────────────────────────────────────
+//
+// A PurchaseReceipt records one receiving event against an ORDERED (or
+// PARTIALLY_RECEIVED) PO. Each receipt carries one-or-more PurchaseReceiptItem
+// rows — one per PO line received — and is the audit trail that ties a stock
+// increase to a specific PO and a specific actor at a specific time.
+//
+// Delete behavior:
+//   PurchaseReceipt  → PurchaseOrder  RESTRICT  (can't drop a receipt whose PO lives)
+//   PurchaseReceipt  → User           RESTRICT  (preserves the actor who received)
+//   PurchaseReceiptItem → PurchaseReceipt  CASCADE (items die with their receipt)
+//   PurchaseReceiptItem → PurchaseOrderItem  RESTRICT (never orphan the source line)
+
+model PurchaseReceipt {
+  id              String                @id @default(uuid())
+  purchaseOrderId String
+  receivedById    String
+  receivedAt      DateTime              @default(now())
+  /// Human-readable receiving reference, allocated server-side as
+  /// `RCPT-YYYYMM-NNNNNN` (mirrors the PO numbering scheme but on its own
+  /// monthly counter so receipts never collide with POs or each other).
+  referenceNumber String                @unique
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  receivedBy      User                  @relation(fields: [receivedById], references: [id], onDelete: Restrict)
+  items           PurchaseReceiptItem[]
+}
+
+model PurchaseReceiptItem {
+  id                String           @id @default(uuid())
+  purchaseReceiptId String
+  purchaseOrderItemId String
+  receivedQty       Int
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  purchaseReceipt   PurchaseReceipt  @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+}
+
+model ReceiptNumberCounter {
+  month      String @id // "YYYYMM"
+  lastNumber Int    @default(0)
 }

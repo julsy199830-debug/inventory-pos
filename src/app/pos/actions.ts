@@ -1,9 +1,16 @@
 "use server";
 
-import { timingSafeEqual } from "node:crypto";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { setCashierCookie, clearCashierCookie } from "@/lib/session";
-import { PIN_PATTERN } from "@/lib/pin";
+import {
+  checkRateLimit,
+  recordLoginFailure,
+  recordLoginSuccess,
+  RATE_LIMITED_MESSAGE,
+  type RateVerdict,
+} from "@/lib/rate-limit";
+import { PIN_PATTERN, verifyPin } from "@/lib/pin";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
 
 /**
@@ -16,11 +23,18 @@ import { asRole, type Role, type ActionResult } from "@/lib/types";
  * inline gate (not the Employees dialogs), so co-locating it with the POS route
  * matches where it's called from.
  *
- * Login keys off `User.pin` (the numeric login handle — see the `User.pin`
- * schema comment) + `User.active`, exactly as the schema intends. We deliberately
- * don't involve `passwordHash` here: PIN is the documented POS login mechanism,
- * and keeping this path independent of the password hash means a cashier can sign
- * in to the register without a password ever being set.
+ * Login authenticates against `User.pinHash` — the account's ONLY credential —
+ * plus `User.active`. We deliberately don't involve `passwordHash` here: PIN is
+ * the documented POS login mechanism, and keeping this path independent of the
+ * password hash means a cashier can sign in to the register without a password
+ * ever being set.
+ *
+ * Verification is hash-ONLY (plaintext retirement complete): the candidate PIN
+ * is recomputed through scrypt against the stored versioned hash via
+ * {@link verifyPin} — never plain equality, and there is no plaintext fallback
+ * of any kind. A wrong PIN, an unknown account, an offboarded employee, or a
+ * somehow-malformed stored hash all return the same generic failure, revealing
+ * nothing about which condition it was.
  */
 
 /**
@@ -35,19 +49,29 @@ import { asRole, type Role, type ActionResult } from "@/lib/types";
 export type SignInResult = ActionResult<{ role: Role }>;
 
 /**
- * Constant-time comparison of two strings of equal length, so a wrong PIN
- * doesn't leak how many leading digits matched via response timing. Returns
- * `false` (not throw) on length mismatch so the caller can fold it into the
- * normal "wrong PIN" path without a try/catch.
+ * Best-effort request-source identifier for the rate limiter.
  *
- * Mirrors the `timingSafeEqual` usage in `verifyPassword` (employees/actions.ts)
- * — same security posture, applied to the plaintext PIN column instead of the
- * scrypt hash.
+ * HONEST LIMITATION: inside a Next.js Server Action there is no socket-level
+ * remote address, so the only candidate is the `x-forwarded-for` header — and
+ * that header is trivially spoofable by a direct client. This deployment has
+ * no reverse proxy in front of the app, so we do NOT pretend the header is
+ * trustworthy: we read it when present (harmless if a proxy is ever added),
+ * and otherwise fold every direct client into a single shared fallback
+ * bucket. Consequence: on this LAN the per-IP limiter behaves as a global
+ * brake on total failure volume (20 fails / 5 min) rather than a true
+ * per-machine limit — which is exactly the anti-cycling protection wanted,
+ * and its thresholds are sized well above any legitimate staff usage. The
+ * per-USER dimension (keyed by the server-resolved account id) is unaffected
+ * and remains the primary boundary.
  */
-function pinsMatch(candidate: string, stored: string): boolean {
-  const a = Buffer.from(candidate);
-  const b = Buffer.from(stored);
-  return a.length === b.length && timingSafeEqual(a, b);
+async function clientIp(): Promise<string> {
+  const headerList = await headers();
+  const forwarded = headerList.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return "direct-client";
 }
 
 /**
@@ -78,18 +102,57 @@ export async function signInCashierPin(input: {
     return { ok: false, error: "PIN must be 4–6 digits." };
   }
 
+  // ── Rate limiting (Stage 4) ──────────────────────────────────────────────
+  // Synchronous and FIRST: a throttled attempt never reaches the database or
+  // the scrypt verifier, so an attacker cannot spend our CPU or learn anything
+  // about the account from this path. The client-supplied `userId` is used
+  // only as a bucket key here — the actual authentication decision below is
+  // still made entirely server-side.
+  const ip = await clientIp();
+  const verdict: RateVerdict = checkRateLimit(userId, ip);
+  if (verdict !== "ok") {
+    // Same shape as every other failure so the UI needs no special case, but a
+    // distinct, deliberately vague message: no counters, no remaining
+    // attempts, no hint whether the employee exists.
+    return { ok: false, error: RATE_LIMITED_MESSAGE };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, pin: true, active: true, role: true },
+    select: {
+      id: true,
+      pinHash: true,
+      active: true,
+      role: true,
+    },
   });
 
   // The shape of "wrong PIN" and "no such user" and "offboarded" are deliberately
   // identical from the caller's view — return the same generic message so the
-  // response reveals nothing about which users exist or are active. The active
-  // re-check here is belt-and-suspenders on top of the gate only listing them.
-  if (!user || !user.active || !pinsMatch(pin, user.pin)) {
+  // response reveals nothing about which users exist, are active, or have a
+  // malformed hash. The active re-check here is belt-and-suspenders on top of the gate
+  // only listing them. Every one of these outcomes also counts as a failed
+  // login attempt for the rate limiter (the limiter never learns which kind it
+  // was, and this action never tells it).
+  if (!user || !user.active) {
+    recordLoginFailure(userId, ip);
     return { ok: false, error: "Incorrect employee or PIN." };
   }
+
+  // Hash-ONLY verification (plaintext retired). `verifyPin` recomputes scrypt
+  // against the stored versioned hash with timing-safe comparison and fails
+  // closed — a malformed/stale hash returns false, never authenticates, and
+  // there is no plaintext fallback of any kind.
+  const authenticated = await verifyPin(pin, user.pinHash);
+  if (!authenticated) {
+    recordLoginFailure(userId, ip);
+    return { ok: false, error: "Incorrect employee or PIN." };
+  }
+
+  // A genuine sign-in clears this account's failure counter and lockout (and
+  // empties this source's rolling failure window) before the session is
+  // issued — success must never leave stale throttling behind.
+  recordLoginSuccess(user.id, ip);
 
   await setCashierCookie(user.id);
   return { ok: true, role: asRole(user.role) };

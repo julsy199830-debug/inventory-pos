@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requirePageAuth } from "@/lib/session";
 import Sidebar from "./_components/Sidebar";
 import Breadcrumbs from "./_components/Breadcrumbs";
+import { PageTransition } from "@/app/_components/ui/PageTransition";
 
 export default async function DashboardLayout({
   children,
@@ -18,12 +19,12 @@ export default async function DashboardLayout({
   if (user.role === "CASHIER") redirect("/pos");
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-950">
       <Sidebar user={user} />
       <main className="min-w-0 flex-1 overflow-y-auto scroll-smooth">
         <div className="mx-auto w-full max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
           <Breadcrumbs />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </div>
       </main>
     </div>

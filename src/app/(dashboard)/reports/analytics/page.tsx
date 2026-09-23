@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { getStoreSettings } from "@/app/actions/settings";
 import { getSalesAnalytics } from "../actions";
 import SalesBarChart from "../_components/SalesBarChart";
@@ -8,18 +8,18 @@ import TopProductsTable from "../_components/TopProductsTable";
 import { formatMoney } from "../_components/chart-theme";
 
 /**
- * Interactive Sales Analytics — `/reports/analytics`.
+ * Interactive Sales Analytics â€” `/reports/analytics`.
  *
  * Server Component that loads the full analytics payload in one server action
  * (`getSalesAnalytics`) plus the store's currency symbol, then arranges the
  * Recharts widgets and KPI tiles. The interactivity lives entirely inside the
  * client components (the bar chart's Month/Week toggle, hover tooltips, the
  * sparklines' active-dot tracking), so the page itself stays a plain data
- * hand-off — no refetching, no loading state.
+ * hand-off â€” no refetching, no loading state.
  *
  * Layout, mirroring the rest of the dashboard: a KPI tile row (two tiles carry
  * the orders sparkline), then a wide Sales Volume card beside the Category
- * Share donut, then the Top Selling Products table — all on the standard
+ * Share donut, then the Top Selling Products table â€” all on the standard
  * rounded-2xl slate-200/80 border + white card.
  */
 export default async function SalesAnalyticsPage() {
@@ -27,13 +27,13 @@ export default async function SalesAnalyticsPage() {
     getSalesAnalytics(),
     getStoreSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "₱";
+  const symbol = settings?.currencySymbol ?? "â‚±";
 
   if (!result.ok) {
     return (
       <div className="space-y-6">
         <PageHeader />
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {result.error}
         </div>
       </div>
@@ -50,14 +50,14 @@ export default async function SalesAnalyticsPage() {
       {/* KPI tiles */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
-          label="Revenue · 30 days"
+          label="Revenue Â· 30 days"
           value={formatMoney(totals.revenue30d, symbol)}
           sparkline={
             <OrdersSparkline data={data.orderTrend} color="blue" height={56} />
           }
         />
         <KpiTile
-          label="Orders · 30 days"
+          label="Orders Â· 30 days"
           value={totals.orders30d.toLocaleString()}
           sparkline={
             <OrdersSparkline data={data.orderTrend} color="blue" height={56} />
@@ -69,7 +69,7 @@ export default async function SalesAnalyticsPage() {
         />
         <KpiTile
           label="Top Category"
-          value={totals.topCategory?.name ?? "—"}
+          value={totals.topCategory?.name ?? "â€”"}
           badge={
             totals.topCategory
               ? `${totals.topCategory.percent.toFixed(1)}% of sales`
@@ -100,12 +100,12 @@ export default async function SalesAnalyticsPage() {
 function PageHeader() {
   return (
     <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
         Sales Analytics
       </h1>
       <p className="text-sm text-slate-500">
         Interactive overview of revenue, payment methods, categories, and top
-        movers — completed sales only.
+        movers â€” completed sales only.
       </p>
     </header>
   );
@@ -127,9 +127,9 @@ function KpiTile({
   sparkline?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
+    <div className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
       <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-100">
         {value}
       </p>
       {badge ? (
@@ -137,8 +137,8 @@ function KpiTile({
           className={[
             "mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
             badgeTone === "blue"
-              ? "bg-blue-50 text-blue-700"
-              : "bg-slate-100 text-slate-500",
+              ? "bg-indigo-500/15 text-indigo-300"
+              : "bg-slate-800 text-slate-500",
           ].join(" ")}
         >
           {badge}

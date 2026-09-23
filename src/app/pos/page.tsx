@@ -42,7 +42,7 @@ export default async function POSPage() {
 
 
   const store: PosStore = {
-    storeName: settings?.storeName ?? 'My Store',
+    storeName: settings?.storeName ?? 'InvPos Store',
     address: settings?.address ?? null,
     phone: settings?.phone ?? null,
     currencySymbol: settings?.currencySymbol ?? '₱',

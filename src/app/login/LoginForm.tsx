@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -49,8 +49,8 @@ export function LoginForm({
       {/* Branding */}
       <div className="flex flex-col items-center justify-center bg-transparent">
         <Image
-          src="/Logo.png"
-          alt="JuLs POS SYSTEM"
+          src="/Logo final.png"
+          alt="InvPos"
           width={224}
           height={224}
           priority
@@ -60,7 +60,7 @@ export function LoginForm({
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {error}
         </p>
       )}
@@ -81,16 +81,16 @@ export function LoginForm({
                   setPin("");
                   setError(null);
                 }}
-                className={`flex items-center justify-between rounded-md border px-3 py-2.5 text-left text-sm transition ${
+                className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150 ${
                   active
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-slate-200 bg-white text-slate-900 hover:border-slate-400"
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm hover:shadow"
+                    : "border-slate-700 bg-slate-900 text-slate-100 hover:border-slate-600 hover:bg-slate-950 hover:shadow-sm active:scale-[0.99]"
                 }`}
               >
                 <span className="font-medium">{u.name}</span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                    active ? "bg-slate-900/20 text-white" : "bg-slate-800 text-slate-500"
                   }`}
                 >
                   {ROLE_LABEL[u.role]}
@@ -116,17 +116,17 @@ export function LoginForm({
           disabled={!selected}
           value={pin}
           onChange={(e) => setPin(e.target.value)}
-          placeholder={selected ? "Your 4–6 digit PIN" : "Select your name first"}
-          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:bg-slate-50"
+          placeholder={selected ? "Your 4â€“6 digit PIN" : "Select your name first"}
+          className="mt-2 w-full rounded-md border border-slate-700 px-3 py-2 font-mono text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950"
         />
       </div>
 
       <button
         type="submit"
         disabled={!selected || pin.length < 4 || busy}
-        className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {busy ? "Signing in…" : "Open register"}
+        {busy ? "Signing inâ€¦" : "Open register"}
       </button>
     </form>
     </div>

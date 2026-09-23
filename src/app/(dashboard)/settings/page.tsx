@@ -1,4 +1,4 @@
-import { getStoreSettings } from "@/app/actions/settings";
+﻿import { getStoreSettings } from "@/app/actions/settings";
 import SettingsForm from "./SettingsForm";
 
 /**
@@ -6,11 +6,11 @@ import SettingsForm from "./SettingsForm";
  *
  * A Server Component: it reads the single (if any) settings row from the DB via
  * `getStoreSettings()` and hands it as props to the client `SettingsForm`. The
- * tuning knobs the manager can change here — store name/contact info, the sales-
- * tax rate, and the currency glyph — are intended to drive POS checkout and
+ * tuning knobs the manager can change here â€” store name/contact info, the sales-
+ * tax rate, and the currency glyph â€” are intended to drive POS checkout and
  * receipts (today those are hardcoded constants; this page externalizes them).
  *
- * Unlike the suppliers page there's no table or filtering — settings are one
+ * Unlike the suppliers page there's no table or filtering â€” settings are one
  * row, so this is a form page, not a list page. The `(dashboard)` route group is
  * folder-only, so the public path is `/settings` (the sidebar already links
  * here).
@@ -27,7 +27,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
           Store Settings
         </h1>
         <p className="text-sm text-slate-500">
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
               Last edited{" "}
               <time
                 dateTime={settings.updatedAt.toISOString()}
-                className="font-medium text-slate-900"
+                className="font-medium text-slate-100"
               >
                 {settings.updatedAt.toLocaleDateString(undefined, {
                   year: "numeric",

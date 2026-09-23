@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { updateEmployee } from './actions'
@@ -45,7 +45,7 @@ export default function EditEmployeeDialog({
         setError(res.error ?? 'Something went wrong')
       }
     } finally {
-      // Always clear pending — if the action rejects we'd otherwise leave the
+      // Always clear pending â€” if the action rejects we'd otherwise leave the
       // submit button disabled forever with no path to retry.
       setPending(false)
     }
@@ -56,29 +56,29 @@ export default function EditEmployeeDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        className="inline-flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-1 text-sm font-medium text-slate-200 hover:bg-slate-950"
       >
         Edit
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold">Edit Employee</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+            <h2 className="mb-4 text-lg font-semibold text-slate-100">Edit Employee</h2>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-200">
                   Name
                 </label>
                 <input
                   name="name"
                   required
                   defaultValue={employee.name}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-200">
                   Email
                 </label>
                 <input
@@ -86,13 +86,13 @@ export default function EditEmployeeDialog({
                   type="email"
                   required
                   defaultValue={employee.email}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-200">
                   PIN{' '}
-                  <span className="font-normal text-gray-400">
+                  <span className="font-normal text-slate-400">
                     (leave blank to keep current)
                   </span>
                 </label>
@@ -101,18 +101,18 @@ export default function EditEmployeeDialog({
                   inputMode="numeric"
                   pattern="\d{4,6}"
                   maxLength={6}
-                  placeholder="4–6 digits"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="4â€“6 digits"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-200">
                   Role
                 </label>
                 <select
                   name="role"
                   defaultValue={employee.role}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
@@ -120,35 +120,36 @@ export default function EditEmployeeDialog({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-200">
                   Password{' '}
-                  <span className="font-normal text-gray-400">
+                  <span className="font-normal text-slate-400">
                     (leave blank to keep current)
                   </span>
                 </label>
                 <input
                   name="password"
                   type="password"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-400">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  disabled={pending}
+                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? 'Saving...' : 'Save'}
+                  {pending ? 'Savingâ€¦' : 'Save'}
                 </button>
               </div>
             </form>
