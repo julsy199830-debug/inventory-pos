@@ -1,8 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'node:path';
+
+const E2E_DB_PATH = path.resolve(__dirname, 'test-db', 'e2e.db');
+const E2E_DATABASE_URL = `file:./${path.relative(process.cwd(), E2E_DB_PATH).replace(/\\/g, '/')}`;
+
+const E2E_PREPARE = 'node tests/setup/prepare-e2e-db.cjs';
+
+// Playwright test workers and the web server must resolve the same disposable DB.
+process.env.DATABASE_URL = E2E_DATABASE_URL;
 
 /**
- * Playwright E2E test configuration for InvPos
- * See https://playwright.dev/docs/test-configuration
+ * Playwright E2E test configuration for InvPos.
+ * The web server and global setup use a disposable copy of the root database.
  */
 export default defineConfig({
   testDir: './tests/e2e',
@@ -28,15 +37,10 @@ export default defineConfig({
    * concurrent writers against the single dev.db file. Plain relative path
    * (no require.resolve) because the TS config may load as ESM. */
   globalSetup: './tests/setup/global-setup',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  /* Shared settings for all projects. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: 'http://localhost:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-
-    /* Increase timeouts for slower CI/hydration */
     actionTimeout: 15000,
     navigationTimeout: 15000,
   },
@@ -71,9 +75,10 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: `${E2E_PREPARE} && npm run dev`,
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120000,
+    env: { DATABASE_URL: E2E_DATABASE_URL },
   },
 });

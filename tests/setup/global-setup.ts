@@ -1,5 +1,6 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { E2E_DATABASE_URL, assertE2EDatabaseUrl } from './e2e-database';
 
 /**
  * One-time, serial database setup for the whole E2E suite.
@@ -25,12 +26,18 @@ import path from 'node:path';
  * non-module package.json.
  */
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const TSX_CLI = path.resolve(PROJECT_ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 
 async function globalSetup() {
-  execSync('npx tsx prisma/seed.ts', {
+  assertE2EDatabaseUrl();
+  // This must run against the disposable E2E database, never the root dev.db.
+  // Invoke the local tsx CLI through Node to avoid Windows .cmd spawning EINVAL
+  // failures in Playwright's global-setup process.
+  execFileSync(process.execPath, [TSX_CLI, 'prisma/seed.ts'], {
     cwd: PROJECT_ROOT,
     stdio: 'inherit',
     timeout: 120000,
+    env: { ...process.env, DATABASE_URL: E2E_DATABASE_URL },
   });
 }
 

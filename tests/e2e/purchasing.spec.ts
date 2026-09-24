@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import Database from 'better-sqlite3';
-import path from 'node:path';
+import { getE2EDatabasePath } from '../setup/e2e-database';
 
 /**
  * Purchasing (Purchase Orders) — Phase 1 UI smoke tests.
@@ -15,8 +15,8 @@ import path from 'node:path';
  *  - NO mid-suite reseeding. The spec creates ONE disposable PO through the UI
  *    and deletes it again in afterAll — zero impact on the seeded baseline.
  *  - Runs under --workers=1 (suite standard) so state transitions are ordered.
- *  - Direct DB access honors DATABASE_URL so the suite can run against an
- *    isolated copy; it falls back to the repo-root dev.db otherwise.
+ *  - Direct DB access requires the Playwright-provided disposable DATABASE_URL;
+ *    it never falls back to the repository's development database.
  */
 
 interface SqliteConn {
@@ -28,9 +28,7 @@ interface SqliteConn {
   close(): void;
 }
 
-const DB_PATH = process.env.DATABASE_URL
-  ? path.resolve(process.cwd(), process.env.DATABASE_URL.replace(/^file:/, ''))
-  : path.resolve(__dirname, '..', '..', 'dev.db');
+const DB_PATH = getE2EDatabasePath();
 
 function db(): SqliteConn {
   return new Database(DB_PATH) as unknown as SqliteConn;

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import Database from 'better-sqlite3';
-import path from 'node:path';
+import { getE2EDatabasePath } from '../setup/e2e-database';
 import { randomUUID } from 'node:crypto';
 
 interface SqliteConn { prepare(sql: string): { get(...args: unknown[]): unknown; run(...args: unknown[]): unknown }; close(): void }
-const DB_PATH = process.env.DATABASE_URL ? path.resolve(process.cwd(), process.env.DATABASE_URL.replace(/^file:/, '')) : path.resolve(__dirname, '..', '..', 'dev.db');
+const DB_PATH = getE2EDatabasePath();
 function db(): SqliteConn { return new Database(DB_PATH) as unknown as SqliteConn; }
 
 let poId = '';

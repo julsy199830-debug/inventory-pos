@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import Database from 'better-sqlite3';
-import path from 'node:path';
+import { getE2EDatabasePath } from '../setup/e2e-database';
 
 /**
  * Employee PIN write-path tests (Priority 2 — retirement).
@@ -40,11 +40,8 @@ interface SqliteConn {
   close(): void;
 }
 
-// Honors DATABASE_URL (set by Playwright runs) so the suite can run against an
-// isolated copy of the database; falls back to the repo-root dev.db otherwise.
-const DB_PATH = process.env.DATABASE_URL
-  ? path.resolve(process.cwd(), process.env.DATABASE_URL.replace(/^file:/, ""))
-  : path.resolve(__dirname, '..', '..', 'dev.db');
+// Playwright must provide the disposable database URL; there is no dev.db fallback.
+const DB_PATH = getE2EDatabasePath();
 
 function db(): SqliteConn {
   return new Database(DB_PATH) as unknown as SqliteConn;
