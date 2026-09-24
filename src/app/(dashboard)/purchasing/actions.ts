@@ -87,11 +87,16 @@ export type PoStatus = (typeof PO_STATUSES)[number];
 // Phase 1 + Phase 2 allowed transitions.
 // Phase 1: DRAFT → ORDERED, DRAFT → CANCELLED, ORDERED → CANCELLED
 // Phase 2: ORDERED → PARTIALLY_RECEIVED, ORDERED → RECEIVED,
-//          PARTIALLY_RECEIVED → RECEIVED, PARTIALLY_RECEIVED → CANCELLED
+//          PARTIALLY_RECEIVED → RECEIVED
+//
+// Cancellation stays Phase 1-only (DRAFT/ORDERED). A PARTIALLY_RECEIVED PO is
+// deliberately NOT cancellable: inventory has already been committed against
+// it, and the "cancel the remaining balance" workflow was never specified — so
+// Phase 2 does not invent one.
 const ALLOWED_TRANSITIONS: Record<PoStatus, PoStatus[]> = {
   DRAFT: ["ORDERED", "CANCELLED"],
   ORDERED: ["CANCELLED", "PARTIALLY_RECEIVED", "RECEIVED"],
-  PARTIALLY_RECEIVED: ["CANCELLED", "RECEIVED"],
+  PARTIALLY_RECEIVED: ["RECEIVED"],
   RECEIVED: [],
   CANCELLED: [],
 };
@@ -110,6 +115,8 @@ export type ReceivePoResult = ActionResult<{
   status: string;
   totalReceived: number;
   totalOrdered: number;
+  /** Client-generated idempotency key; the server returns the same receipt for retries. */
+  requestKey: string;
 }>;
 // ── Reader/query result shapes ─────────────────────────────────────────
 // Read helpers below are plain queries (not Server Actions performing writes).
@@ -130,6 +137,7 @@ export type PoItemDetail = {
   productId: string;
   productName: string;
   productSku: string;
+  stock: number;
   orderedQty: number;
   unitCost: number;
   receivedQty: number;
@@ -566,6 +574,10 @@ export async function receivePurchaseOrder(
   if (!id) return { ok: false, error: "Missing purchase order id." };
 
   const notes = load(formData, "notes");
+  const requestKey = load(formData, "requestKey");
+  if (!requestKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey)) {
+    return { ok: false, error: "A valid receiving request is required. Refresh and try again." };
+  }
 
   // Parse receiving quantities per line.
   const lineCountStr = load(formData, "lineCount");
@@ -594,7 +606,15 @@ export async function receivePurchaseOrder(
     }
   }
 
-  // At least one line must have a positive quantity.
+  // At least one line must have a positive quantity. Reject duplicate PO-line
+  // submissions too: otherwise a stale form could append the same line twice.
+  const requested = new Map<string, number>();
+  for (const line of receiptLines) {
+    if (requested.has(line.itemId)) {
+      return { ok: false, error: "Each purchase-order line may only appear once in a receipt." };
+    }
+    requested.set(line.itemId, line.qty);
+  }
   const hasPositive = receiptLines.some((l) => l.qty > 0);
   if (!hasPositive) {
     return { ok: false, error: "At least one line must have a positive received quantity." };
@@ -620,6 +640,27 @@ export async function receivePurchaseOrder(
 
       if (!po) {
         throw new Error("PURCHASE_ORDER_NOT_FOUND");
+      }
+
+      // Retry of the same browser request: return the original receipt rather
+      // than incrementing stock a second time. The key is unique in the DB.
+      const existing = await tx.purchaseReceipt.findUnique({
+        where: { requestKey },
+        include: { purchaseOrder: { include: { items: true } } },
+      });
+      if (existing) {
+        if (existing.purchaseOrderId !== po.id) {
+          throw new Error("This receiving request was already used for another purchase order.");
+        }
+        const totalOrdered = existing.purchaseOrder.items.reduce((s: number, it: { orderedQty: number }) => s + it.orderedQty, 0);
+        const totalReceived = existing.purchaseOrder.items.reduce((s: number, it: { receivedQty: number }) => s + it.receivedQty, 0);
+        return {
+          referenceNumber: existing.referenceNumber,
+          status: existing.purchaseOrder.status as PoStatus,
+          totalReceived,
+          totalOrdered,
+          requestKey,
+        };
       }
 
       if (!RECEIVEABLE_STATUSES.includes(po.status as PoStatus)) {
@@ -659,6 +700,7 @@ export async function receivePurchaseOrder(
           receivedAt: new Date(),
           referenceNumber,
           notes: notes ?? undefined,
+          requestKey,
         },
       });
 
@@ -678,10 +720,16 @@ export async function receivePurchaseOrder(
           },
         });
 
-        await tx.purchaseOrderItem.update({
-          where: { id: item.id },
+        // Compare-and-set prevents two concurrent receiving requests from both
+        // accepting the same stale remaining quantity. A losing transaction
+        // throws and rolls back all of its own writes.
+        const updated = await tx.purchaseOrderItem.updateMany({
+          where: { id: item.id, receivedQty: item.receivedQty },
           data: { receivedQty: { increment: line.qty } },
         });
+        if (updated.count !== 1) {
+          throw new Error("This purchase order changed while you were receiving stock. Refresh and try again.");
+        }
 
         await tx.product.update({
           where: { id: item.product.id },
@@ -725,7 +773,7 @@ export async function receivePurchaseOrder(
         });
       }
 
-      return { referenceNumber, status, totalReceived, totalOrdered };
+      return { referenceNumber, status, totalReceived, totalOrdered, requestKey };
     });
 
     revalidatePath("/purchasing");
@@ -741,10 +789,14 @@ export async function receivePurchaseOrder(
     ) {
       return { ok: false, error: err.message };
     }
+    if (err?.message?.includes("already used") || err?.message?.includes("changed while")) {
+      return { ok: false, error: err.message };
+    }
     if (
       err?.message?.includes("not found on this purchase order") ||
       err?.message?.includes("cannot receive") ||
-      err?.message?.includes("positive")
+      err?.message?.includes("positive") ||
+      err?.message?.includes("purchase-order line")
     ) {
       return { ok: false, error: err.message };
     }
@@ -835,7 +887,7 @@ export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
       createdBy: { select: { id: true, name: true } },
       items: {
         orderBy: { createdAt: "asc" },
-        include: { product: { select: { name: true, sku: true } } },
+        include: { product: { select: { name: true, sku: true, stock: true } } },
       },
     },
   });
@@ -845,6 +897,7 @@ export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
     productId: it.productId,
     productName: it.product.name,
     productSku: it.product.sku,
+    stock: it.product.stock,
     orderedQty: it.orderedQty,
     unitCost: it.unitCost,
     receivedQty: it.receivedQty,

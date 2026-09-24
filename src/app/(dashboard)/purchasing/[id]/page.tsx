@@ -4,6 +4,8 @@ import { getPurchaseOrder } from "../actions";
 import PoStatusBadge from "../_components/PoStatusBadge";
 import OrderPurchaseOrderButton from "../OrderPurchaseOrderButton";
 import CancelPurchaseOrderButton from "../CancelPurchaseOrderButton";
+import ReceiveStockDialog from "../ReceiveStockDialog";
+import { getReceivingHistory } from "../actions";
 
 /** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
 function formatPrice(value: number): string {
@@ -34,10 +36,8 @@ function formatDateTime(value: Date): string {
 /**
  * Purchase order detail.
  *
- * Pure Server Component over `getPurchaseOrder()`. Phase 1 is read + status
- * transitions only (DRAFT → ORDERED, DRAFT/ORDERED → CANCELLED): nothing on
- * this page touches `Product.stock`, `Product.cost`, or `StockMovement` —
- * receiving arrives in a later phase.
+ * Pure Server Component over `getPurchaseOrder()`. Status actions are
+ * status-only; stock changes happen only through the receiving receipt flow.
  */
 export default async function PurchaseOrderDetailPage({
   params,
@@ -53,6 +53,8 @@ export default async function PurchaseOrderDetailPage({
   // Phase 1 transitions only; same buttons as the list rows.
   const canOrder = po.status === "DRAFT";
   const canCancel = po.status === "DRAFT" || po.status === "ORDERED";
+  const canReceive = po.status === "ORDERED" || po.status === "PARTIALLY_RECEIVED";
+  const history = canReceive || po.status === "RECEIVED" ? await getReceivingHistory(po.id) : [];
 
   const meta = [
     { label: "Supplier", value: po.supplierName },
@@ -99,6 +101,21 @@ export default async function PurchaseOrderDetailPage({
               {canCancel && (
                 <CancelPurchaseOrderButton id={po.id} poNumber={po.poNumber} />
               )}
+              {canReceive && (
+                <ReceiveStockDialog
+                  purchaseOrderId={po.id}
+                  poNumber={po.poNumber}
+                  supplierName={po.supplierName}
+              items={po.items.map((item, index) => ({
+                    lineNumber: index + 1,
+                    itemId: item.id,
+                    productName: item.productName,
+                    productSku: item.productSku,
+                    orderedQty: item.orderedQty,
+                    receivedQty: item.receivedQty,
+                  }))}
+                />
+              )}
             </div>
           )}
         </header>
@@ -140,6 +157,7 @@ export default async function PurchaseOrderDetailPage({
                 <th scope="col" className="px-4 py-3 font-medium">Product</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Ordered</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Received</th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">Current stock</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Unit cost</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Line total</th>
               </tr>
@@ -165,6 +183,9 @@ export default async function PurchaseOrderDetailPage({
                       {item.receivedQty.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                      {item.stock.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
                       {formatPrice(item.unitCost)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-100">
@@ -177,7 +198,7 @@ export default async function PurchaseOrderDetailPage({
             <tfoot className="border-t border-slate-800 bg-slate-950/60">
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-3 text-right text-xs uppercase tracking-wide text-slate-500"
                 >
                   Total ({po.itemCount.toLocaleString()}{" "}
@@ -195,10 +216,29 @@ export default async function PurchaseOrderDetailPage({
         </div>
       </div>
 
-      <p className="text-xs text-slate-600">
-        Phase 1: ordering and cancelling are status-only changes — stock is not
-        affected until the receiving phase.
-      </p>
+        <p className="text-xs text-slate-600">
+          Receiving records each delivery and increases product stock atomically. Purchase costs are retained on the PO line; Product.cost is not changed.
+        </p>
+
+        {history.length > 0 && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-100">Receiving history</h2>
+            <div className="mt-3 space-y-3">
+              {history.map((receipt) => (
+                <div key={receipt.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="font-mono text-slate-200">{receipt.referenceNumber}</span>
+                    <span className="text-slate-500">{formatDateTime(receipt.receivedAt)} · {receipt.receivedByName}</span>
+                  </div>
+                  {receipt.notes && <p className="mt-1 text-slate-400">{receipt.notes}</p>}
+                  <ul className="mt-2 space-y-1 text-slate-300">
+                    {receipt.items.map((item) => <li key={`${receipt.id}-${item.productSku}`}>{item.productName} ({item.productSku}): {item.receivedQty}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
     </div>
   );

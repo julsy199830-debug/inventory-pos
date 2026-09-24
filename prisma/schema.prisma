@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(uuid())
-  name             String
-  email            String            @unique
-  passwordHash     String
+  id                     String            @id @default(uuid())
+  name                   String
+  email                  String            @unique
+  passwordHash           String
   /// Scrypt hash of the login PIN in the versioned wire format
   /// `scrypt$v1$N$r$p$saltHex$hashHex` produced by `hashPin` in
   /// `src/lib/pin.ts`, and verified with the dedicated `verifyPin`
@@ -21,18 +21,18 @@ model User {
   /// The 4–6 digit shape rule lives at the action layer (`PIN_PATTERN`);
   /// the string form preserves leading zeros ("0000", "0123").
   /// No index: lookups are by `id`, never by hash.
-  pinHash          String
+  pinHash                String
   /// Whether this employee can currently sign in / is staffed. Distinguished
   /// from hard delete so an offboarded cashier's audit trail survives while
   /// their login is revoked — `toggleEmployeeStatus` flips this bit.
-  active           Boolean           @default(true)
-  role             String            @default("CASHIER")
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-     customerPayments CustomerPayment[]
-  sales            Sale[]
-  shifts           Shift[]
-  purchaseOrders   PurchaseOrder[]
+  active                 Boolean           @default(true)
+  role                   String            @default("CASHIER")
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  customerPayments       CustomerPayment[]
+  sales                  Sale[]
+  shifts                 Shift[]
+  purchaseOrders         PurchaseOrder[]
   receivedPurchaseOrders PurchaseReceipt[]
 }
 
@@ -348,23 +348,23 @@ model PurchaseOrder {
   notes        String?
   createdById  String
   createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
-    items        PurchaseOrderItem[]
+  items        PurchaseOrderItem[]
   receipts     PurchaseReceipt[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid())
+  id              String                @id @default(uuid())
   purchaseOrderId String
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   productId       String
-  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product         Product               @relation(fields: [productId], references: [id], onDelete: Restrict)
   orderedQty      Int
   unitCost        Float
-    receivedQty     Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  receivedQty     Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   receiptItems    PurchaseReceiptItem[]
 }
 
@@ -396,6 +396,9 @@ model PurchaseReceipt {
   /// monthly counter so receipts never collide with POs or each other).
   referenceNumber String                @unique
   notes           String?
+  /// Stable UUID supplied by the receiving dialog. A retry with the same key
+  /// returns the original receipt instead of creating a second stock receipt.
+  requestKey      String?               @unique
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
@@ -404,14 +407,14 @@ model PurchaseReceipt {
 }
 
 model PurchaseReceiptItem {
-  id                String           @id @default(uuid())
-  purchaseReceiptId String
+  id                  String            @id @default(uuid())
+  purchaseReceiptId   String
   purchaseOrderItemId String
-  receivedQty       Int
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  purchaseReceipt   PurchaseReceipt  @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
-  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+  receivedQty         Int
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  purchaseReceipt     PurchaseReceipt   @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
 }
 
 model ReceiptNumberCounter {
