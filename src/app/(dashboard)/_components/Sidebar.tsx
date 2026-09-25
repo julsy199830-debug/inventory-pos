@@ -101,18 +101,18 @@ export default function Sidebar({
   return (
     <aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
       {/* Branding */}
-      <div className="mb-7 flex items-center px-4">
+      <div className="mb-4 flex items-center px-3">
         <Link
           href="/"
-          className="group flex w-full items-center gap-3.5 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
+          className="group flex w-full items-center gap-3 rounded-xl px-1.5 py-1.5 transition-colors hover:bg-slate-50"
           aria-label="InvPos Home"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-sm font-bold tracking-tight text-white shadow-md shadow-indigo-600/20">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-sm font-bold tracking-tight text-white shadow-md shadow-indigo-600/20">
             IP
           </span>
           <span className="min-w-0 leading-none">
-            <span className="block truncate text-[1.05rem] font-bold tracking-tight text-slate-900">InvPos</span>
-            <span className="mt-1.5 block truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inventory &amp; Sales</span>
+            <span className="block truncate text-base font-bold tracking-tight text-slate-900">InvPos</span>
+            <span className="mt-1 block truncate text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inventory &amp; Sales</span>
           </span>
         </Link>
       </div>

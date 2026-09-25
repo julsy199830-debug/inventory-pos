@@ -35,6 +35,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<CustomerRow | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
   const [paying, setPaying] = useState<CustomerRow | null>(null);
   const [payment, setPayment] = useState({ amount: "", method: "CASH", notes: "" });
@@ -71,6 +72,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
     const res = editing ? await updateCustomer(editing.id, payload) : await createCustomer(payload);
     setBusy(false);
     if (!res.ok) return setError(res.error);
+    setFormOpen(false);
     setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
     setEditing(null);
     await reload();
@@ -142,6 +144,8 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             className={primary}
             onClick={() => {
               setEditing(null);
+              setFormOpen(true);
+              setError(null);
               setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
             }}
           >
@@ -209,6 +213,8 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                       className={ghost}
                       onClick={() => {
                         setEditing(r);
+                        setFormOpen(true);
+                        setError(null);
                         setForm({
                           name: r.name,
                           email: r.email ?? "",
@@ -234,10 +240,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
         </div>
       </div>
 
-      {(form.name !== "" || editing) && (
+      {formOpen && (
         <Modal
           title={editing ? "Edit Customer" : "Add Customer"}
           onClose={() => {
+            setFormOpen(false);
             setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
             setEditing(null);
           }}
@@ -249,7 +256,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             <input className={input} placeholder="Credit limit (0 = no credit)" type="number" min="0" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} />
             <textarea className={input} placeholder="Notes" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" className={ghost} onClick={() => setEditing(null)}>Cancel</button>
+              <button type="button" className={ghost} onClick={() => { setFormOpen(false); setEditing(null); setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" }); }}>Cancel</button>
               <button type="submit" className={primary} disabled={busy}>{busy ? "Saving…" : editing ? "Save Changes" : "Add Customer"}</button>
             </div>
           </form>
