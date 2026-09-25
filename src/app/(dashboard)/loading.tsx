@@ -1,11 +1,11 @@
-﻿/**
+/**
  * Dashboard route-group loading skeleton.
  *
  * Streamed automatically by the router into the `(dashboard)` layout's
  * <main> while any dashboard `page.tsx` (an async Server Component awaiting
- * its Prisma queries) is rendering. The sidebar stays live â€” this only
- * replaces the content column â€” and the structure mirrors the common page
- * shape (breadcrumb â†’ header â†’ toolbar â†’ table card), so settling into real
+ * its Prisma queries) is rendering. The sidebar stays live — this only
+ * replaces the content column — and the structure mirrors the common page
+ * shape (breadcrumb → header → toolbar → table card), so settling into real
  * content is a fade rather than a layout jump.
  * `animate-pulse` (Tailwind) gives the gentle breathing shimmer.
  */

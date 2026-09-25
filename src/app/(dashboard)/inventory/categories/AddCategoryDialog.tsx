@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 import { createCategory, type CategoryResult } from "../actions";
@@ -6,11 +6,11 @@ import { createCategory, type CategoryResult } from "../actions";
 /**
  * Modal dialog for creating a new category.
  *
- * Mirrors the inventory/suppliers `Add<â€¦>Dialog` shells: a self-contained
+ * Mirrors the inventory/suppliers `Add<…>Dialog` shells: a self-contained
  * client island that owns its trigger + modal, submits via a manual async
  * handler that `await`s the raw {@link createCategory} Server Action directly
  * (the "Event Handlers" convention), and closes + resets the form on success.
- * We deliberately don't use `useActionState` â€” reacting to its success would
+ * We deliberately don't use `useActionState` — reacting to its success would
  * mean `setState` inside an effect keyed on state, which the
  * `react-hooks/set-state-in-effect` lint flags as a derived-state cascade; calling
  * the action ourselves lets the close/reset live in the submit handler, where
@@ -150,7 +150,7 @@ export default function AddCategoryDialog() {
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Savingâ€¦" : "Add category"}
+                  {pending ? "Saving…" : "Add category"}
                 </button>
               </div>
             </form>
@@ -164,7 +164,7 @@ export default function AddCategoryDialog() {
 const inputCls =
   "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper â€” keeps the form DRY (matches the sibling dialogs). */
+/** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
 function Field({
   label,
   htmlFor,

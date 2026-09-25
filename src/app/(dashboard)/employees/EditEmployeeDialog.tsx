@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { updateEmployee } from './actions'
@@ -45,7 +45,7 @@ export default function EditEmployeeDialog({
         setError(res.error ?? 'Something went wrong')
       }
     } finally {
-      // Always clear pending â€” if the action rejects we'd otherwise leave the
+      // Always clear pending — if the action rejects we'd otherwise leave the
       // submit button disabled forever with no path to retry.
       setPending(false)
     }
@@ -101,7 +101,7 @@ export default function EditEmployeeDialog({
                   inputMode="numeric"
                   pattern="\d{4,6}"
                   maxLength={6}
-                  placeholder="4â€“6 digits"
+                  placeholder="4–6 digits"
                   className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
@@ -149,7 +149,7 @@ export default function EditEmployeeDialog({
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? 'Savingâ€¦' : 'Save'}
+                  {pending ? 'Saving…' : 'Save'}
                 </button>
               </div>
             </form>

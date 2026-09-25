@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -11,7 +11,7 @@ import {
  * Modal dialog for editing an existing category: rename + low-stock threshold.
  *
  * Two separate Server Actions back it ({@link renameCategory} for the name,
- * {@link setCategoryThreshold} for the cutoff) â€” the schema models them as
+ * {@link setCategoryThreshold} for the cutoff) — the schema models them as
  * independent columns and the actions are independently idempotent, so the save
  * handler fires only the ones that actually changed (no-op renames or unchanged
  * thresholds don't round-trip). On the first failure we stop and surface the
@@ -48,7 +48,7 @@ export default function EditCategoryDialog({
     const name = String(formData.get("name") ?? "").trim();
     const thresholdStr = String(formData.get("threshold") ?? "").trim();
 
-    // Only fire the actions for fields the user actually changed â€” a no-op
+    // Only fire the actions for fields the user actually changed — a no-op
     // rename (same name) or an unchanged threshold avoids a needless write and
     // its (redundant but harmless) revalidation.
     const nameChanged = name !== "" && name !== category.name;
@@ -57,7 +57,7 @@ export default function EditCategoryDialog({
       thresholdStr !== "" && Number.isFinite(threshold) && threshold !== category.lowStockThreshold;
 
     if (!nameChanged && !thresholdChanged) {
-      // Nothing to do â€” close as if saved.
+      // Nothing to do — close as if saved.
       setOpen(false);
       return;
     }
@@ -102,7 +102,7 @@ export default function EditCategoryDialog({
 
   return (
     <>
-      {/* Trigger â€” pencil icon, matches the trash button's sizing/hover style */}
+      {/* Trigger — pencil icon, matches the trash button's sizing/hover style */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -165,7 +165,7 @@ export default function EditCategoryDialog({
             </div>
 
             <form onSubmit={onSubmit} className="space-y-4 px-5 py-5">
-              {/* Hidden ID â€” travels in the same payload as the fields so the
+              {/* Hidden ID — travels in the same payload as the fields so the
                   server actions know which row to update. */}
               <input type="hidden" name="id" value={category.id} />
 
@@ -223,7 +223,7 @@ export default function EditCategoryDialog({
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Savingâ€¦" : "Save changes"}
+                  {pending ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -237,7 +237,7 @@ export default function EditCategoryDialog({
 const inputCls =
   "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper â€” keeps the form DRY (matches the sibling dialogs). */
+/** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
 function Field({
   label,
   htmlFor,

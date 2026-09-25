@@ -808,6 +808,9 @@ export async function receivePurchaseOrder(
 
 /** List all POs newest-first with computed line totals. */
 export async function getPurchaseOrders(): Promise<PoListItem[]> {
+  const denied = await staffGuardError();
+  if (denied) throw new Error(denied);
+
   const rows = await prisma.purchaseOrder.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -849,6 +852,9 @@ export type ReceiptHistoryView = {
  * → product so each line shows name, SKU, and quantity received.
  */
 export async function getReceivingHistory(poId: string): Promise<ReceiptHistoryView[]> {
+  const denied = await staffGuardError();
+  if (denied) throw new Error(denied);
+
   const rows = await prisma.purchaseReceipt.findMany({
     where: { purchaseOrderId: poId },
     orderBy: { receivedAt: "desc" },
@@ -880,6 +886,9 @@ export async function getReceivingHistory(poId: string): Promise<ReceiptHistoryV
 
 /** Fetch one PO with lines plus computed totals. */
 export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
+  const denied = await staffGuardError();
+  if (denied) throw new Error(denied);
+
   const po = await prisma.purchaseOrder.findUnique({
     where: { id },
     include: {
@@ -924,6 +933,9 @@ export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
 
 /** Suppliers for the PO create/edit select, ordered by name. */
 export async function getSuppliersForSelect(): Promise<{ id: string; name: string }[]> {
+  const denied = await staffGuardError();
+  if (denied) throw new Error(denied);
+
   return prisma.supplier.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true },
@@ -932,6 +944,9 @@ export async function getSuppliersForSelect(): Promise<{ id: string; name: strin
 
 /** Products for the PO line-item select, ordered by name. */
 export async function getProductsForSelect(): Promise<{ id: string; name: string; sku: string }[]> {
+  const denied = await staffGuardError();
+  if (denied) throw new Error(denied);
+
   return prisma.product.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true, sku: true },

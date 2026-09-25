@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { deleteEmployee } from './actions'
 
@@ -6,14 +6,14 @@ import { deleteEmployee } from './actions'
  * Per-row trash button that deletes an employee by ID.
  *
  * `deleteEmployee` is a Server Action invoked through the `<form action=...>`
- * prop, so submission works with progressive enhancement (JS off â†’ plain
+ * prop, so submission works with progressive enhancement (JS off → plain
  * POST). The confirm gate needs client JS, so this is a Client Component:
  * we intercept `onSubmit` to confirm; cancelling the event stops the POST.
  * On confirm, the action runs, deletes the row (cascading shifts; sales are
- * SetNull per the schema), and `revalidatePath` swaps the page â€” the row
+ * SetNull per the schema), and `revalidatePath` swaps the page — the row
  * vanishes on its own, so no local pending state is needed.
  *
- * Like `DeleteCustomerButton`, the row's `id` travels as a hidden field here â€”
+ * Like `DeleteCustomerButton`, the row's `id` travels as a hidden field here —
  * the action reads it via `load(formData, "id")`.
  */
 export default function DeleteEmployeeButton({

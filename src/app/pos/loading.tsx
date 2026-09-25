@@ -1,10 +1,10 @@
-﻿/**
+/**
  * POS loading skeleton.
  *
  * Streamed automatically by the router while `pos/page.tsx` (an async Server
  * Component awaiting its Prisma queries) is rendering. Mirrors the register's
- * split-screen shell â€” header â†’ catalog toolbar + product tiles on the left,
- * cart skeleton on the right â€” so the register feels instant instead of
+ * split-screen shell — header → catalog toolbar + product tiles on the left,
+ * cart skeleton on the right — so the register feels instant instead of
  * hanging on the DB read. `animate-pulse` (Tailwind) gives the shimmer.
  */
 export default function PosLoading() {

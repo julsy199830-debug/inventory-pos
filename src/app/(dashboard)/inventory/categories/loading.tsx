@@ -1,9 +1,9 @@
-﻿/**
+/**
  * Categories loading skeleton.
  *
  * Streamed automatically by the router while the categories `page.tsx` (an
  * async Server Component awaiting its Prisma queries) is rendering. Mirrors the
- * inventory loader's structure (header â†’ controls â†’ table) so settling into the
+ * inventory loader's structure (header → controls → table) so settling into the
  * real content is a fade rather than a layout jump; `animate-pulse` (Tailwind)
  * gives the gentle breathing shimmer.
  */
@@ -63,5 +63,5 @@ export default function CategoriesLoading() {
 }
 
 /** Number of placeholder rows. Six reads as "loading a list" without overflowing
- *  a typical viewport â€” the category set is small, so six is plenty. */
+ *  a typical viewport — the category set is small, so six is plenty. */
 const ROWS = Array.from({ length: 6 }, (_, i) => i);

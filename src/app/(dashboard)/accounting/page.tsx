@@ -1,4 +1,4 @@
-﻿import { getStoreSettings } from "@/app/actions/settings";
+import { getStoreSettings } from "@/app/actions/settings";
 import {
   getFinancialSummary,
   type ProductBreakdownRow,
@@ -10,7 +10,7 @@ import RangeSelector from "./RangeSelector";
  * `RangeSelector` client island writes into the URL (`?range=<preset>`), so the
  * two stay in sync by sharing this one source of truth. "custom" is a placeholder
  * for a future date-picker and currently collapses to the same window as "30d"
- * â€” but we still accept the token so the URL stays meaningful when the picker
+ * — but we still accept the token so the URL stays meaningful when the picker
  * lands, and so an unknown or missing token has a deterministic fallback.
  */
 type RangePreset = "today" | "7d" | "30d" | "custom";
@@ -27,7 +27,7 @@ const PRESET_LABELS: Record<RangePreset, string> = {
 };
 
 /** Normalize an arbitrary `?range=` query value into a known preset, falling
- * back to the default on anything unrecognized (including array values â€”
+ * back to the default on anything unrecognized (including array values —
  * `?range=today&range=7d` would otherwise slip a string[] through). */
 function resolvePreset(value: string | string[] | undefined): RangePreset {
   const token = Array.isArray(value) ? value[0] : value;
@@ -38,7 +38,7 @@ function resolvePreset(value: string | string[] | undefined): RangePreset {
 
 /** Compute the [start, end] date window for a preset, inclusive of both
  * endpoints. `end` is always today; `start` steps back from today. We pass
- * naive date-only values â€” `getFinancialSummary` re-normalizes the hours to a
+ * naive date-only values — `getFinancialSummary` re-normalizes the hours to a
  * full-day `[00:00:00.000, 23:59:59.999]` bound itself, so the helper owns the
  * edge semantics and this stays a pure calendar computation. */
 function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
@@ -51,16 +51,16 @@ function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
 
 /** Format a number as currency using the store's symbol. We read the symbol
  * from StoreSetting (the settings page externalizes it for exactly this
- * reason); if no settings row exists yet we fall back to "â‚±" rather than
+ * reason); if no settings row exists yet we fall back to "₱" rather than
  * refusing to render. The amount is formatted with grouping and two decimals,
- * independent of the glyph â€” yen etc. still get the symbol prepended. */
+ * independent of the glyph — yen etc. still get the symbol prepended. */
 function money(amount: number, symbol: string): string {
   const body = Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
   const sign = amount < 0 ? "-" : "";
-  const glyph = symbol || "â‚±";
+  const glyph = symbol || "₱";
   return `${sign}${glyph}${body}`;
 }
 
@@ -74,7 +74,7 @@ function percent(value: number): string {
 export default async function AccountingPage({
   searchParams,
 }: {
-  // searchParams is a Promise in this Next.js version â€” see the page file
+  // searchParams is a Promise in this Next.js version — see the page file
   // convention docs. The RangeSelector deliberately avoids `useSearchParams`
   // (which would force the route to client-render under a Suspense boundary
   // during prerender); instead the server reads the active preset here and
@@ -87,7 +87,7 @@ export default async function AccountingPage({
   // `now` anchors the window at request time. Both the window and the summary
   // are derived from it so the date label and the figures can never disagree.
   // The store's currency symbol is read in parallel so the page renders with
-  // the manager's chosen glyph rather than a hardcoded "â‚±".
+  // the manager's chosen glyph rather than a hardcoded "₱".
   const now = new Date();
   const { start, end } = windowFor(preset, now);
 
@@ -95,7 +95,7 @@ export default async function AccountingPage({
     getFinancialSummary({ startDate: start, endDate: end }),
     getStoreSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "â‚±";
+  const symbol = settings?.currencySymbol ?? "₱";
 
   const { revenue, cogs, tax, profit, margin, productBreakdown } = summary;
   const unitsSold = productBreakdown.reduce(
@@ -116,7 +116,7 @@ export default async function AccountingPage({
             <span className="font-medium text-slate-100">
               {PRESET_LABELS[preset]}
             </span>{" "}
-            â€” completed sales only.
+            — completed sales only.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export default async function AccountingPage({
 
       {/* KPI cards. Mirrors the dashboard home stat tiles; the Positive/negative
           coloring on Net Profit and the margin communicate health at a glance.
-          COGS isn't a headline card here â€” it's the difference between Total
+          COGS isn't a headline card here — it's the difference between Total
           Revenue and Net Profit, and it's already surfaced per-product in the
           breakdown below (and in `getFinancialSummary`), so the four cards stay
           to the four figures a manager reads first. */}
@@ -151,7 +151,7 @@ export default async function AccountingPage({
         />
       </div>
 
-      {/* Secondary strip: COGS and units sold. Context-only â€” COGS backs the
+      {/* Secondary strip: COGS and units sold. Context-only — COGS backs the
           Net Profit figure above, and units sold summarizes volume. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
@@ -215,7 +215,7 @@ export default async function AccountingPage({
 }
 
 /** A single KPI stat tile. `tone` optionally tints the value text so profit /
- * margin read at a glance â€” neutral by default, green for positive, red for
+ * margin read at a glance — neutral by default, green for positive, red for
  * negative. Kept as a tiny presentational helper to keep the table above flat. */
 function KpiCard({
   label,

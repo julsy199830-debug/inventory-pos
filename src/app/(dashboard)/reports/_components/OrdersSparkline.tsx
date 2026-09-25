@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useId } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -10,7 +10,7 @@ const strokeByColor = {
 } as const;
 
 /**
- * Smooth area sparkline of daily order counts â€” the mini trend behind a KPI
+ * Smooth area sparkline of daily order counts — the mini trend behind a KPI
  * tile. Axis-free by design (it's a tile footer, not an analysis chart); the
  * hover tooltip carries the day label + count. `useId()` keeps the SVG
  * gradient id unique per instance so two tiles can coexist on one page.

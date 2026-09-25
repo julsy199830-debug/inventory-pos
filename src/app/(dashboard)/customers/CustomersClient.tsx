@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import {
@@ -109,10 +109,10 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500">Directory, credit limits, and debt tracking (â€œutangâ€).</p>
+          <p className="mt-1 text-sm text-slate-500">Directory, credit limits, and debt tracking (“utang”).</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* Export CSV â€” serializes the filtered ledger (name, contacts,
+          {/* Export CSV — serializes the filtered ledger (name, contacts,
               credit limit, outstanding debt, history counts) for the
               bookkeeper. Client-side blob, no server round-trip. */}
           <button
@@ -155,7 +155,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by name, phone, or emailâ€¦"
+        placeholder="Search by name, phone, or email…"
         className={`${input} mt-4 max-w-sm`}
       />
 
@@ -175,7 +175,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             {filtered.map((r) => (
               <tr key={r.id} className="hover:bg-slate-950">
                 <td className="px-4 py-3 font-medium text-slate-100">{r.name}</td>
-                <td className="px-4 py-3 text-slate-300">{r.phone ?? "â€”"}</td>
+                <td className="px-4 py-3 text-slate-300">{r.phone ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-300">{f(r.creditLimit)}</td>
                 <td className="px-4 py-3">
                   <span className={r.currentBalance > 0 ? "font-semibold text-red-400" : "text-slate-400"}>
@@ -183,7 +183,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">
-                  {r.salesCount} sale{r.salesCount === 1 ? "" : "s"} Â· {r.paymentsCount} payment
+                  {r.salesCount} sale{r.salesCount === 1 ? "" : "s"} · {r.paymentsCount} payment
                   {r.paymentsCount === 1 ? "" : "s"}
                 </td>
                 <td className="px-4 py-3">
@@ -248,14 +248,14 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             <textarea className={input} placeholder="Notes" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" className={ghost} onClick={() => setEditing(null)}>Cancel</button>
-              <button type="submit" className={primary} disabled={busy}>{busy ? "Savingâ€¦" : editing ? "Save Changes" : "Add Customer"}</button>
+              <button type="submit" className={primary} disabled={busy}>{busy ? "Saving…" : editing ? "Save Changes" : "Add Customer"}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {paying && (
-        <Modal title={`Receive Payment â€” ${paying.name}`} onClose={() => setPaying(null)}>
+        <Modal title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
           <form onSubmit={pay} className="space-y-3">
             <p className="text-sm text-slate-500">
               Outstanding debt: <span className="font-semibold text-red-400">{f(paying.currentBalance)}</span>
@@ -270,14 +270,14 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             <textarea className={input} placeholder="Notes (optional)" rows={2} value={payment.notes} onChange={(e) => setPayment({ ...payment, notes: e.target.value })} />
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" className={ghost} onClick={() => setPaying(null)}>Cancel</button>
-              <button type="submit" className={primary} disabled={busy}>{busy ? "Recordingâ€¦" : "Record Payment"}</button>
+              <button type="submit" className={primary} disabled={busy}>{busy ? "Recording…" : "Record Payment"}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {viewing && statement && (
-        <Modal title={`Statement â€” ${statement.customer.name}`} onClose={() => setViewing(null)}>
+        <Modal title={`Statement — ${statement.customer.name}`} onClose={() => setViewing(null)}>
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-lg bg-slate-950 p-3">
               <p className="text-xs text-slate-500">Credit Limit</p>
@@ -309,11 +309,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                       <span className={e.type === "SALE"
                         ? "rounded bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400"
                         : "rounded bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300"}>
-                        {e.type === "SALE" ? "On Account" : "Payment"} Â· {e.paymentMethod}
+                        {e.type === "SALE" ? "On Account" : "Payment"} · {e.paymentMethod}
                       </span>
                     </td>
                     <td className="py-2 text-right font-medium">
-                      {e.type === "SALE" ? "+" : "âˆ’"}
+                      {e.type === "SALE" ? "+" : "−"}
                       {f(e.amount)}
                     </td>
                   </tr>
@@ -338,7 +338,7 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
       <div className="w-full max-w-md rounded-xl bg-slate-900 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200">âœ•</button>
+          <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200">✕</button>
         </div>
         {children}
       </div>

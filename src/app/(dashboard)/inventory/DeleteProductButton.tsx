@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { deleteProduct, type DeleteProductResult } from "./actions";
@@ -10,7 +10,7 @@ import { deleteProduct, type DeleteProductResult } from "./actions";
  * `onSubmit` handler rather than the `<form action={...}>` prop. The confirm
  * gate needs client JS, so this is a Client Component: we intercept `onSubmit`
  * to confirm; cancelling the event stops the call before it ever fires. We
- * `await` the action ourselves and act on its `{ ok, ... }` result â€” on success
+ * `await` the action ourselves and act on its `{ ok, ... }` result — on success
  * `revalidatePath` swaps the page and the row vanishes on its own (no local
  * pending state to clear), and on a failure (e.g. a `SaleItem`/`TransactionItem`
  * FK Restrict, surfaced leak-free by the action) we render the message inline
@@ -45,7 +45,7 @@ export default function DeleteProductButton({
       setError(result.error ?? null);
     }
     // On success the action revalidates /inventory, so the row vanishes on its
-    // own â€” no local state to clear beyond the error.
+    // own — no local state to clear beyond the error.
   }
 
   return (

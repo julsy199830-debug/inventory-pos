@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type ReactNode } from "react";
 import {
@@ -21,7 +21,7 @@ import {
 } from "./chart-theme";
 
 /**
- * Stacked sales-volume bar chart â€” the centrepiece of the analytics page.
+ * Stacked sales-volume bar chart — the centrepiece of the analytics page.
  *
  * Two stacked series per bucket: **Cash** (blue-600) vs **Card / Credit**
  * (blue-500), with the top segment's corners rounded. The Month / Week
@@ -33,7 +33,7 @@ import {
 export default function SalesBarChart({
   monthly,
   weekly,
-  currencySymbol = "â‚±",
+  currencySymbol = "₱",
 }: {
   monthly: SalesVolumePoint[];
   weekly: SalesVolumePoint[];
@@ -49,7 +49,7 @@ export default function SalesBarChart({
         <div>
           <h2 className="text-base font-semibold text-slate-100">Sales Volume</h2>
           <p className="text-sm text-slate-500">
-            Revenue by payment method â€”{" "}
+            Revenue by payment method —{" "}
             {period === "month" ? "last 6 months" : "last 8 weeks"}.
           </p>
         </div>

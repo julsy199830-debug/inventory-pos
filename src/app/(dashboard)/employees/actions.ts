@@ -5,7 +5,14 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
 import { PIN_PATTERN, hashPin } from "@/lib/pin";
-import { getCashier } from "@/lib/session";
+import { getCashier, roleGuardError } from "@/lib/session";
+
+/** Employee management is restricted to ADMIN and MANAGER at the action layer. */
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
+
+async function staffGuardError(): Promise<string | null> {
+  return roleGuardError(STAFF_ROLES);
+}
 
 /**
  * `load` reads a `FormData` field as a string and coerces an empty/whitespace
@@ -115,6 +122,9 @@ export async function createEmployee(
   // is no client state to merge anyway.
   formData: FormData,
 ): Promise<CreateEmployeeResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const name = load(formData, "name");
   const email = load(formData, "email");
   const pin = load(formData, "pin");
@@ -224,6 +234,9 @@ export async function updateEmployee(
   // revalidatePath, nothing to merge.
   formData: FormData,
 ): Promise<UpdateEmployeeResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const id = load(formData, "id");
   const name = load(formData, "name");
   const email = load(formData, "email");
@@ -307,6 +320,9 @@ export async function updateEmployee(
  * on the next render.
  */
 export async function toggleEmployeeStatus(formData: FormData): Promise<ActionResult<void>> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const id = load(formData, "id");
   const next = load(formData, "active");
   if (!id) {
@@ -356,6 +372,9 @@ export async function toggleEmployeeStatus(formData: FormData): Promise<ActionRe
  * table so the role badge updates.
  */
 export async function assignRole(formData: FormData): Promise<ActionResult<void>> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const id = load(formData, "id");
   const roleRaw = load(formData, "role");
   if (!id) {
@@ -407,6 +426,9 @@ export async function assignRole(formData: FormData): Promise<ActionResult<void>
  * keeping history; this hard-delete path is for genuine cleanup.
  */
 export async function deleteEmployee(formData: FormData): Promise<void> {
+  const denied = await staffGuardError();
+  if (denied) return;
+
   const id = load(formData, "id");
   if (!id) {
     // No id means the form was tampered or malformed — nothing to delete.

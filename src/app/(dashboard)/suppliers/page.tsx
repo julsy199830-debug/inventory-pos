@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import AddSupplierDialog from "./AddSupplierDialog";
 import DeleteSupplierButton from "./DeleteSupplierButton";
 import EditSupplierDialog from "./EditSupplierDialog";
@@ -6,9 +6,9 @@ import EditSupplierDialog from "./EditSupplierDialog";
 type Supplier = {
   id: string;
   name: string;
-  // These hold the raw DB values (nullable) â€” the em-dash you see in the
+  // These hold the raw DB values (nullable) — the em-dash you see in the
   // table is a pure view concern rendered at display time, not baked into
-  // the data. That way a supplier literally named "â€”" can't be confused with
+  // the data. That way a supplier literally named "—" can't be confused with
   // a blank, and the edit dialog gets "" for empty inputs with no sentinel
   // round-trip.
   contactName: string | null;
@@ -22,7 +22,7 @@ type Supplier = {
 export default async function SuppliersPage({
   searchParams,
 }: {
-  // searchParams is a Promise in this Next.js version â€” see the page file
+  // searchParams is a Promise in this Next.js version — see the page file
   // convention docs on handling filtering with searchParams.
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
@@ -57,7 +57,7 @@ export default async function SuppliersPage({
       id: s.id,
       name: s.name,
       // Keep the raw nullable values; the em-dash is rendered at display time
-      // (table cells) and the edit form coalesces null â†’ "".
+      // (table cells) and the edit form coalesces null → "".
       contactName: s.contactName,
       email: s.email,
       phone: s.phone,
@@ -87,7 +87,7 @@ export default async function SuppliersPage({
         </div>
       </header>
 
-      {/* Controls row â€” a GET form so submitting (Enter in the search box)
+      {/* Controls row — a GET form so submitting (Enter in the search box)
           updates the URL searchParams, which re-renders this Server Component
           with the filtered rows. */}
       <form className="flex flex-wrap items-center gap-3">
@@ -138,10 +138,10 @@ export default async function SuppliersPage({
               {suppliers.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-950">
                   <td className="px-4 py-3 font-medium text-slate-100">{s.name}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.contactName ?? "â€”"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.email ?? "â€”"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.phone ?? "â€”"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.address ?? "â€”"}</td>
+                  <td className="px-4 py-3 text-slate-300">{s.contactName ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-300">{s.email ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-300">{s.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-300">{s.address ?? "—"}</td>
                   <td className="px-4 py-3">
                     <ProductCountPill count={s.productCount} />
                   </td>
@@ -150,7 +150,7 @@ export default async function SuppliersPage({
                       <EditSupplierDialog
                         supplier={{
                           // Pass the raw nullable values straight through; the
-                          // dialog coalesces null â†’ "" at its input layer and the
+                          // dialog coalesces null → "" at its input layer and the
                           // em-dash lives only in the table cells above.
                           id: s.id,
                           name: s.name,

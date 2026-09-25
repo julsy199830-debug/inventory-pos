@@ -1,8 +1,8 @@
-﻿import type { AnalyticsTopProduct } from "../actions";
+import type { AnalyticsTopProduct } from "../actions";
 import { formatMoney } from "./chart-theme";
 
 /**
- * Top-selling products table â€” best movers by units sold over the last 30
+ * Top-selling products table — best movers by units sold over the last 30
  * days. A pure presentational Server Component (no state, no recharts), so it
  * renders with zero client JavaScript.
  *
@@ -13,7 +13,7 @@ import { formatMoney } from "./chart-theme";
  */
 export default function TopProductsTable({
   products,
-  currencySymbol = "â‚±",
+  currencySymbol = "₱",
 }: {
   products: AnalyticsTopProduct[];
   currencySymbol?: string;
@@ -25,7 +25,7 @@ export default function TopProductsTable({
           Top Selling Products
         </h2>
         <p className="text-sm text-slate-500">
-          Best movers by units sold â€” last 30 days.
+          Best movers by units sold — last 30 days.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function TopProductsTable({
                           {product.sku}
                           {product.category ? (
                             <>
-                              <span className="text-slate-300"> Â· </span>
+                              <span className="text-slate-300"> · </span>
                               {product.category}
                             </>
                           ) : null}

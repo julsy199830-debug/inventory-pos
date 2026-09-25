@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { downloadCsv } from "@/lib/csv";
 import type { PaymentBreakdownRow, TopProduct } from "./actions";
@@ -6,8 +6,8 @@ import type { PaymentBreakdownRow, TopProduct } from "./actions";
 /**
  * "Export CSV" button for the daily Sales & Z-Report page (`/reports`).
  *
- * Builds a three-section spreadsheet â€” Summary (headline KPIs), Payment
- * breakdown (per-method count/total), and Top products â€” from the data the
+ * Builds a three-section spreadsheet — Summary (headline KPIs), Payment
+ * breakdown (per-method count/total), and Top products — from the data the
  * Server Component already loaded for the printed report, so the CSV can never
  * disagree with the sheet on screen. Everything is client-side: no extra
  * server round-trip, no new action to guard.
@@ -33,7 +33,7 @@ export default function ExportCsvButton({
   function onExport() {
     const rows: (string | number | null)[][] = [];
 
-    // â”€â”€ Section 1: summary KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Section 1: summary KPIs ──────────────────────────────────────────
     rows.push(["Summary", "Date", dateLabel]);
     if (summary) {
       rows.push(["Summary", "Revenue", summary.revenue]);
@@ -45,14 +45,14 @@ export default function ExportCsvButton({
       rows.push(["Summary", "Error", "No data for this date"]);
     }
 
-    // â”€â”€ Section 2: payment method breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Section 2: payment method breakdown ─────────────────────────────
     if (summary) {
       for (const row of summary.paymentBreakdown) {
         rows.push(["Payments", row.method, `count=${row.count}`, row.total]);
       }
     }
 
-    // â”€â”€ Section 3: top selling products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Section 3: top selling products ─────────────────────────────────
     for (const product of topProducts) {
       rows.push([
         "Top products",

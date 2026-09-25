@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { toggleEmployeeStatus } from './actions'
@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 /**
  * Per-row toggle for an employee's `active` bit. Soft-deletes a cashier
  * (active=false) to revoke login while keeping their `Sale`/`Shift` audit
- * trail â€” see the `User.active` schema comment and the `toggleEmployeeStatus`
+ * trail — see the `User.active` schema comment and the `toggleEmployeeStatus`
  * action doc.
  *
  * The next state travels as a hidden `active` field ("true"/"false") so the

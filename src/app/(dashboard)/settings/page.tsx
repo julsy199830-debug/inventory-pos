@@ -1,4 +1,4 @@
-﻿import { getStoreSettings } from "@/app/actions/settings";
+import { getStoreSettings } from "@/app/actions/settings";
 import SettingsForm from "./SettingsForm";
 
 /**
@@ -6,11 +6,11 @@ import SettingsForm from "./SettingsForm";
  *
  * A Server Component: it reads the single (if any) settings row from the DB via
  * `getStoreSettings()` and hands it as props to the client `SettingsForm`. The
- * tuning knobs the manager can change here â€” store name/contact info, the sales-
- * tax rate, and the currency glyph â€” are intended to drive POS checkout and
+ * tuning knobs the manager can change here — store name/contact info, the sales-
+ * tax rate, and the currency glyph — are intended to drive POS checkout and
  * receipts (today those are hardcoded constants; this page externalizes them).
  *
- * Unlike the suppliers page there's no table or filtering â€” settings are one
+ * Unlike the suppliers page there's no table or filtering — settings are one
  * row, so this is a form page, not a list page. The `(dashboard)` route group is
  * folder-only, so the public path is `/settings` (the sidebar already links
  * here).

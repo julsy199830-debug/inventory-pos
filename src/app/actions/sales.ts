@@ -13,6 +13,13 @@ import type { MutationResult } from "@/lib/types";
 /** Round to 2 decimals - money math always lands on centavo precision. */
 const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
+/** The only payment methods supported by the POS and persisted sale ledger. */
+const PAYMENT_METHODS = ["CASH", "CARD", "STORE_CREDIT"] as const;
+type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+function isPaymentMethod(value: string): value is PaymentMethod {
+  return (PAYMENT_METHODS as readonly string[]).includes(value);
+}
+
 /**
  * One cart line sent to the server. Only the cart's *shape* is trusted — the
  * unit price is re-derived from the catalog (`Product.price`) and discounts are
@@ -70,8 +77,8 @@ export async function createSale(
   }
 
   // ── Server-authoritative validation ────────────────────────────────────
-  if (!paymentMethod) {
-    return { ok: false, error: "Payment method is required." };
+  if (!isPaymentMethod(paymentMethod)) {
+    return { ok: false, error: "Payment method must be CASH, CARD, or STORE_CREDIT." };
   }
   // Store Credit ("On Account") can only be used with a customer attached —
   // there's no ledger to charge without an account.
@@ -165,14 +172,22 @@ export async function createSale(
       // Loyalty points per whole 10 of the discounted subtotal.
       const earnedPoints = Math.floor(taxable / 10);
 
-      // Cash-only drawer figures, persisted for the audit trail. The register
-      // only sends these on CASH checkouts; every other method stores null.
-      const tendered = paymentMethod === "CASH" && Number.isFinite(Number(input.tendered))
-        ? round2(Number(input.tendered))
-        : null;
-      const change = paymentMethod === "CASH" && tendered != null && Number.isFinite(Number(input.change))
-        ? round2(Number(input.change))
-        : null;
+      // Payment validation is server-authoritative. The total above is the exact
+      // value persisted below; a client-supplied change value is never trusted.
+      // CASH requires a finite, non-negative amount at least equal to that total;
+      // all other methods ignore any tender/change payload and persist nulls.
+      let tendered: number | null = null;
+      let change: number | null = null;
+      if (paymentMethod === "CASH") {
+        if (typeof input.tendered !== "number" || !Number.isFinite(input.tendered) || input.tendered < 0) {
+          throw new Error("INVALID_CASH_TENDERED");
+        }
+        tendered = round2(input.tendered);
+        if (tendered < totalAmount) {
+          throw new Error("INSUFFICIENT_CASH");
+        }
+        change = round2(tendered - totalAmount);
+      }
 
       const created = await tx.sale.create({
         data: {
@@ -267,6 +282,12 @@ export async function createSale(
       }
       if (err.message === "CREDIT_LIMIT_EXCEEDED") {
         return { ok: false, error: "This customer has reached their credit limit for this transaction." };
+      }
+      if (err.message === "INVALID_CASH_TENDERED") {
+        return { ok: false, error: "Cash tendered must be a valid amount of 0 or more." };
+      }
+      if (err.message === "INSUFFICIENT_CASH") {
+        return { ok: false, error: "Cash tendered must cover the total due." };
       }
       if (err.message === "CUSTOMER_NOT_FOUND") {
         return { ok: false, error: "The selected customer no longer exists." };

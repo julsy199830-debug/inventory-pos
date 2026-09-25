@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { CategorySalesSlice } from "../actions";
@@ -7,15 +7,15 @@ import { DONUT_PALETTE, formatMoney } from "./chart-theme";
 /**
  * Donut chart of revenue share by product category (last 30 days).
  *
- * Slice labels only render for segments â‰¥ 8% so tiny slices don't crowd each
+ * Slice labels only render for segments ≥ 8% so tiny slices don't crowd each
  * other; the full percentage always lives in the legend list below and in the
- * hover tooltip. The centre overlays the 30-day revenue total â€” a div on top
+ * hover tooltip. The centre overlays the 30-day revenue total — a div on top
  * of the SVG rather than an SVG `<text>` so it inherits the Tailwind
  * typography for free.
  */
 export default function CategoryDonutChart({
   data,
-  currencySymbol = "â‚±",
+  currencySymbol = "₱",
 }: {
   data: CategorySalesSlice[];
   currencySymbol?: string;
@@ -28,7 +28,7 @@ export default function CategoryDonutChart({
         <h2 className="text-base font-semibold text-slate-100">
           Category Share
         </h2>
-        <p className="text-sm text-slate-500">Revenue mix â€” last 30 days.</p>
+        <p className="text-sm text-slate-500">Revenue mix — last 30 days.</p>
       </div>
 
       <div className="relative mt-4 h-64">

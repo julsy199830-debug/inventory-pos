@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { LOW_STOCK_THRESHOLD } from "@/lib/types";
 import AddCategoryDialog from "./AddCategoryDialog";
@@ -23,9 +23,9 @@ type CategoryRow = {
  * `<select>` draws from this set), and the page whose cutoff the inventory
  * badges honor (via {@link stockStatusAt} + the category's `lowStockThreshold`).
  *
- * Sibling in shape to the suppliers page (header â†’ Add trigger â†’ table), but
+ * Sibling in shape to the suppliers page (header → Add trigger → table), but
  * leaner: the category set is small, so there's no text-search box and no
- * `searchParams` plumbing â€” just a sorted table. Each row's Add/Edit/Delete are
+ * `searchParams` plumbing — just a sorted table. Each row's Add/Edit/Delete are
  * small client islands so the confirm + pending state have somewhere to live;
  * everything else stays a pure Server Component.
  *
@@ -36,7 +36,7 @@ type CategoryRow = {
 export default async function CategoriesPage() {
   // Fetched in parallel: the categories (with linked product counts) and the
   // total for the header. Direct server-side Prisma queries, safe in a Server
-  // Component â€” `_count` is the relation aggregate that gives us the N each
+  // Component — `_count` is the relation aggregate that gives us the N each
   // category's Products relation holds without an N+1.
   const [rows, total] = await Promise.all([
     prisma.category.findMany({
@@ -72,11 +72,11 @@ export default async function CategoriesPage() {
           href="/inventory"
           className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-100"
         >
-          â† Back to inventory
+          ← Back to inventory
         </Link>
       </header>
 
-      {/* Controls row â€” just the "Add Category" trigger + modal here (no text
+      {/* Controls row — just the "Add Category" trigger + modal here (no text
           search: the category set is small and sorted by name). Client island
           manages open state and submits to the createCategory Server Action,
           which inserts via Prisma and revalidates this page so the new row

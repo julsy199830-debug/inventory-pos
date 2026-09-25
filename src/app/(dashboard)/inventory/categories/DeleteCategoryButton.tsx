@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { deleteCategory, type DeleteCategoryResult } from "../actions";
@@ -17,7 +17,7 @@ import { deleteCategory, type DeleteCategoryResult } from "../actions";
  * cancelled confirm `preventDefault`s before we ever call the action.
  *
  * `Product.categoryId` is `onDelete: SetNull`, so a category with products is
- * *not* blocked â€” those products just become uncategorized (the audit trail of
+ * *not* blocked — those products just become uncategorized (the audit trail of
  * their sales is untouched). The confirm copy says so, so the user isn't
  * surprised when formerly-categorized products drop to Uncategorized.
  */
@@ -28,7 +28,7 @@ export default function DeleteCategoryButton({
 }: {
   id: string;
   name: string;
-  /** How many products reference this category â€” shown in the confirm prompt so
+  /** How many products reference this category — shown in the confirm prompt so
    * the user knows deletion will uncategorize that many rows (SetNull). */
   productCount: number;
 }) {
@@ -54,7 +54,7 @@ export default function DeleteCategoryButton({
       setError(result.error ?? null);
     }
     // On success the action revalidates both pages, so the row vanishes on its
-    // own â€” no local state to clear beyond the error.
+    // own — no local state to clear beyond the error.
   }
 
   return (

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { updateSupplier, type UpdateSupplierResult } from "./actions";
@@ -6,23 +6,23 @@ import { updateSupplier, type UpdateSupplierResult } from "./actions";
 /**
  * Modal dialog for editing an existing supplier.
  *
- * Sibling to `AddSupplierDialog` â€” same hand-rolled Tailwind modal shell,
- * `Field` wrapper, and `inputCls` â€” except every field is prefilled with the
+ * Sibling to `AddSupplierDialog` — same hand-rolled Tailwind modal shell,
+ * `Field` wrapper, and `inputCls` — except every field is prefilled with the
  * row's current values (via `defaultValue`). The supplier's `id` travels as a
  * hidden field (the same technique `deleteSupplier` uses).
  *
  * Like `AddSupplierDialog`, we submit via a manual async handler that `await`s
- * the raw `updateSupplier` Server Action directly â€” `updateSupplier` takes only
+ * the raw `updateSupplier` Server Action directly — `updateSupplier` takes only
  * the `formData` (no `prevState`, since it's invoked from the event handler,
  * not `useActionState`). Server Actions are async functions that resolve to
  * their declared return type, so awaiting one gives us the result in the same
- * tick â€” we close the dialog right there on success, no effect needed. (This
+ * tick — we close the dialog right there on success, no effect needed. (This
  * is the "Event Handlers" calling convention from the mutating-data docs.)
  *
  * We deliberately don't use `useActionState` here. Its `(state, action,
  * pending)` triple is built for `<form action={...}>` wiring, and the
  * idiomatic way to react to its success is `setState` inside an effect keyed on
- * `state` â€” which `react-hooks/set-state-in-effect` flags as a derived-state
+ * `state` — which `react-hooks/set-state-in-effect` flags as a derived-state
  * cascade. Calling the action ourselves sidesteps that entirely: the close
  * lives in the submit handler, where side effects belong, not in a
  * render-following effect.
@@ -32,7 +32,7 @@ import { updateSupplier, type UpdateSupplierResult } from "./actions";
  *
  * The `supplier` prop carries the raw, nullable DB values (`string | null`).
  * The em-dash you see in the suppliers table is a pure display concern rendered
- * in `page.tsx` â€” the dialog never sees "â€”" â€” so it coalesces `null â†’ ""` here
+ * in `page.tsx` — the dialog never sees "—" — so it coalesces `null → ""` here
  * at the input layer (`defaultValue={supplier.email ?? ""}`), where empty
  * fields edit as empty inputs rather than a literal em-dash placeholder. The
  * parent passes the row through verbatim, no pre-coalescing.
@@ -51,7 +51,7 @@ export default function EditSupplierDialog({
 }) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` â€” same UX (inputs + buttons lock
+  // than reading them out of `useActionState` — same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export default function EditSupplierDialog({
 
   return (
     <>
-      {/* Trigger â€” pencil icon, matches the trash button's sizing/hover style */}
+      {/* Trigger — pencil icon, matches the trash button's sizing/hover style */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -140,7 +140,7 @@ export default function EditSupplierDialog({
             </div>
 
             <form onSubmit={onSubmit} className="space-y-4 px-5 py-5">
-              {/* Hidden ID â€” travels in the same payload as the fields so the
+              {/* Hidden ID — travels in the same payload as the fields so the
                   server action knows which row to update. */}
               <input type="hidden" name="id" value={supplier.id} />
 
@@ -230,7 +230,7 @@ export default function EditSupplierDialog({
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Savingâ€¦" : "Save changes"}
+                  {pending ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -244,7 +244,7 @@ export default function EditSupplierDialog({
 const inputCls =
   "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper â€” keeps the form DRY (matches AddSupplierDialog). */
+/** Labeled field wrapper — keeps the form DRY (matches AddSupplierDialog). */
 function Field({
   label,
   htmlFor,

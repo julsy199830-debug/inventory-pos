@@ -1,7 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { roleGuardError } from "@/lib/session";
 import type { MutationResult } from "@/lib/types";
+
+const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
+
+async function staffGuardError(): Promise<string | null> {
+  return roleGuardError(STAFF_ROLES);
+}
 
 /**
  * Sales analytics & daily reporting (Z-Report).
@@ -74,6 +81,9 @@ export type DailySummary = {
 export async function getDailySummary(
   date: string,
 ): Promise<MutationResult<DailySummary>> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const range = dayRange(date);
   if (!range) {
     return { ok: false, error: "Invalid date. Use YYYY-MM-DD." };
@@ -163,6 +173,9 @@ export async function getTopSellingProducts(
   limit: number = 5,
   opts?: { date?: string },
 ): Promise<MutationResult<TopProduct[]>> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const safeLimit = Math.min(Math.max(Math.floor(limit), MIN_LIMIT), MAX_LIMIT);
 
   let range: { gte: Date; lte: Date } | null = null;
@@ -441,6 +454,9 @@ function buildOrderTrend(sales: { createdAt: Date }[]): OrderTrendPoint[] {
  * and always null — the table falls back to an initials avatar today.
  */
 export async function getSalesAnalytics(): Promise<MutationResult<SalesAnalytics>> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const now = new Date();
   const firstMonth = new Date(
     now.getFullYear(),

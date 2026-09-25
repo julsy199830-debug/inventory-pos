@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -116,7 +116,7 @@ export function LoginForm({
           disabled={!selected}
           value={pin}
           onChange={(e) => setPin(e.target.value)}
-          placeholder={selected ? "Your 4â€“6 digit PIN" : "Select your name first"}
+          placeholder={selected ? "Your 4–6 digit PIN" : "Select your name first"}
           className="mt-2 w-full rounded-md border border-slate-700 px-3 py-2 font-mono text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950"
         />
       </div>
@@ -126,7 +126,7 @@ export function LoginForm({
         disabled={!selected || pin.length < 4 || busy}
         className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {busy ? "Signing inâ€¦" : "Open register"}
+        {busy ? "Signing in…" : "Open register"}
       </button>
     </form>
     </div>

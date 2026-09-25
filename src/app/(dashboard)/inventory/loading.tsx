@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Inventory loading skeleton.
  *
  * Streamed automatically by the router while the inventory `page.tsx` (an
@@ -6,7 +6,7 @@
  * router wraps the page segment in a <Suspense> boundary and swaps this in as
  * the fallback, so navigation feels instant instead of hanging on the DB read.
  *
- * The structure deliberately mirrors `page.tsx` (header â†’ controls â†’ table),
+ * The structure deliberately mirrors `page.tsx` (header → controls → table),
  * so settling into the real content is a fade rather than a layout jump.
  * `animate-pulse` (Tailwind) gives the gentle breathing shimmer.
  */
@@ -84,6 +84,6 @@ export default function InventoryLoading() {
 }
 
 /** Number of placeholder rows to render. Eight gives the table visible body
- *  without overflowing a typical viewport â€” enough to read as "loading a list"
+ *  without overflowing a typical viewport — enough to read as "loading a list"
  *  while staying cheap. */
 const ROWS = Array.from({ length: 8 }, (_, i) => i);

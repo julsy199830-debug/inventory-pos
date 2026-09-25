@@ -477,6 +477,9 @@ export async function getStockMovements(
   // Handlers" convention), so it takes plain arguments rather than FormData.
   id: string,
 ): Promise<GetStockMovementsResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
   const safeId = typeof id === "string" ? id.trim() : "";
   if (!safeId) {
     return { ok: false, error: "Missing product id." };

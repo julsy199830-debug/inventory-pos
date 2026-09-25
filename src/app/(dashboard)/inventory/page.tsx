@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import {
   LOW_STOCK_THRESHOLD,
@@ -42,17 +42,17 @@ type Product = {
   retail: string;
   cost: string;
   stock: number;
-  /** Raw numeric retail price â€” used to prefill the edit dialog. */
+  /** Raw numeric retail price — used to prefill the edit dialog. */
   rawPrice: number;
-  /** Raw numeric cost â€” used to prefill the edit dialog. */
+  /** Raw numeric cost — used to prefill the edit dialog. */
   rawCost: number;
-  /** Effective low-stock threshold â€” the product's category overrides the
+  /** Effective low-stock threshold — the product's category overrides the
    * app-wide default, else {@link LOW_STOCK_THRESHOLD}. Drives the stock badge
    * + status pill so they reflect the category-tuned cutoff, not a blanket 10. */
   threshold: number;
 };
 
-/** Format a number as Philippine Peso currency, e.g. 199 -> "â‚±199.00". */
+/** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
 function formatPrice(value: number): string {
   return value.toLocaleString("en-PH", {
     style: "currency",
@@ -63,7 +63,7 @@ function formatPrice(value: number): string {
 export default async function InventoryPage({
   searchParams,
 }: {
-  // searchParams is a Promise in this Next.js version â€” see the page file
+  // searchParams is a Promise in this Next.js version — see the page file
   // convention docs on handling filtering with searchParams.
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
@@ -72,7 +72,7 @@ export default async function InventoryPage({
   // awaited Promise<searchParams> (see the page file convention docs).
   //
   // `category` is now a category *id* (or the `"all"` sentinel), not the old
-  // free-text name â€” the schema migrated `Product.category` from a string
+  // free-text name — the schema migrated `Product.category` from a string
   // column to a `categoryId` FK, so the filter narrows by id. We resolve it
   // against the actual category set below so a stale URL (a category deleted
   // after it was bookmarked) falls back to `"all"` rather than showing an
@@ -100,7 +100,7 @@ export default async function InventoryPage({
   ]);
 
   // Category option set shared by the filter, the Add dialog, and the Edit
-  // dialog â€” a single source of truth so all three show the same names/ids and
+  // dialog — a single source of truth so all three show the same names/ids and
   // never disagree (e.g. a delete between renders). The empty-string id is the
   // "Uncategorized" sentinel handled in the dialogs.
   const categoryOptions: CategoryOption[] = categoryRows.map((c) => ({
@@ -159,8 +159,8 @@ export default async function InventoryPage({
 
   // Products flagged by the low-stock banner: any row whose stock status is
   // "out" or "low" against its effective per-category threshold. The banner is
-  // a client island that merely renders these pre-filtered items â€” no extra
-  // Prisma query â€” and dismisses only for the current client session.
+  // a client island that merely renders these pre-filtered items — no extra
+  // Prisma query — and dismisses only for the current client session.
   const lowStockItems = products
     .filter((p) => stockStatusAt(p.stock, p.threshold) !== "ok")
     .map((p) => ({
@@ -174,7 +174,7 @@ export default async function InventoryPage({
 
   return (
     <div className="space-y-6">
-      {/* Low-stock alert banner â€” surfaces out/low items at the top of the
+      {/* Low-stock alert banner — surfaces out/low items at the top of the
           page before the controls and table. Client island fed server-side
           data; hidden whenever every product is In Stock. */}
       <LowStockBanner items={lowStockItems} />
@@ -195,7 +195,7 @@ export default async function InventoryPage({
         </div>
       </header>
 
-      {/* Controls row â€” a GET form so submitting (Enter or changing the
+      {/* Controls row — a GET form so submitting (Enter or changing the
           dropdown) updates the URL searchParams, which re-renders this Server
           Component with the filtered rows. CategoryFilter is a small client
           island so the dropdown can submit the form on change. */}
@@ -230,7 +230,7 @@ export default async function InventoryPage({
             `categories` populates the managed-category <select> inside. */}
         <AddProductDialog categories={categoryOptions} />
 
-        {/* Export CSV â€” serializes the rows currently rendered (respecting
+        {/* Export CSV — serializes the rows currently rendered (respecting
             the active search/category filters) for spreadsheets. Client
             island; builds the file locally, no server round-trip. */}
         <ExportCsvButton
@@ -245,7 +245,7 @@ export default async function InventoryPage({
           }))}
         />
 
-        {/* Manage categories link â€” the `/inventory/categories` page governs
+        {/* Manage categories link — the `/inventory/categories` page governs
             the set of categories (rename, threshold, delete) that this form
             and filter draw from. Plain server <Link>, so it stays a Server
             Component with no client island. */}
@@ -312,7 +312,7 @@ export default async function InventoryPage({
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-100">{p.name}</td>
                   <td className="px-4 py-3 text-slate-300">
-                    {p.categoryName ?? "â€”"}
+                    {p.categoryName ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-slate-100">{p.retail}</td>
                   <td className="px-4 py-3 text-slate-500">{p.cost}</td>
@@ -324,7 +324,7 @@ export default async function InventoryPage({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
-                      {/* Inline +/âˆ’ quick-adjust: a client island that calls the
+                      {/* Inline +/− quick-adjust: a client island that calls the
                           adjustStock Server Action with the row id and a signed
                           delta. Lives next to the edit/delete controls so a
                           restock or pull is one click, no modal. */}
@@ -359,7 +359,7 @@ export default async function InventoryPage({
 // Visual treatment by stock status. The two pill-ish views ({@link StockBadge},
 // {@link StatusPill}) share this so a "Low Stock" row is the same shade of red
 // whether you're reading the count pill or the status pill, and the per-category
-// threshold (not a blanket 10) decides the cutoff â€” see {@link stockStatusAt}.
+// threshold (not a blanket 10) decides the cutoff — see {@link stockStatusAt}.
 const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
   out: { badge: "bg-red-500/100/20 text-red-300", status: "Out of Stock" },
   low: { badge: "bg-red-500/10 text-red-300", status: "Low Stock" },
@@ -369,7 +369,7 @@ const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
 /**
  * Stock count pill. The cutoff is the product's effective low-stock threshold
  * (a category override or the app-wide {@link LOW_STOCK_THRESHOLD}), so a
- * high-velocity category with a raised threshold still flags "low" at 50 â€” not
+ * high-velocity category with a raised threshold still flags "low" at 50 — not
  * only at the default 10. 0 is always Out of Stock and rendered with a bolder
  * red than merely-low. */
 function StockBadge({
@@ -412,7 +412,7 @@ function StatusPill({
 
 /**
  * A sortable column header rendered as a relative-positioned anchor. Clicking
- * sets ?sort=<field> in the URL and toggles ?order= ascâ†”desc on the active
+ * sets ?sort=<field> in the URL and toggles ?order= asc↔desc on the active
  * column (or starts fresh at asc when switching columns). It preserves the
  * existing text search (q) and category filters by carrying them through in the
  * query string, so sorting never clobbers an active filter. Because the whole

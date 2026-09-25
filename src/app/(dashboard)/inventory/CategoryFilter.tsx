@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useTransition } from 'react';
 import type { CategoryOption } from './AddProductDialog';

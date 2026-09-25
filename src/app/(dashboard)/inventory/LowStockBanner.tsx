@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import type { StockStatus } from "@/lib/types";
@@ -12,8 +12,8 @@ import type { StockStatus } from "@/lib/types";
  * as props rather than the banner re-querying Prisma. The component stays
  * purely presentational and dismissible.
  *
- * The banner splits the alert into two groups â€” Out of Stock (worse) and Low
- * Stock â€” each listing the offending SKUs so a manager can restock at a
+ * The banner splits the alert into two groups — Out of Stock (worse) and Low
+ * Stock — each listing the offending SKUs so a manager can restock at a
  * glance. `dismissed` is local state only; the banner returns naturally on the
  * next server render once the rows are restocked, and the dismiss affordance
  * simply hides it for the current client session.
@@ -88,7 +88,7 @@ export default function LowStockBanner({
           {low.length > 0 && (
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
-                Low on stock â€” below {low[0].threshold === 1 ? "1 unit" : `${low[0].threshold} units`}
+                Low on stock — below {low[0].threshold === 1 ? "1 unit" : `${low[0].threshold} units`}
               </p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {low.map((item) => (

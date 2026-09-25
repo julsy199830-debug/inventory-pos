@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { getStockMovements, type StockMovementView } from "./actions";
@@ -14,16 +14,16 @@ import type { StockMovementType } from "@/lib/types";
  * consistent with the rest of the inventory table.
  *
  * Unlike the edit/add dialogs this is a read-only view. History is fetched on
- * open via the `getStockMovements` Server Action â€” invoked from the open
+ * open via the `getStockMovements` Server Action — invoked from the open
  * handler (the "Event Handlers" convention), not an effect, so the fetch is a
  * genuine side effect of a user action rather than a render-following cascade.
  * The lazy fetch is deliberate: movements grow without bound for the lifetime
- * of a row, so the page never `include`s them per product â€” only the one
+ * of a row, so the page never `include`s them per product — only the one
  * product's recent slice (max 50) loads when the user actually opens history.
  *
  * While loading, an animated skeleton is shown. Once loaded, each movement
  * renders as a row with a type badge (color-coded by movement kind), a signed
- * quantity (+N green / âˆ’N red), a formatted timestamp, and the optional
+ * quantity (+N green / −N red), a formatted timestamp, and the optional
  * reason/notes.
  */
 export default function StockHistoryDialog({
@@ -39,7 +39,7 @@ export default function StockHistoryDialog({
   const [movements, setMovements] = useState<StockMovementView[]>([]);
 
   // Fetch on open, in the click handler (the codebase's "Event Handlers"
-  // convention â€” see the docblock on `getStockMovements` in actions.ts). Each
+  // convention — see the docblock on `getStockMovements` in actions.ts). Each
   // open refetches so the modal always shows the freshest audit slice; the
   // previous list is cleared first so a stale list never lingers under the
   // skeleton.
@@ -64,7 +64,7 @@ export default function StockHistoryDialog({
 
   return (
     <>
-      {/* Trigger â€” small clock/history icon button in the row's Actions cell */}
+      {/* Trigger — small clock/history icon button in the row's Actions cell */}
       <button
         type="button"
         onClick={onOpen}
@@ -160,7 +160,7 @@ export default function StockHistoryDialog({
   );
 }
 
-// â”€â”€ Movement row & helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Movement row & helpers ──────────────────────────────────────────────────
 
 /**
  * Badge treatment by movement type. RESTOCK (stock arriving, including the
@@ -209,7 +209,7 @@ function MovementRow({ movement }: { movement: StockMovementView }) {
   );
 }
 
-/** Sign the quantity for display: +10 for increases, âˆ’5 for decreases. */
+/** Sign the quantity for display: +10 for increases, −5 for decreases. */
 function signedQuantity(quantity: number): string {
   return quantity > 0 ? `+${quantity}` : `${quantity}`;
 }

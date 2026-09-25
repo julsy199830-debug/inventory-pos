@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 import { updateProduct, type UpdateProductResult } from "./actions";
@@ -12,7 +12,7 @@ import type { CategoryOption } from "./AddProductDialog";
  * hidden `id` alongside the edited fields to the `updateProduct` Server Action.
  *
  * Like the Add dialog, the form submits via a manual async handler (`onSubmit`)
- * that `await`s `updateProduct(formData)` directly â€” the hidden `id` travels in
+ * that `await`s `updateProduct(formData)` directly — the hidden `id` travels in
  * the `FormData` just like the edited fields. Server Actions are async functions
  * that resolve to their declared return type, so awaiting one gives us the
  * result in the same tick: we close on success and surface validation errors
@@ -21,7 +21,7 @@ import type { CategoryOption } from "./AddProductDialog";
  *
  * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
  * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` â€” which
+ * react to its success is `setState` inside an effect keyed on `state` — which
  * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
  * action ourselves sidesteps that entirely: the close lives in the submit
  * handler, where side effects belong, not in a render-following effect.
@@ -60,11 +60,11 @@ export default function EditProductDialog({
 }) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` â€” same UX (inputs + buttons lock
+  // than reading them out of `useActionState` — same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the update succeeds â€” drops any
+  // Ref onto the form so we can reset it once the update succeeds — drops any
   // half-typed edits back to the prefilled values before the next open.
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -90,7 +90,7 @@ export default function EditProductDialog({
 
   return (
     <>
-      {/* Trigger â€” small pencil button rendered inline in the row's Actions cell */}
+      {/* Trigger — small pencil button rendered inline in the row's Actions cell */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -270,7 +270,7 @@ export default function EditProductDialog({
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Savingâ€¦" : "Save changes"}
+                  {pending ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -284,7 +284,7 @@ export default function EditProductDialog({
 const inputCls =
   "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
 
-/** Labeled field wrapper â€” keeps the form DRY. */
+/** Labeled field wrapper — keeps the form DRY. */
 function Field({
   label,
   htmlFor,

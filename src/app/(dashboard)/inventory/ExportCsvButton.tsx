@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { downloadCsv } from "@/lib/csv";
 
@@ -17,7 +17,7 @@ export type InventoryExportRow = {
  * "Export CSV" button for the inventory table (`/inventory`).
  *
  * Serializes exactly the rows the server rendered (respecting the active
- * search/category filters, since the page re-renders with the filtered set) â€”
+ * search/category filters, since the page re-renders with the filtered set) —
  * SKU, name, category, retail/cost price, stock level, and the product's
  * effective low-stock threshold. Client-side blob download, no server
  * round-trip.

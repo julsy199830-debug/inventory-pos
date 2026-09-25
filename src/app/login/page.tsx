@@ -1,8 +1,8 @@
-﻿import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { asRole } from "@/lib/types";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Sign in â€” InvPos" };
+export const metadata = { title: "Sign in — InvPos" };
 
 /** Open route: tap your name + enter PIN to open the register. */
 export default async function LoginPage({

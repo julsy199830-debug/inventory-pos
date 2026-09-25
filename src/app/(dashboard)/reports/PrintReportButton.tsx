@@ -1,11 +1,11 @@
-﻿"use client";
+"use client";
 
 /**
  * "Print Report" button.
  *
  * Reports are Z-Read / Z-Report documents: the manager closes the register and
  * prints the day's totals. This tiny client component just calls
- * `window.print()` â€” the browser then applies the `.print-report`-only
+ * `window.print()` — the browser then applies the `.print-report`-only
  * `@media print` layout in `globals.css`, so exactly the report sheet prints
  * with no navigation chrome. The button itself lives inside `.no-print` (a
  * sibling of `.print-report`) so it never appears on paper.

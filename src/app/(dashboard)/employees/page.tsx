@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
 import EditEmployeeDialog from "./EditEmployeeDialog";
@@ -8,20 +8,20 @@ import RoleSelect from "./RoleSelect";
 import ClockButton from "./ClockButton";
 
 /**
- * Employees page â€” a Server Component composes three concerns:
+ * Employees page — a Server Component composes three concerns:
  *
  *   1. A shift-management widget (who's currently clocked in, open-shift
  *      controls) backed by `clockIn` / `clockOut`.
  *   2. A performance summary derived from each employee's closed shifts
  *      (`Shift.totalSales` / `salesCount` snapshots) plus their live
- *      completed-sale total â€” the `Shift` model stamps totals at clock-out so
+ *      completed-sale total — the `Shift` model stamps totals at clock-out so
  *      historical performance is stable; the live figure is recomputed here so
  *      the current shift's in-progress sales count toward the summary too.
  *   3. The employee management table (CRUD, role assignment, active toggle)
  *      matching the customers/suppliers UI patterns.
  *
  * The `(dashboard)` route group is folder-only, so the public path is
- * `/employees` (no `(dashboard)` segment) â€” that's the path the actions
+ * `/employees` (no `(dashboard)` segment) — that's the path the actions
  * `revalidatePath` against.
  *
  * `role` arrives as a raw `String` from Prisma (SQLite has no native enum) and
@@ -29,9 +29,9 @@ import ClockButton from "./ClockButton";
  * islands; the column's allowed values live in `ROLES` / the `Role` union.
  */
 
-// â”€â”€ Display shape passed to client islands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Display shape passed to client islands ───────────────────────────────────
 // Carrying the narrowed `role` (not the raw string) keeps the client components
-// honest about which values exist â€” same trick the suppliers page uses with its
+// honest about which values exist — same trick the suppliers page uses with its
 // `Supplier` type.
 type EmployeeRow = {
   id: string;
@@ -52,16 +52,16 @@ type EmployeeRow = {
   liveSalesCount: number;
 };
 
-/** The currency used by the POS â€” kept as a constant here so the summary tiles
+/** The currency used by the POS — kept as a constant here so the summary tiles
  *  format consistently. Mirrors the `TAX_RATE`-style local constant note in the
  *  `StoreSetting` schema comment (these are externalized there, but the
  *  Employees summary predates wiring it in). */
-const CURRENCY = "â‚±";
+const CURRENCY = "₱";
 
 export default async function EmployeesPage() {
   // Fetched in parallel: the roster, every shift (with totals for performance),
   // and the store-wide completed-sale aggregate (feeds the "Live sales (all
-  // cashiers)" summary tile â€” the per-employee shift ledgers are windowed
+  // cashiers)" summary tile — the per-employee shift ledgers are windowed
   // separately below, so they can't share this all-time aggregate). All Server
   // Component Prisma queries.
   const [users, shifts, storeAgg] = await Promise.all([
@@ -108,11 +108,11 @@ export default async function EmployeesPage() {
     lifetimeCount.set(s.userId, (lifetimeCount.get(s.userId) ?? 0) + s.salesCount);
   }
 
-  // "Sales this ledger" â€” each currently clocked-in employee's completed sales
+  // "Sales this ledger" — each currently clocked-in employee's completed sales
   // rung up since their open shift began (`createdAt >= shift.start`; the upper
-  // bound is implicit â€” `Sale.createdAt` defaults to server now() at insert, so
+  // bound is implicit — `Sale.createdAt` defaults to server now() at insert, so
   // no row can be dated in the future). The window is per-employee, so we run
-  // one aggregate per open shift (a user has at most one â€” `clockIn` auto-closes
+  // one aggregate per open shift (a user has at most one — `clockIn` auto-closes
   // a dangling prior one); a single `groupBy` can't express a per-bucket time
   // window. `_sum` types as `... | null`, so we null-chain it; `_count: true`
   // resolves to a bare `number` there (same shapes as the closed-shift snapshot
@@ -152,12 +152,12 @@ export default async function EmployeesPage() {
     liveSalesCount: ledgerCount.get(u.id) ?? 0,
   }));
 
-  // â”€â”€ Shift-management widget roll-up â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shift-management widget roll-up ────────────────────────────────────
   const clockedInList = employees.filter((e) => e.clockedIn);
   const activeCount = employees.filter((e) => e.active).length;
-  // Lifetime total sales across all employees â€” a store-wide sales-volume read.
+  // Lifetime total sales across all employees — a store-wide sales-volume read.
   const totalLifetimeSales = employees.reduce((sum, e) => sum + e.lifetimeSales, 0);
-  // Store-wide completed-sale volume across all time â€” independent of who's
+  // Store-wide completed-sale volume across all time — independent of who's
   // clocked in, so it must not be derived from the shift-ledger figures above.
   const totalLiveSales = Math.round((storeAgg._sum.totalAmount ?? 0) * 100) / 100;
 
@@ -184,7 +184,7 @@ export default async function EmployeesPage() {
         <AddEmployeeDialog />
       </header>
 
-      {/* Performance summary tiles â€” quick KPIs derived from the shift + sale
+      {/* Performance summary tiles — quick KPIs derived from the shift + sale
           aggregates above. Mirrors the supplier header's compact stat style. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
@@ -219,7 +219,7 @@ export default async function EmployeesPage() {
         />
       </div>
 
-      {/* Shift management widget â€” who is currently clocked in, with clock-in
+      {/* Shift management widget — who is currently clocked in, with clock-in
           / clock-out controls. Reads from the same underlying shift data as the
           per-row ClockButton so the widget and table stay consistent. */}
       <ShiftWidget employees={clockedInList} />
@@ -247,7 +247,7 @@ export default async function EmployeesPage() {
                   <td className="px-4 py-3 font-medium text-slate-100">
                     {e.name}
                     {/* Inactive employees are dimmed so the roster reads at a
-                        glance â€” visual only, the raw state drives the toggle. */}
+                        glance — visual only, the raw state drives the toggle. */}
                     {!e.active && (
                       <span className="ml-2 text-xs font-normal text-slate-400">
                         (offboarded)
@@ -269,7 +269,7 @@ export default async function EmployeesPage() {
                     <span className="font-medium text-slate-100">
                       {e.lifetimeCount.toLocaleString()}
                     </span>{" "}
-                    sales Â·{" "}
+                    sales ·{" "}
                     {CURRENCY}
                     {e.lifetimeSales.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
@@ -312,7 +312,7 @@ export default async function EmployeesPage() {
   );
 }
 
-// â”€â”€ Sub-components (Server Components â€” no client state needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sub-components (Server Components — no client state needed) ──────────────
 
 /** A single KPI tile in the performance summary. Pure presentational, ke. */
 function SummaryTile({
@@ -370,7 +370,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
 
       {employees.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-slate-500">
-          Everyone is clocked out. Use a row&rsquo;s â€œClock Inâ€ control to open a
+          Everyone is clocked out. Use a row&rsquo;s “Clock In” control to open a
           shift.
         </div>
       ) : (
@@ -385,7 +385,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
                   {e.name}
                 </p>
                 <p className="truncate text-xs text-slate-500">
-                  {e.email} Â· {e.role}
+                  {e.email} · {e.role}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -397,7 +397,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
                       maximumFractionDigits: 2,
                     })}
                   </span>{" "}
-                  Â· {e.liveSalesCount.toLocaleString()} sales this ledger
+                  · {e.liveSalesCount.toLocaleString()} sales this ledger
                 </span>
                 <ClockButton
                   userId={e.id}

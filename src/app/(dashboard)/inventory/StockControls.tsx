@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { adjustStock, type StockAdjustResult } from "./actions";
  * Inline +/- quick-adjust controls for one product row.
  *
  * Calls the {@link adjustStock} Server Action directly with the row id and a
- * signed delta (+1/-1 here â€” the action enforces the >= 0 floor server-side, so
+ * signed delta (+1/-1 here — the action enforces the >= 0 floor server-side, so
  * clicking -1 on a 0-stock row surfaces "Stock can't go below zero" rather than
  * corrupting the count). This is the "Event Handlers" calling convention: we
  * `await` the action ourselves and act on its result, no `useActionState`, so
@@ -51,7 +51,7 @@ export default function StockControls({
       if (result.stock != null) setDisplayed(result.stock);
       // One live toast per row: a stable id means a rapid +/- click run updates
       // the same toast in place instead of stacking a pile of notifications.
-      toast.success(`${name} â€” ${result.stock ?? "?"} in stock`, {
+      toast.success(`${name} — ${result.stock ?? "?"} in stock`, {
         id: `stock-${id}`,
       });
     } else {

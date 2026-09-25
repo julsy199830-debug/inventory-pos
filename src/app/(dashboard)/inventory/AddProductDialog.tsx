@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 import { createProduct, type CreateProductResult } from "./actions";
@@ -15,27 +15,27 @@ export type CategoryOption = { id: string; name: string };
  * The dialog mounts its own modal overlay once `open` is set, then submits via a
  * manual async handler that `await`s the raw `createProduct` Server Action
  * directly. Server Actions are async functions that resolve to their declared
- * return type, so awaiting one gives us the result in the same tick â€” we close +
+ * return type, so awaiting one gives us the result in the same tick — we close +
  * reset the form right there on success, no effect needed. (This is the
  * "Event Handlers" calling convention from the mutating-data docs.)
  *
  * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
  * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` â€” which
+ * react to its success is `setState` inside an effect keyed on `state` — which
  * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
  * action ourselves sidesteps that entirely: the close/reset lives in the submit
  * handler, where side effects belong, not in a render-following effect.
  *
- * Note on progressive enhancement: the modal itself is gated behind `{open && â€¦}`,
+ * Note on progressive enhancement: the modal itself is gated behind `{open && …}`,
  * so a JS-disabled client can never reach the form to submit it. `<form action>`
  * would therefore buy nothing real here, and a manual JS submit is the honest
  * shape. Self-contained client island that owns the trigger + modal together so
- * the parent page stays a pure Server Component â€” the same structure as the
+ * the parent page stays a pure Server Component — the same structure as the
  * suppliers `AddSupplierDialog`.
  *
  * Category is chosen from a managed `<select>` populated server-side (the page
  * passes the current set of {@link CategoryOption}s), so a product is always
- * linked to a real {@link Category} id or left uncategorized â€” the old free-text
+ * linked to a real {@link Category} id or left uncategorized — the old free-text
  * `category` field is gone. The field is named `categoryId` to match what
  * {@link createProduct} reads; an empty value means "uncategorized" and is a
  * legal, intentional choice.
@@ -47,11 +47,11 @@ export default function AddProductDialog({
 }) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` â€” same UX (inputs + buttons lock
+  // than reading them out of `useActionState` — same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the insert succeeds â€” the next
+  // Ref onto the form so we can reset it once the insert succeeds — the next
   // time the dialog opens it's a blank form rather than the just-submitted row.
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -251,7 +251,7 @@ export default function AddProductDialog({
                   disabled={pending}
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {pending ? "Savingâ€¦" : "Save product"}
+                  {pending ? "Saving…" : "Save product"}
                 </button>
               </div>
             </form>

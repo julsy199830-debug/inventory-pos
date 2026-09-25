@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { assignRole } from './actions'
@@ -11,7 +11,7 @@ type Role = 'ADMIN' | 'MANAGER' | 'CASHIER'
  * Server Action on change.
  *
  * A dedicated control rather than the edit dialog so role changes are a quick
- * one-click op â€” the action takes just `id` + `role`. `asRole` narrows the
+ * one-click op — the action takes just `id` + `role`. `asRole` narrows the
  * submitted value server-side (unknown values fall back to CASHIER), so this
  * client never widens permissions; a tampered select can only *narrows* down to
  * the least-privileged default at worst.

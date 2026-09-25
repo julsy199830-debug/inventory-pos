@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { clockIn, clockOut } from './actions'
@@ -10,7 +10,7 @@ import { clockIn, clockOut } from './actions'
  * state: a "Clock In" button when they have no open shift, or "Clock Out" when
  * they do. The row's `userId` travels as a hidden field so the action can
  * resolve their open shift server-side (and, on clock-in, auto-close any
- * forgotten prior shift â€” see `clockIn` in `actions.ts`).
+ * forgotten prior shift — see `clockIn` in `actions.ts`).
  *
  * Because the actions return a `ShiftResult` (unlike the void form-driven
  * toggles) we drive them from a click handler with `useActionState`-style
@@ -40,7 +40,7 @@ export default function ClockButton({
         setError(res.error ?? 'Something went wrong')
       }
     } finally {
-      // Always clear pending â€” if clockIn/clockOut rejects (e.g. a thrown
+      // Always clear pending — if clockIn/clockOut rejects (e.g. a thrown
       // Server Action) the button would stay stuck disabled otherwise.
       setPending(false)
     }
@@ -61,8 +61,8 @@ export default function ClockButton({
       >
         {pending
           ? clockedIn
-            ? 'Clocking outâ€¦'
-            : 'Clocking inâ€¦'
+            ? 'Clocking out…'
+            : 'Clocking in…'
           : clockedIn
             ? 'Clock Out'
             : 'Clock In'}
