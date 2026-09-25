@@ -20,9 +20,9 @@ export default async function DashboardLayout({
   if (user.role === "CASHIER") redirect("/pos");
 
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-slate-50">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50">
       <Sidebar user={user} />
-      <main className="min-w-0 flex-1 overflow-y-auto scroll-smooth">
+      <main className="h-screen min-w-0 flex-1 overflow-y-auto scroll-smooth">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-2.5">
