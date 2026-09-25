@@ -5,6 +5,9 @@ import { requirePageAuth } from "@/lib/session";
 import Sidebar from "./_components/Sidebar";
 import Breadcrumbs from "./_components/Breadcrumbs";
 import { PageTransition } from "@/app/_components/ui/PageTransition";
+import { stockStatusAt, lowStockThresholdFor } from "@/lib/types";
+import { prisma } from "@/lib/db";
+import InventoryAssistant from "./_components/InventoryAssistant";
 
 export default async function DashboardLayout({
   children,
@@ -18,6 +21,23 @@ export default async function DashboardLayout({
   // views they can't use.
   const user = await requirePageAuth();
   if (user.role === "CASHIER") redirect("/pos");
+
+  const products = await prisma.product.findMany({
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      stock: true,
+      category: { select: { lowStockThreshold: true } },
+    },
+  });
+  const inventoryAlerts = products.flatMap((product) => {
+    const threshold = lowStockThresholdFor(product.category?.lowStockThreshold);
+    const status = stockStatusAt(product.stock, product.category?.lowStockThreshold);
+    return status === "ok"
+      ? []
+      : [{ id: product.id, name: product.name, sku: product.sku, stock: product.stock, threshold, status }];
+  });
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
@@ -53,6 +73,7 @@ export default async function DashboardLayout({
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
+      <InventoryAssistant alerts={inventoryAlerts} />
     </div>
   );
 }
