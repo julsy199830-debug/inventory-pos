@@ -99,7 +99,7 @@ export default function Sidebar({
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
+    <aside className="sticky top-0 z-40 hidden h-screen w-68 shrink-0 self-start flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
       {/* Branding */}
       <div className="mb-4 flex items-center px-3">
         <Link
