@@ -61,3 +61,5 @@ next-env.d.ts
 /backups/
 /public/Logo final.png
 /NEW DASHBOARD DESIGN 1.png
+
+.claude/
