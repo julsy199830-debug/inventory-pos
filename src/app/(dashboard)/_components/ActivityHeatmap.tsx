@@ -8,6 +8,7 @@
  * `rgba(...)` so the palette stays exactly in the redesign's indigo family
  * without depending on generated Tailwind shade classes.
  */
+import { Fragment } from "react";
 
 export default function ActivityHeatmap({
   matrix,
@@ -47,7 +48,7 @@ export default function ActivityHeatmap({
 
           {/* One row per day: day label + 8 intensity cells */}
           {matrix.map((cells, dayIndex) => (
-            <>
+            <Fragment key={dayIndex}>
               <span className="flex w-9 items-center justify-center rounded-md bg-slate-800/60 text-[10px] font-semibold leading-none text-slate-300">
                 {DAYS[dayIndex]}
               </span>
@@ -72,7 +73,7 @@ export default function ActivityHeatmap({
                   </span>
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
       )}
