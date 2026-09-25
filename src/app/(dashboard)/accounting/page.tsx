@@ -5,6 +5,9 @@ import {
 } from "@/app/actions/accounting";
 import RangeSelector from "./RangeSelector";
 
+const SURFACE_CLS = "rounded-xl border border-slate-200 bg-white shadow-sm p-5";
+const SECONDARY_SURFACE_CLS = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
+
 /**
  * The selectable date-range presets. These mirror the values the
  * `RangeSelector` client island writes into the URL (`?range=<preset>`), so the
@@ -154,15 +157,15 @@ export default async function AccountingPage({
       {/* Secondary strip: COGS and units sold. Context-only — COGS backs the
           Net Profit figure above, and units sold summarizes volume. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
+        <div className={SECONDARY_SURFACE_CLS}>
           <p className="text-sm font-medium text-slate-500">Cost of Goods Sold</p>
-          <p className="mt-2 text-xl font-semibold text-slate-100">
+          <p className="mt-2 text-xl font-semibold text-slate-900">
             {money(cogs, symbol)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
+        <div className={SECONDARY_SURFACE_CLS}>
           <p className="text-sm font-medium text-slate-500">Units Sold</p>
-          <p className="mt-2 text-xl font-semibold text-slate-100">
+          <p className="mt-2 text-xl font-semibold text-slate-900">
             {unitsSold.toLocaleString()}
           </p>
         </div>
@@ -171,8 +174,8 @@ export default async function AccountingPage({
       {/* Per-product profitability breakdown. Sorted by profit desc inside
           getFinancialSummary, so the biggest contributors surface first. The
           margin column colors by sign so a loss can't masquerade as a win. */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
-        <div className="border-b border-slate-700 px-5 py-4">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-5 py-4">
           <h2 className="text-base font-semibold text-slate-100">
             Profit by Product
           </h2>
@@ -183,7 +186,7 @@ export default async function AccountingPage({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
@@ -192,7 +195,7 @@ export default async function AccountingPage({
                 <th className="px-5 py-3 text-right font-medium">Margin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200">
               {productBreakdown.map((row) => (
                 <ProductRow
                   key={row.productId}
@@ -228,12 +231,12 @@ function KpiCard({
 }) {
   const color =
     tone === "positive"
-      ? "text-indigo-300"
+      ? "text-emerald-700"
       : tone === "negative"
-        ? "text-red-300"
-        : "text-slate-100";
+        ? "text-red-700"
+        : "text-slate-900";
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-5">
+    <div className={SURFACE_CLS}>
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className={`mt-2 text-2xl font-semibold ${color}`}>{value}</p>
     </div>
@@ -249,17 +252,17 @@ function ProductRow({
   row: ProductBreakdownRow;
   symbol: string;
 }) {
-  const profitTone = row.profit >= 0 ? "text-indigo-300" : "text-red-300";
-  const marginTone = row.margin >= 0 ? "text-indigo-300" : "text-red-300";
+  const profitTone = row.profit >= 0 ? "text-indigo-700" : "text-red-700";
+  const marginTone = row.margin >= 0 ? "text-indigo-700" : "text-red-700";
   return (
-    <tr className="hover:bg-slate-950">
-      <td className="px-5 py-3 font-medium text-slate-100">
+    <tr className="hover:bg-slate-50">
+      <td className="px-5 py-3 font-medium text-slate-900">
         {row.productName}
       </td>
-      <td className="px-5 py-3 text-right text-slate-300">
+      <td className="px-5 py-3 text-right text-slate-600">
         {row.quantitySold.toLocaleString()}
       </td>
-      <td className="px-5 py-3 text-right text-slate-100">
+      <td className="px-5 py-3 text-right text-slate-900">
         {money(row.revenue, symbol)}
       </td>
       <td className="px-5 py-3 text-right text-slate-500">

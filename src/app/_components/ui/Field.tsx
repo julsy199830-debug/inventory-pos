@@ -1,6 +1,6 @@
 /**
  * Labeled form-field wrapper shared across the dashboard dialogs so the
- * markup stays DRY. Renders an uppercase micro-label (with an optional
+ * markup stays DRY. Renders a compact uppercase micro-label (with an optional
  * required marker) above its children.
  */
 export function Field({
@@ -18,16 +18,19 @@ export function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-400"
+        className="block text-xs font-semibold uppercase tracking-wide text-slate-600"
       >
         {label}
-        {required && <span className="ml-0.5 text-red-400">*</span>}
+        {required && <span className="ml-0.5 text-red-600">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-/** Shared input styling — dark surfaces, consistent radii, indigo focus ring. */
+/** Shared light input styling with an accessible indigo focus treatment. */
 export const inputCls =
-  "w-full rounded-xl border border-slate-700 bg-slate-950/60 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-900 disabled:text-slate-500";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
+
+export const selectCls =
+  "w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";

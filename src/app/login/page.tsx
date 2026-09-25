@@ -22,8 +22,8 @@ export default async function LoginPage({
   ).map((u) => ({ ...u, role: asRole(u.role) }));
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <div className="w-full max-w-md bg-transparent">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/10 sm:p-8">
         <LoginForm users={users} nextPath={nextPath ?? null} />
       </div>
     </div>

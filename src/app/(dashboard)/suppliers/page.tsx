@@ -109,7 +109,7 @@ export default async function SuppliersPage({
             name="q"
             defaultValue={query}
             placeholder="Search suppliers..."
-            className="w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm py-2 pl-9 pr-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
 
@@ -120,7 +120,7 @@ export default async function SuppliersPage({
       </form>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

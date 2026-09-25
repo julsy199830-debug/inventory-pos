@@ -23,7 +23,7 @@ export default function CategoryDonutChart({
   const total = data.reduce((sum, slice) => sum + slice.revenue, 0);
 
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
+    <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
       <div>
         <h2 className="text-base font-semibold text-slate-100">
           Category Share
@@ -65,7 +65,7 @@ export default function CategoryDonutChart({
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-700">
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50">
             <p className="text-sm text-slate-500">
               No sales to categorize yet.
             </p>
@@ -127,7 +127,7 @@ function DonutTooltip({
   const entry = payload[0];
   const percent = entry.payload?.percent ?? 0;
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-900/10">
       <p className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
         <span
           className="h-2 w-2 rounded-full"

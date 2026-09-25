@@ -225,7 +225,7 @@ export default async function EmployeesPage() {
       <ShiftWidget employees={clockedInList} />
 
       {/* Employee management table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -356,7 +356,7 @@ function SummaryTile({
  */
 function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-700 px-4 py-3">
         <h2 className="text-sm font-semibold tracking-tight text-slate-100">
           On the clock

@@ -170,9 +170,9 @@ export default function StockHistoryDialog({
  * `@/lib/types`, which is the narrowed type the server ships.
  */
 const TYPE_STYLES: Record<StockMovementType, string> = {
-  RESTOCK: "bg-indigo-500/20 text-indigo-300 border-blue-200",
-  SALE: "bg-red-500/100/20 text-red-300 border-red-500/30",
-  ADJUSTMENT: "bg-amber-500/100/15 text-amber-300 border-amber-500/30",
+  RESTOCK: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  SALE: "bg-red-50 text-red-700 border-red-200",
+  ADJUSTMENT: "bg-amber-50 text-amber-800 border-amber-200",
   DAMAGE: "bg-orange-100 text-orange-700 border-orange-200",
   VOID: "bg-slate-500/20 text-slate-300 border-slate-400",
 };

@@ -23,11 +23,11 @@ const fd = (d: Date) =>
     minute: "2-digit",
   });
 const input =
-  "w-full rounded-lg border border-slate-700 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
 const primary =
-  "rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50";
+  "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50";
 const ghost =
-  "rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-950";
+  "inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700";
 
 export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] }) {
   const [rows, setRows] = useState(initialRows);
@@ -105,7 +105,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
   const statement = viewing ? statements[viewing.id] : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-0">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Customers</h1>
@@ -150,18 +150,19 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
         </div>
       </div>
 
-      {error && <div className="mt-4 rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</div>}
+      {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>}
 
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by name, phone, or email…"
-        className={`${input} mt-4 max-w-sm`}
+        className={`${input} mt-4 sm:max-w-sm`}
       />
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-700">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-950 text-left text-xs uppercase tracking-wide text-slate-500">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
@@ -173,7 +174,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
           </thead>
           <tbody className="divide-y divide-slate-800">
             {filtered.map((r) => (
-              <tr key={r.id} className="hover:bg-slate-950">
+              <tr key={r.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium text-slate-100">{r.name}</td>
                 <td className="px-4 py-3 text-slate-300">{r.phone ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-300">{f(r.creditLimit)}</td>
@@ -229,7 +230,8 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {(form.name !== "" || editing) && (
@@ -334,11 +336,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl bg-slate-900 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
+          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Close">✕</button>
         </div>
         {children}
       </div>

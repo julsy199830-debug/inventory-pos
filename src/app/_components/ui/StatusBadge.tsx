@@ -9,10 +9,10 @@ type StatusVariant =
   | "info"; // Processing, On Hold
 
 const variantStyles: Record<StatusVariant, string> = {
-  success: "bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/30",
-  warning: "bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/30",
-  danger: "bg-red-500/10 text-red-300 ring-1 ring-red-500/30",
-  info: "bg-indigo-500/10 text-indigo-300 ring-1 ring-indigo-500/30",
+  success: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  warning: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+  danger: "bg-red-50 text-red-700 ring-1 ring-red-200",
+  info: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",
 };
 
 export function StatusBadge({

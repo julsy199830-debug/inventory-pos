@@ -127,7 +127,7 @@ function KpiTile({
   sparkline?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
+    <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-100">
         {value}

@@ -19,8 +19,8 @@ export default function TopProductsTable({
   currencySymbol?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
-      <div className="border-b border-slate-700 px-5 py-4">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-4">
         <h2 className="text-base font-semibold text-slate-100">
           Top Selling Products
         </h2>
@@ -37,16 +37,16 @@ export default function TopProductsTable({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950/60 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Rank</th>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units Sold</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200">
               {products.map((product, i) => (
-                <tr key={product.productId} className="hover:bg-slate-950">
+                <tr key={product.productId} className="hover:bg-slate-50">
                   <td className="px-5 py-3">
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300 ring-1 ring-indigo-500/30">
                       {i + 1}

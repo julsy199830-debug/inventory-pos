@@ -36,7 +36,7 @@ export default function RangeSelector({ active }: { active: RangePreset }) {
 
   return (
     <div
-      className="inline-flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-1"
+      className="rounded-xl border border-slate-200 bg-white shadow-sm p-1"
       role="group"
       aria-label="Date range"
     >
@@ -59,7 +59,7 @@ export default function RangeSelector({ active }: { active: RangePreset }) {
               "disabled:cursor-not-allowed disabled:opacity-60",
               isActive
                 ? "bg-indigo-600 text-white"
-                : "text-slate-300 hover:bg-slate-800 hover:text-slate-100",
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
             ].join(" ")}
           >
             {preset.label}

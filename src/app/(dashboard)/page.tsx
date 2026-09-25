@@ -251,15 +251,15 @@ export default async function Home({
   }));
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950 shadow-lg shadow-slate-950/10">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
       {/* ── Top navigation bar ─────────────────────────────────────────── */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-white px-5 py-5 sm:px-7">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
             InvPos · Overview
           </div>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-white">
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
             Welcome back, {firstName}
           </h1>
           <p className="mt-0.5 text-sm text-slate-400">
@@ -270,7 +270,7 @@ export default async function Home({
 
         <nav
           aria-label="Reporting timeframe"
-          className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 p-1"
+          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1"
         >
           {RANGE_DEFS.map((r) => {
             const active = r.key === rangeKey;
@@ -283,7 +283,7 @@ export default async function Home({
                   "rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors",
                   active
                     ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/25"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white",
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                 ].join(" ")}
               >
                 {r.label}
@@ -382,7 +382,7 @@ function MetricCard({
   gradient: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
       <div className="flex items-center gap-2.5">
         <span
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-md shadow-indigo-500/20`}
@@ -393,7 +393,7 @@ function MetricCard({
           {label}
         </p>
       </div>
-      <p className="mt-4 text-3xl font-bold tabular-nums tracking-tight text-white">
+      <p className="mt-4 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
         {value}
       </p>
       {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
@@ -416,9 +416,9 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={`flex flex-col rounded-2xl border border-slate-800 bg-slate-900 ${className}`}>
-      <div className="flex items-center gap-2.5 border-b border-slate-800 px-4 py-3.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-indigo-300 ring-1 ring-slate-700">
+    <section className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
+      <div className="flex items-center gap-2.5 border-b border-slate-200 bg-slate-50/70 px-4 py-3.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -494,7 +494,7 @@ function RecentSalesList({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3">
               <p className="truncate text-sm font-medium text-slate-200">{sale.customer}</p>
-              <p className="shrink-0 text-sm font-semibold tabular-nums text-white">
+              <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
                 {fmtMoney(sale.total, symbol)}
               </p>
             </div>

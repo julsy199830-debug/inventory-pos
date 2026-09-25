@@ -22,8 +22,8 @@ export function ActionIconButton({
 }) {
   const tone =
     variant === "danger"
-      ? "text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
-      : "text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200";
+      ? "text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+      : "text-slate-500 transition-colors hover:bg-indigo-50 hover:text-indigo-700";
 
   return (
     <button

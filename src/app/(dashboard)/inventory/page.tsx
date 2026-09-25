@@ -218,7 +218,7 @@ export default async function InventoryPage({
             name="q"
             defaultValue={query}
             placeholder="Search items..."
-            className="w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm py-2 pl-9 pr-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
 
@@ -251,7 +251,7 @@ export default async function InventoryPage({
             Component with no client island. */}
         <Link
           href="/inventory/categories"
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <svg
             className="h-4 w-4"
@@ -273,7 +273,7 @@ export default async function InventoryPage({
       </form>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

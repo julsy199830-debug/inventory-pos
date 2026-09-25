@@ -134,7 +134,7 @@ export default function EditCategoryDialog({
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
               <h2 className="text-base font-semibold tracking-tight text-slate-100">
                 Edit Category

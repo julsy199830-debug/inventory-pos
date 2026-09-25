@@ -12,14 +12,14 @@ import type { PoStatus } from "../actions";
  * Phase 1 code path can produce them.
  */
 const STATUS_META: Record<PoStatus, { label: string; cls: string }> = {
-  DRAFT: { label: "Draft", cls: "bg-slate-800 text-slate-300" },
-  ORDERED: { label: "Ordered", cls: "bg-indigo-500/15 text-indigo-300" },
+  DRAFT: { label: "Draft", cls: "bg-slate-100 text-slate-700 ring-1 ring-slate-200" },
+  ORDERED: { label: "Ordered", cls: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200" },
   PARTIALLY_RECEIVED: {
     label: "Partially received",
-    cls: "bg-amber-500/15 text-amber-300",
+    cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
   },
-  RECEIVED: { label: "Received", cls: "bg-emerald-500/15 text-emerald-300" },
-  CANCELLED: { label: "Cancelled", cls: "bg-red-500/15 text-red-300" },
+  RECEIVED: { label: "Received", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
+  CANCELLED: { label: "Cancelled", cls: "bg-red-50 text-red-700 ring-1 ring-red-200" },
 };
 
 /** Small pill showing a purchase order's status. */

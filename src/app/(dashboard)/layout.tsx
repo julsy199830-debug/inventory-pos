@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePageAuth } from "@/lib/session";
 import Sidebar from "./_components/Sidebar";
@@ -19,10 +20,35 @@ export default async function DashboardLayout({
   if (user.role === "CASHIER") redirect("/pos");
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-950">
+    <div className="flex min-h-screen w-full overflow-hidden bg-slate-50">
       <Sidebar user={user} />
       <main className="min-w-0 flex-1 overflow-y-auto scroll-smooth">
-        <div className="mx-auto w-full max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white">IP</span>
+              <span>
+                <span className="block text-base font-bold text-slate-900">InvPos</span>
+                <span className="block text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Inventory & Sales</span>
+              </span>
+            </Link>
+            <Link href="/pos" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm">Point of Sale</Link>
+          </div>
+          <nav className="mt-3 flex gap-1 overflow-x-auto pb-0.5" aria-label="Mobile dashboard navigation">
+            {[
+              ["Dashboard", "/"],
+              ["Inventory", "/inventory"],
+              ["Purchasing", "/purchasing"],
+              ["Reports", "/reports"],
+              ["Customers", "/customers"],
+            ].map(([label, href]) => (
+              <Link key={href} href={href} className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-indigo-700">
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </header>
+        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8 xl:px-10">
           <Breadcrumbs />
           <PageTransition>{children}</PageTransition>
         </div>

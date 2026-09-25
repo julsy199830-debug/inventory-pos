@@ -41,12 +41,12 @@ export default function LowStockBanner({
   return (
     <div
       role="alert"
-      className="overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-slate-900 to-indigo-500/10 shadow-sm"
+      className="overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 shadow-sm"
     >
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Warning icon */}
         <svg
-          className="mt-0.5 h-5 w-5 shrink-0 text-indigo-300"
+          className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"

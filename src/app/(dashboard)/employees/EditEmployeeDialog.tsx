@@ -63,7 +63,7 @@ export default function EditEmployeeDialog({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
             <h2 className="mb-4 text-lg font-semibold text-slate-100">Edit Employee</h2>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>

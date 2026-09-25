@@ -98,7 +98,7 @@ export default async function PurchasingPage({
           which re-renders this Server Component with the filtered rows. */}
       <form
         method="get"
-        className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm"
+        className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
       >
         <div className="min-w-[220px] flex-1">
           <label htmlFor="q" className="sr-only">
@@ -110,7 +110,7 @@ export default async function PurchasingPage({
             type="search"
             defaultValue={query}
             placeholder="Search by PO number or supplier…"
-            className="w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
           />
         </div>
 
@@ -122,7 +122,7 @@ export default async function PurchasingPage({
             id="status"
             name="status"
             defaultValue={statusFilter}
-            className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
           >
             <option value="">All statuses</option>
             <option value="DRAFT">Draft</option>
@@ -135,17 +135,17 @@ export default async function PurchasingPage({
 
         <button
           type="submit"
-          className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950"
+          className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
         >
           Filter
         </button>
       </form>
 
       {/* PO table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th scope="col" className="px-4 py-3 font-medium">
                   PO number
@@ -184,7 +184,7 @@ export default async function PurchasingPage({
                 </tr>
               ) : (
                 orders.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-950/60">
+                  <tr key={po.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <Link
                         href={`/purchasing/${po.id}`}

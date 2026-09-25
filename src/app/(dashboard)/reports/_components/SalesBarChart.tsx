@@ -44,7 +44,7 @@ export default function SalesBarChart({
   const hasSales = data.some((point) => point.cash > 0 || point.cardCredit > 0);
 
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
+    <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-100">Sales Volume</h2>
@@ -122,7 +122,7 @@ export default function SalesBarChart({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-700">
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50">
             <p className="text-sm text-slate-500">
               No completed sales in this window yet.
             </p>
@@ -150,8 +150,8 @@ function PeriodButton({
       className={[
         "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
         active
-          ? "bg-slate-900 text-indigo-300 shadow-sm"
-          : "text-slate-500 hover:text-slate-200",
+          ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200"
+          : "text-slate-500 hover:bg-white/70 hover:text-slate-800",
       ].join(" ")}
     >
       {children}
@@ -193,7 +193,7 @@ function VolumeTooltip({
     0,
   );
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-900/10">
       <p className="text-xs font-medium text-slate-500">{label}</p>
       {payload.map((entry, i) => (
         <p

@@ -207,7 +207,7 @@ export default function SettingsForm({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100";
 
 /** Labeled field wrapper — keeps the form DRY (matches the supplier dialogs). */
 function Field({
@@ -225,7 +225,7 @@ function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
+        className="block text-xs font-medium uppercase tracking-wide text-slate-600"
       >
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}

@@ -10,14 +10,14 @@
  * formatters.
  */
 
-export const BLUE_600 = "#6366f1"; // indigo-500 — primary series (was blue-600)
-export const blue = "#6366f1";      // alias for simple imports
-export const SKY_400 = "#8b5cf6"; // violet-500 — secondary series (was sky-400)
-export const BLUE_500 = "#d946ef"; // fuchsia-500 — tertiary series
-export const BLUE_400 = "#22d3ee"; // cyan-400 — highlight / sparkline
-export const SLATE_300 = "#334155"; // slate-700 — grid / axis lines (dark)
-export const SLATE_400 = "#94a3b8"; // slate-400 — axis ticks / labels
-export const SLATE_500 = "#64748b"; // slate-500 — secondary text
+export const BLUE_600 = "#4f46e5"; // indigo-600 — primary series
+export const blue = "#4f46e5";      // alias for simple imports
+export const SKY_400 = "#7c3aed"; // violet-600 — secondary series
+export const BLUE_500 = "#c026d3"; // fuchsia-600 — tertiary series
+export const BLUE_400 = "#0891b2"; // cyan-600 — highlight / sparkline
+export const SLATE_300 = "#e2e8f0"; // light grid / axis lines
+export const SLATE_400 = "#64748b"; // axis ticks / labels
+export const SLATE_500 = "#475569"; // secondary text
 
 /** Donut slice palette — blue/sky/slate family only, cycled for stores
  * with more categories than colors (three seeded categories fit exactly). */

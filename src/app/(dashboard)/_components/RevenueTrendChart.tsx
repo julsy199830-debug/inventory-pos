@@ -24,10 +24,10 @@ export type TrendPoint = {
  * grid, slate-400 ticks, and indigo/violet accents (Tailwind indigo-500
  * `#6366f1`, violet-500 `#8b5cf6`) so the SVG chart and the surrounding
  * charcoal cards agree on color. */
-const INDIGO = "#6366f1";
-const VIOLET = "#8b5cf6";
-const GRID = "#1e293b"; // slate-800
-const TICK = "#94a3b8"; // slate-400
+const INDIGO = "#4f46e5";
+const VIOLET = "#7c3aed";
+const GRID = "#e2e8f0"; // light grid
+const TICK = "#64748b"; // readable axis labels
 
 /**
  * Revenue trend area chart for the dashboard's Analytics card.
@@ -54,7 +54,7 @@ export default function RevenueTrendChart({
   return (
     <div className="h-72">
       {!hasSales ? (
-        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-700">
+        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50">
           <p className="text-sm text-slate-400">
             No completed sales in this window yet.
           </p>
@@ -118,9 +118,9 @@ function TrendTooltip({
   if (!active || !payload?.length) return null;
   const value = payload[0]?.value ?? 0;
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg">
-      <p className="text-xs font-medium text-slate-300">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold tabular-nums text-white">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-900/10">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums text-slate-900">
         {formatMoney(Number(value), currencySymbol)}
       </p>
     </div>

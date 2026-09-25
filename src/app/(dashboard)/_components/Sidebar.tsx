@@ -99,11 +99,15 @@ export default function Sidebar({
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
+    <aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
       {/* Branding */}
-      <div className="mb-4 px-2 text-center">
-        <Link href="/" className="block" aria-label="InvPos Home">
-          <span className="block text-2xl font-bold tracking-tight text-white">InvPos</span>
+      <div className="mb-5 flex items-center justify-between px-2">
+        <Link href="/" className="group flex items-center gap-3" aria-label="InvPos Home">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm">IP</span>
+          <span>
+            <span className="block text-xl font-bold tracking-tight text-slate-900">InvPos</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Inventory & Sales</span>
+          </span>
         </Link>
       </div>
 
@@ -114,7 +118,7 @@ export default function Sidebar({
       <div className="mx-4 mb-4">
         <Link
           href="/pos"
-          className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/30 transition-colors hover:bg-indigo-500"
+          className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700"
         >
           <ShoppingCart className="h-5 w-5 shrink-0" />
           Point of Sale
@@ -122,8 +126,8 @@ export default function Sidebar({
       </div>
 
       {/* User profile card: avatar, name, role badge */}
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-semibold text-white">
+      <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white shadow-sm">
           {user.name
             .split(" ")
             .map((n) => n[0])
@@ -135,7 +139,7 @@ export default function Sidebar({
           <p className="truncate text-sm font-medium text-slate-100">
             {user.name}
           </p>
-          <span className="mt-1 inline-block rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-300 ring-1 ring-indigo-500/30">
+          <span className="mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200">
             {user.role === "ADMIN" ? "Administrator" : "Manager"}
           </span>
         </div>
@@ -188,11 +192,11 @@ export default function Sidebar({
       </nav>
 
       {/* Sticky register lock */}
-      <div className="border-t border-slate-800 px-4 py-4">
+      <div className="border-t border-slate-200 px-4 py-4">
         <button
           type="button"
           onClick={() => lockRegister()}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
           <Lock className="h-5 w-5 shrink-0 text-slate-500" />
           Lock Register

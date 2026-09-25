@@ -746,8 +746,8 @@ export default function PosCheckout({
 
   // Desktop: sticky right-hand cart sidebar (hidden below `md`).
   const cartPanel = (
-    <aside className="hidden w-[360px] shrink-0 flex-col bg-slate-900 md:flex lg:w-[400px]">
-      <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+    <aside className="hidden w-[360px] shrink-0 flex-col border-l border-slate-200 bg-white md:flex lg:w-[400px]">
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
         <h2 className="text-base font-semibold text-slate-100">Current Order</h2>
         {cart.length > 0 && (
           <span className="rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-semibold text-indigo-300">
@@ -762,9 +762,9 @@ export default function PosCheckout({
 
 
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-950">
+    <div className="flex h-screen w-full flex-col bg-slate-100">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3 sm:px-6 sm:py-4">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-4">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Image
             src="/Logo final.png"
@@ -974,11 +974,11 @@ export default function PosCheckout({
             transition={{ duration: 0.2 }}
           >
             <div
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
               onClick={() => setCartOpen(false)}
             />
             <motion.div
-              className="absolute inset-y-0 right-0 flex w-[88%] max-w-md flex-col bg-slate-900 shadow-xl"
+              className="absolute inset-y-0 right-0 flex w-[88%] max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -1019,7 +1019,7 @@ export default function PosCheckout({
             transition={{ type: 'spring', stiffness: 200, damping: 25 }}
           >
             <motion.div
-              className="w-full max-w-md overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
+              className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -1049,7 +1049,7 @@ export default function PosCheckout({
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto bg-slate-950 px-5 py-5">
+            <div className="max-h-[70vh] overflow-y-auto bg-slate-100 px-5 py-5">
               {/* Receipt preview — sized 80mm to match the printed output. */}
               <Receipt
                 store={store}

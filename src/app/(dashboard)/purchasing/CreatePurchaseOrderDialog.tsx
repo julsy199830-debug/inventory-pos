@@ -181,7 +181,7 @@ export default function CreatePurchaseOrderDialog({
             </div>
 
             {/* Line items — each row posts productId_N/orderedQty_N/unitCost_N */}
-            <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   Line items
@@ -190,7 +190,7 @@ export default function CreatePurchaseOrderDialog({
                   type="button"
                   onClick={() => setLineCount((n) => n + 1)}
                   disabled={pending}
-                  className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs font-medium text-indigo-300 hover:bg-slate-900"
+                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
                 >
                   + Add line
                 </button>

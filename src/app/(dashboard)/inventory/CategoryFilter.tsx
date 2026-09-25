@@ -34,7 +34,7 @@ export default function CategoryFilter({
         const form = e.currentTarget.form;
         if (form) startTransition(() => form.requestSubmit());
       }}
-      className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:opacity-60"
+      className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-60"
     >
       <option value="all">All categories</option>
       {categories.map((c) => (
