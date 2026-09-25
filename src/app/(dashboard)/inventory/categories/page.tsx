@@ -95,16 +95,16 @@ export default async function CategoriesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
                 <th className="px-5 py-3 font-medium">Category Name</th>
                 <th className="px-5 py-3 font-medium">Products</th>
                 <th className="px-5 py-3 font-medium">Low-stock threshold</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {categories.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-950">
+                <tr key={c.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-5 py-3 font-medium text-slate-100">{c.name}</td>
                   <td className="px-5 py-3">
                     <ProductCountPill count={c.productCount} />

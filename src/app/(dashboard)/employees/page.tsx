@@ -229,7 +229,7 @@ export default async function EmployeesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Role</th>
@@ -241,9 +241,9 @@ export default async function EmployeesPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {employees.map((e) => (
-                <tr key={e.id} className="hover:bg-slate-950">
+                <tr key={e.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-100">
                     {e.name}
                     {/* Inactive employees are dimmed so the roster reads at a
@@ -357,7 +357,7 @@ function SummaryTile({
 function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-700 px-4 py-3">
+      <div className="border-b border-slate-200 px-4 py-3">
         <h2 className="text-sm font-semibold tracking-tight text-slate-100">
           On the clock
         </h2>
@@ -374,7 +374,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
           shift.
         </div>
       ) : (
-        <ul className="divide-y divide-slate-800">
+        <ul className="divide-y divide-slate-200/80">
           {employees.map((e) => (
             <li
               key={e.id}

@@ -148,10 +148,10 @@ export default async function PurchaseOrderDetailPage({
       )}
 
       {/* Line items */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm shadow-slate-900/5">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b border-slate-800 bg-slate-950/60 text-left text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th scope="col" className="px-4 py-3 font-medium">SKU</th>
                 <th scope="col" className="px-4 py-3 font-medium">Product</th>
@@ -162,7 +162,7 @@ export default async function PurchaseOrderDetailPage({
                 <th scope="col" className="px-4 py-3 text-right font-medium">Line total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {po.items.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
@@ -171,7 +171,7 @@ export default async function PurchaseOrderDetailPage({
                 </tr>
               ) : (
                 po.items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-950/60">
+                  <tr key={item.id} className="transition-colors hover:bg-slate-50">
                     <td className="px-4 py-3 font-mono text-xs text-slate-400">
                       {item.productSku}
                     </td>
@@ -195,7 +195,7 @@ export default async function PurchaseOrderDetailPage({
                 ))
               )}
             </tbody>
-            <tfoot className="border-t border-slate-800 bg-slate-950/60">
+            <tfoot className="border-t border-slate-200 bg-slate-50/70">
               <tr>
                 <td
                   colSpan={5}

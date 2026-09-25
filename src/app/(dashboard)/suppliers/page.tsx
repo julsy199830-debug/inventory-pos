@@ -124,7 +124,7 @@ export default async function SuppliersPage({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3 font-medium">Supplier Name</th>
                 <th className="px-4 py-3 font-medium">Contact</th>
                 <th className="px-4 py-3 font-medium">Email</th>
@@ -134,9 +134,9 @@ export default async function SuppliersPage({
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {suppliers.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-950">
+                <tr key={s.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-100">{s.name}</td>
                   <td className="px-4 py-3 text-slate-300">{s.contactName ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-300">{s.email ?? "—"}</td>

@@ -101,12 +101,18 @@ export default function Sidebar({
   return (
     <aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
       {/* Branding */}
-      <div className="mb-5 flex items-center justify-between px-2">
-        <Link href="/" className="group flex items-center gap-3" aria-label="InvPos Home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm">IP</span>
-          <span>
-            <span className="block text-xl font-bold tracking-tight text-slate-900">InvPos</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Inventory & Sales</span>
+      <div className="mb-7 flex items-center px-4">
+        <Link
+          href="/"
+          className="group flex w-full items-center gap-3.5 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
+          aria-label="InvPos Home"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-sm font-bold tracking-tight text-white shadow-md shadow-indigo-600/20">
+            IP
+          </span>
+          <span className="min-w-0 leading-none">
+            <span className="block truncate text-[1.05rem] font-bold tracking-tight text-slate-900">InvPos</span>
+            <span className="mt-1.5 block truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inventory &amp; Sales</span>
           </span>
         </Link>
       </div>
@@ -126,7 +132,7 @@ export default function Sidebar({
       </div>
 
       {/* User profile card: avatar, name, role badge */}
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+      <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 shadow-sm backdrop-blur-sm">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white shadow-sm">
           {user.name
             .split(" ")
@@ -166,21 +172,21 @@ export default function Sidebar({
                       className={[
                         "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         active
-                          ? "bg-indigo-500/10 font-medium text-indigo-300"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100",
+                          ? "bg-indigo-50 font-medium text-indigo-700"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                       ].join(" ")}
                     >
                       <Icon
                         className={[
                           "h-5 w-5 shrink-0 transition-colors",
                           active
-                            ? "text-indigo-300"
-                            : "text-slate-500 group-hover:text-slate-200",
+                            ? "text-indigo-600"
+                            : "text-slate-400 group-hover:text-slate-700",
                         ].join(" ")}
                       />
                       {item.label}
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />
                       )}
                     </Link>
                   );

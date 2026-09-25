@@ -277,7 +277,7 @@ export default async function InventoryPage({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3 font-medium">SKU / Barcode</th>
                 <th className="px-4 py-3 font-medium">Product Name</th>
                 <th className="px-4 py-3 font-medium">Category</th>
@@ -304,9 +304,9 @@ export default async function InventoryPage({
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {products.map((p) => (
-                <tr key={p.sku} className="hover:bg-slate-950">
+                <tr key={p.sku} className="transition-colors hover:bg-slate-50">
                   <td className="px-4 py-3 font-mono text-xs font-medium text-slate-200">
                     {p.sku}
                   </td>

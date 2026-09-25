@@ -172,7 +172,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-200/80">
             {filtered.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium text-slate-100">{r.name}</td>
@@ -303,7 +303,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                   <th className="pb-2 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-200/80">
                 {statement.entries.map((e) => (
                   <tr key={e.id}>
                     <td className="py-2 text-slate-300">{fd(e.date)}</td>

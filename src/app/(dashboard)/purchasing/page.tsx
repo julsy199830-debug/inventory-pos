@@ -173,7 +173,7 @@ export default async function PurchasingPage({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80">
               {orders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-slate-500">

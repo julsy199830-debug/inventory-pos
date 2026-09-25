@@ -251,7 +251,7 @@ export default async function Home({
   }));
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
+      <div className="mx-1 rounded-2xl border border-slate-200/80 bg-white/55 p-5 shadow-sm shadow-slate-900/5 backdrop-blur-md">
       {/* ── Top navigation bar ─────────────────────────────────────────── */}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-white px-5 py-5 sm:px-7">
         <div className="min-w-0 flex-1">
@@ -382,7 +382,7 @@ function MetricCard({
   gradient: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
+    <div className="rounded-2xl border border-slate-200/80 bg-white/60 p-5 shadow-sm shadow-slate-900/5 backdrop-blur-md">
       <div className="flex items-center gap-2.5">
         <span
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-md shadow-indigo-500/20`}
@@ -416,8 +416,8 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
-      <div className="flex items-center gap-2.5 border-b border-slate-200 bg-slate-50/70 px-4 py-3.5">
+    <section className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/60 shadow-sm shadow-slate-900/5 backdrop-blur-md ${className}`}>
+      <div className="flex items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
           <Icon className="h-4 w-4" />
         </span>
@@ -485,7 +485,7 @@ function RecentSalesList({
     );
   }
   return (
-    <ul className="divide-y divide-slate-800">
+    <ul className="divide-y divide-slate-200/80">
       {sales.map((sale) => (
         <li key={sale.id} className="flex items-start gap-3 px-3 py-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/90 to-violet-600/90 text-xs font-bold text-white">
