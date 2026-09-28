@@ -2,6 +2,14 @@
 
 import { useRef, useState } from "react";
 import { createSupplier, type CreateSupplierResult } from "./actions";
+import { Modal } from "@/app/_components/ui/Modal";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 /**
  * Modal dialog for creating a new supplier.
@@ -85,53 +93,17 @@ export default function AddSupplierDialog() {
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
+        <Modal
+          open
+          onClose={onClose}
+          title="Add New Supplier"
+          description="Track a vendor you purchase stock from."
+          busy={pending}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-100">
-                Add New Supplier
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={pending}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
+          <form onSubmit={onSubmit} ref={formRef} className="space-y-4">
+            <FormError>{error}</FormError>
 
-            <form onSubmit={onSubmit} ref={formRef} className="space-y-4 px-5 py-5">
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-                >
-                  {error}
-                </p>
-              )}
-
-              <Field label="Supplier name" htmlFor="name" required>
+            <Field label="Supplier name" htmlFor="name" required>
                 <input
                   id="name"
                   name="name"
@@ -189,56 +161,26 @@ export default function AddSupplierDialog() {
                 </Field>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
+                  className={dialogSecondaryCls}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className={dialogPrimaryCls}
                 >
                   {pending ? "Saving…" : "Save supplier"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
-  );
-}
-
-const inputCls =
-  "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
-
-/** Labeled field wrapper — keeps the form DRY. */
-function Field({
-  label,
-  htmlFor,
-  required,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
-      >
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }

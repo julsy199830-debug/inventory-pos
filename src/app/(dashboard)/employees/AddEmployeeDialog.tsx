@@ -2,6 +2,15 @@
 
 import { useState } from 'react'
 import { createEmployee } from './actions'
+import { Modal } from '@/app/_components/ui/Modal'
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+  selectCls,
+} from '@/app/_components/ui/Field'
 
 /**
  * "Add New Employee" dialog. Same client-island pattern as
@@ -61,92 +70,92 @@ export default function AddEmployeeDialog() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold text-slate-100">Add Employee</h2>
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-200">
-                  Name
-                </label>
+        <Modal
+          open
+          onClose={() => setOpen(false)}
+          title="Add Employee"
+          description="Create a staff account for the register or dashboard."
+          busy={pending}
+        >
+          <form onSubmit={onSubmit} className="space-y-4">
+            <Field label="Name" htmlFor="name" required>
+              <input
+                id="name"
+                name="name"
+                required
+                disabled={pending}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Email" htmlFor="email" required>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                disabled={pending}
+                className={inputCls}
+              />
+            </Field>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="PIN" htmlFor="pin" required>
                 <input
-                  name="name"
-                  required
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200">
-                  Email
-                </label>
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200">
-                  PIN
-                </label>
-                <input
+                  id="pin"
                   name="pin"
                   inputMode="numeric"
                   pattern="\d{4,6}"
                   required
                   maxLength={6}
                   placeholder="4–6 digits"
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  disabled={pending}
+                  className={inputCls}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200">
-                  Role
-                </label>
+              </Field>
+              <Field label="Role" htmlFor="role" required>
                 <select
+                  id="role"
                   name="role"
                   defaultValue="CASHIER"
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  disabled={pending}
+                  className={selectCls}
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
                   <option value="CASHIER">Cashier</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200">
-                  Password <span className="font-normal text-slate-400">(optional)</span>
-                </label>
-                <input
-                  name="password"
-                  type="password"
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
+              </Field>
+            </div>
+            <Field label="Password (optional)" htmlFor="password">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                disabled={pending}
+                className={inputCls}
+              />
+            </Field>
 
-              {error && <p className="text-sm text-red-400">{error}</p>}
+            <FormError>{error}</FormError>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                >
-                  {pending ? 'Saving…' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                disabled={pending}
+                className={dialogSecondaryCls}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={pending}
+                className={dialogPrimaryCls}
+              >
+                {pending ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </>
   )

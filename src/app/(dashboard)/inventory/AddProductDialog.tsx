@@ -3,7 +3,14 @@
 import { useRef, useState } from "react";
 import { createProduct, type CreateProductResult } from "./actions";
 import { Modal } from "@/app/_components/ui/Modal";
-import { Field, inputCls } from "@/app/_components/ui/Field";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+  selectCls,
+} from "@/app/_components/ui/Field";
 
 /** One selectable option in the category dropdown. The empty-string id is the
  * "Uncategorized" sentinel the server accepts (it coerces `""`/absent to null). */
@@ -102,53 +109,17 @@ export default function AddProductDialog({
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
+        <Modal
+          open
+          onClose={onClose}
+          title="Add New Product"
+          description="Add an item to the catalog so it can be sold at the register."
+          busy={pending}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-100">
-                Add New Product
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={pending}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
+          <form onSubmit={onSubmit} ref={formRef} className="space-y-4">
+            <FormError>{error}</FormError>
 
-            <form onSubmit={onSubmit} ref={formRef} className="space-y-4 px-5 py-5">
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-                >
-                  {error}
-                </p>
-              )}
-
-              <Field label="Product name" htmlFor="name" required>
+            <Field label="Product name" htmlFor="name" required>
                 <input
                   id="name"
                   name="name"
@@ -237,26 +208,25 @@ export default function AddProductDialog({
                 </Field>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
+                  className={dialogSecondaryCls}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className={dialogPrimaryCls}
                 >
                   {pending ? "Saving…" : "Save product"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
   );

@@ -3,7 +3,13 @@
 import { useRef, useState } from "react";
 import { createPurchaseOrder, type CreatePoResult } from "./actions";
 import { Modal } from "@/app/_components/ui/Modal";
-import { Field, inputCls } from "@/app/_components/ui/Field";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 type SupplierOption = { id: string; name: string };
 type ProductOption = { id: string; name: string; sku: string };
@@ -135,6 +141,7 @@ export default function CreatePurchaseOrderDialog({
           title="New purchase order"
           description="Saved as a draft — nothing is ordered or received yet."
           className="max-w-2xl"
+          busy={pending}
         >
           <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
             <input type="hidden" name="lineCount" value={lineCount} />
@@ -252,7 +259,7 @@ export default function CreatePurchaseOrderDialog({
                         onClick={() => setLineCount((c) => Math.max(1, c - 1))}
                         disabled={pending || lineCount <= 1}
                         aria-label="Remove the last line"
-                        className="w-full rounded-lg border border-slate-800 px-2 py-2 text-xs font-medium text-red-400 hover:bg-slate-900 disabled:opacity-40"
+                        className="w-full rounded-lg border border-slate-300 bg-white py-2 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         ✕
                       </button>
@@ -262,25 +269,21 @@ export default function CreatePurchaseOrderDialog({
               })}
             </div>
 
-            {error && (
-              <p role="alert" className="text-sm font-medium text-red-400">
-                {error}
-              </p>
-            )}
+            <FormError>{error}</FormError>
 
-            <div className="flex justify-end gap-3 pt-1">
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
+                className={dialogSecondaryCls}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={pending}
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                className={dialogPrimaryCls}
               >
                 {pending ? "Creating…" : "Create draft"}
               </button>

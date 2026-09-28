@@ -11,6 +11,7 @@ import {
   type CustomerStatement,
 } from "./actions";
 import { downloadCsv } from "@/lib/csv";
+import { Modal } from "@/app/_components/ui/Modal";
 
 const f = (n: number) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
@@ -242,7 +243,14 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
 
       {formOpen && (
         <Modal
+          open
           title={editing ? "Edit Customer" : "Add Customer"}
+          description={
+            editing
+              ? "Update this customer's details."
+              : "Add a customer to track loyalty points and store credit."
+          }
+          busy={busy}
           onClose={() => {
             setFormOpen(false);
             setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
@@ -255,7 +263,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             <input className={input} placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             <input className={input} placeholder="Credit limit (0 = no credit)" type="number" min="0" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} />
             <textarea className={input} placeholder="Notes" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button type="button" className={ghost} onClick={() => { setFormOpen(false); setEditing(null); setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" }); }}>Cancel</button>
               <button type="submit" className={primary} disabled={busy}>{busy ? "Saving…" : editing ? "Save Changes" : "Add Customer"}</button>
             </div>
@@ -264,7 +272,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
       )}
 
       {paying && (
-        <Modal title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
+        <Modal open title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
           <form onSubmit={pay} className="space-y-3">
             <p className="text-sm text-slate-500">
               Outstanding debt: <span className="font-semibold text-red-400">{f(paying.currentBalance)}</span>
@@ -286,7 +294,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
       )}
 
       {viewing && statement && (
-        <Modal title={`Statement — ${statement.customer.name}`} onClose={() => setViewing(null)}>
+        <Modal open title={`Statement — ${statement.customer.name}`} onClose={() => setViewing(null)}>
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-lg bg-slate-950 p-3">
               <p className="text-xs text-slate-500">Credit Limit</p>
@@ -337,20 +345,6 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
           </div>
         </Modal>
       )}
-    </div>
-  );
-}
-
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Close">✕</button>
-        </div>
-        {children}
-      </div>
     </div>
   );
 }
