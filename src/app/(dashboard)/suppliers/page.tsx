@@ -87,11 +87,16 @@ export default async function SuppliersPage({
         </div>
       </header>
 
-      {/* Controls row — a GET form so submitting (Enter in the search box)
-          updates the URL searchParams, which re-renders this Server Component
-          with the filtered rows. */}
-      <form className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1">
+      {/* Controls row. The search box is its own GET form so submitting (Enter in
+          the search field) updates the URL searchParams, which re-renders this
+          Server Component with the filtered rows. The form deliberately wraps
+          ONLY the search input: the "Add New Supplier" dialog renders its own
+          <form> for the createSupplier Server Action, and nesting a form inside
+          a form is invalid HTML that React reports as a hydration error. The
+          trigger button therefore sits OUTSIDE the search form, inside the same
+          flex row so the layout is unchanged. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <form className="relative min-w-0 flex-1">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
             xmlns="http://www.w3.org/2000/svg"
@@ -111,13 +116,15 @@ export default async function SuppliersPage({
             placeholder="Search suppliers..."
             className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
-        </div>
+        </form>
 
         {/* "Add New Supplier" trigger + modal. Client island (manages open
             state); submits to the createSupplier Server Action, which inserts
-            via Prisma and revalidates this page so the new row streams in. */}
+            via Prisma and revalidates this page so the new row streams in.
+            Kept outside the search form above so its inner <form> is never
+            nested inside another form. */}
         <AddSupplierDialog />
-      </form>
+      </div>
 
       {/* Data table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
