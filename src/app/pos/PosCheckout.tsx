@@ -398,14 +398,14 @@ export default function PosCheckout({
           the code here (the global hook ignores focused fields); pressing
           Enter resolves it and clears the box for the next scan. The box
           keeps focus by default so repeated scans just work. */}
-      <div className="border-b border-slate-800 px-5 py-4">
+      <div className="border-b border-slate-200 px-5 py-3">
         <label
           htmlFor="scan-input"
-          className="block text-xs font-medium uppercase tracking-wide text-slate-500"
+          className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
         >
           Scan barcode / SKU
         </label>
-        <div className="relative mt-1">
+        <div className="relative">
           <Barcode
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
             aria-hidden
@@ -426,16 +426,16 @@ export default function PosCheckout({
             autoComplete="off"
             autoFocus
             placeholder="Scan or type a SKU, then Enter"
-            className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 pl-9 pr-3 font-mono text-sm text-slate-100 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
       </div>
 
       {/* Optional customer link for loyalty accrual. Empty option = guest. */}
-      <div className="border-b border-slate-800 px-5 py-4">
+      <div className="border-b border-slate-200 px-5 py-3">
         <label
           htmlFor="customer-select"
-          className="block text-xs font-medium uppercase tracking-wide text-slate-500"
+          className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
         >
           Customer
         </label>
@@ -443,9 +443,9 @@ export default function PosCheckout({
           id="customer-select"
           value={customerId}
           onChange={(e) => setCustomerId(e.target.value)}
-          className="mt-1 h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-100 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
         >
-          <option value="">Guest (no loyalty)</option>
+          <option value="">Walk-in Customer</option>
           {customers.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name} — {c.loyaltyPoints} pts
@@ -455,11 +455,11 @@ export default function PosCheckout({
       </div>
 
       {/* Payment method — segmented control, touch-friendly. */}
-      <div className="border-b border-slate-800 px-5 py-4">
-        <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">
+      <div className="border-b border-slate-200 px-5 py-3">
+        <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Payment Method
         </span>
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        <div className="mt-1.5 grid grid-cols-3 gap-2">
           {(
             [
               { value: 'CASH', label: 'Cash', icon: Banknote },
@@ -477,8 +477,8 @@ export default function PosCheckout({
                 className={[
                   'inline-flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-semibold transition active:scale-[0.98]',
                   active
-                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                    : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-300',
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
+                    : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:bg-slate-50 hover:text-indigo-700',
                 ].join(' ')}
               >
                 <Icon className="h-4 w-4" />
@@ -495,33 +495,43 @@ export default function PosCheckout({
           </p>
         )}
         {creditBlocked && (
-          <p className="mt-2 text-xs font-medium text-red-400">
-            Charge exceeds the credit limit for this customer.
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+            <span aria-hidden>⚠</span>
+            <span>Charge exceeds the credit limit for this customer.</span>
           </p>
         )}
       </div>
 
 
       {/* Cart lines */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {cart.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-400">
-            No items yet. Tap a product to add it.
-          </p>
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+              <ShoppingCart className="h-7 w-7 text-slate-400" aria-hidden />
+            </div>
+            <p className="text-sm font-semibold text-slate-900">
+              No items yet. Tap a product to add it.
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Scan a barcode or pick a product to start this sale.
+            </p>
+          </div>
         ) : (
           <AnimatePresence initial={false}>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {cart.map((line) => (
                 <motion.li
                   key={line.product.id}
-                  initial={{ opacity: 0, height: 0, y: -10, scale: 0.96 }}
-                  animate={{ opacity: 1, height: 'auto', y: 0, scale: 1 }}
-                  exit={{ opacity: 0, height: 0, y: -10, scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-sm"
+                  initial={{ opacity: 0, height: 0, y: -8 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -8 }}
+                  transition={{ duration: 0.15 }}
+                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
                 >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-100">
+                  <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
                     {line.product.name}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
@@ -538,8 +548,8 @@ export default function PosCheckout({
                       className={[
                         'rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors',
                         line.discount
-                          ? 'bg-violet-100 text-violet-300 ring-1 ring-violet-200'
-                          : 'text-slate-400 ring-1 ring-slate-700 hover:bg-slate-800 hover:text-slate-200',
+                          ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
+                          : 'text-slate-500 ring-1 ring-slate-300 hover:bg-slate-100 hover:text-slate-700',
                       ].join(' ')}
                     >
                       {line.discount
@@ -556,7 +566,7 @@ export default function PosCheckout({
                             })
                           }
                           aria-label={`Discount type for ${line.product.name}`}
-                          className="h-7 rounded-md border border-slate-700 bg-slate-900 px-1 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
+                          className="h-7 rounded-md border border-slate-300 bg-white px-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
                         >
                           <option value="PERCENT">%</option>
                           <option value="FIXED">{store.currencySymbol}</option>
@@ -574,45 +584,45 @@ export default function PosCheckout({
                             }
                           }}
                           aria-label={`Discount value for ${line.product.name}`}
-                          className="h-7 w-16 rounded-md border border-slate-700 px-1.5 text-xs tabular-nums text-slate-100 focus:border-indigo-500 focus:outline-none"
+                          className="h-7 w-16 rounded-md border border-slate-300 bg-white px-1.5 text-xs tabular-nums text-slate-900 focus:border-indigo-500 focus:outline-none"
                         />
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-800 bg-slate-950/60 px-1.5 py-1.5">
+                <div className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-slate-50 p-1">
                   <button
                     type="button"
                     onClick={() => changeQty(line.product.id, -1)}
                     aria-label={`Decrease ${line.product.name} quantity`}
-                    className="rounded p-1.5 text-slate-500 transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300 active:scale-[0.95]"
+                    className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-700 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="min-w-7 px-1 text-center text-sm font-medium text-slate-100 transition-all duration-200">
+                  <span className="min-w-8 text-center text-sm font-bold tabular-nums text-slate-900">
                     {line.qty}
                   </span>
                   <button
                     type="button"
                     onClick={() => changeQty(line.product.id, 1)}
                     aria-label={`Increase ${line.product.name} quantity`}
-                    className="rounded p-1.5 text-slate-500 transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300 active:scale-[0.95]"
+                    className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-700 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-col items-end gap-1">
                   {line.discount ? (
                     <>
-                      <span className="text-xs text-slate-400 line-through">
+                      <span className="text-xs tabular-nums text-slate-400 line-through">
                         {money(line.product.price * line.qty)}
                       </span>
-                      <span className="text-sm font-semibold text-violet-300">
+                      <span className="text-sm font-bold tabular-nums text-violet-700">
                         {money(line.product.price * line.qty - lineDiscountMoney(line))}
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-bold tabular-nums text-slate-900">
                       {money(line.product.price * line.qty)}
                     </span>
                   )}
@@ -624,11 +634,12 @@ export default function PosCheckout({
                       )
                     }
                     aria-label={`Remove ${line.product.name} from order`}
-                    className="rounded-lg p-1.5 text-slate-300 transition-all duration-200 hover:bg-red-500/150/10 hover:text-red-400 active:scale-[0.95]"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+                  </div>
                 </motion.li>
               ))}
             </ul>
@@ -640,10 +651,10 @@ export default function PosCheckout({
 
   // Totals + payment footer — shared by the desktop sidebar and mobile drawer.
   const cartFooter = (
-    <div className="border-t border-slate-800 px-5 py-4">
+    <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
       {/* Order-wide discount: toggle + inline %/₱ editor, applied after the
           per-line discounts and re-validated server-side at checkout. */}
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() =>
@@ -651,10 +662,10 @@ export default function PosCheckout({
           }
           aria-pressed={!!cartDiscount}
           className={[
-            'rounded-lg px-2 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
+            'rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
             cartDiscount
-              ? 'bg-violet-100 text-violet-300 ring-1 ring-violet-200'
-              : 'text-slate-500 ring-1 ring-slate-700 hover:bg-slate-800 hover:text-slate-200',
+              ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
+              : 'text-slate-500 ring-1 ring-slate-300 hover:bg-white hover:text-slate-700',
           ].join(' ')}
         >
           Order discount
@@ -667,7 +678,7 @@ export default function PosCheckout({
                 setCartDiscount({ ...cartDiscount, type: e.target.value as DiscountType })
               }
               aria-label="Order discount type"
-              className="h-8 rounded-lg border border-slate-700 bg-slate-900 px-1.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
+              className="h-8 rounded-lg border border-slate-300 bg-white px-1.5 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
             >
               <option value="PERCENT">%</option>
               <option value="FIXED">{store.currencySymbol}</option>
@@ -685,13 +696,13 @@ export default function PosCheckout({
                 }
               }}
               aria-label="Order discount value"
-              className="h-8 w-20 rounded-lg border border-slate-700 px-2 text-xs tabular-nums text-slate-100 focus:border-indigo-500 focus:outline-none"
+              className="h-8 w-20 rounded-lg border border-slate-300 bg-white px-2 text-xs tabular-nums text-slate-900 focus:border-indigo-500 focus:outline-none"
             />
             <button
               type="button"
               onClick={() => setCartDiscount(null)}
               aria-label="Clear order discount"
-              className="rounded-md px-1.5 py-0.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -699,24 +710,24 @@ export default function PosCheckout({
         )}
       </div>
       <dl className="space-y-1.5 text-sm">
-        <div className="flex justify-between text-slate-500">
+        <div className="flex justify-between text-slate-600">
           <dt>Subtotal</dt>
-          <dd>{money(subtotal)}</dd>
+          <dd className="tabular-nums">{money(subtotal)}</dd>
         </div>
         {discountAmount > 0 && (
-          <div className="flex justify-between font-medium text-violet-300">
+          <div className="flex justify-between font-medium text-violet-700">
             <dt>Discount</dt>
-            <dd>−{money(discountAmount)}</dd>
+            <dd className="tabular-nums">−{money(discountAmount)}</dd>
           </div>
         )}
-        <div className="flex justify-between text-slate-500">
+        <div className="flex justify-between text-slate-600">
           <dt>Tax ({store.taxRate}%)</dt>
-          <dd>{money(tax)}</dd>
+          <dd className="tabular-nums">{money(tax)}</dd>
         </div>
       </dl>
-      <div className="mt-3 flex items-center justify-between rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 shadow-md shadow-indigo-600/25">
-        <span className="text-sm font-medium text-indigo-100">Grand Total</span>
-        <span className="text-xl font-bold tabular-nums text-white">
+      <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5">
+        <span className="text-sm font-semibold text-indigo-700">Grand Total</span>
+        <span className="text-2xl font-bold tabular-nums text-indigo-800">
           {money(total)}
         </span>
       </div>
@@ -724,7 +735,7 @@ export default function PosCheckout({
         type="button"
         disabled={cart.length === 0 || pending || creditBlocked}
         onClick={onCheckout}
-        className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-4 text-base font-semibold text-white shadow-sm shadow-indigo-600/30 transition-all duration-200 hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
+        className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-4 text-base font-bold text-white shadow-sm shadow-indigo-600/25 transition-all duration-150 hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
       >
         {pending ? 'Processing…' : 'Process Payment'}
       </button>
@@ -736,7 +747,7 @@ export default function PosCheckout({
             setCustomerId('')
             setScanInput('')
           }}
-          className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-950 hover:text-slate-100 active:scale-[0.98]"
+          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
         >
           Clear order
         </button>
@@ -747,10 +758,10 @@ export default function PosCheckout({
   // Desktop: sticky right-hand cart sidebar (hidden below `md`).
   const cartPanel = (
     <aside className="hidden w-[360px] shrink-0 flex-col border-l border-slate-200 bg-white md:flex lg:w-[400px]">
-      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-100">Current Order</h2>
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
+        <h2 className="text-base font-bold text-slate-900">Current Order</h2>
         {cart.length > 0 && (
-          <span className="rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-semibold text-indigo-300">
+          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
             {cart.reduce((n, l) => n + l.qty, 0)} items
           </span>
         )}
@@ -778,7 +789,7 @@ export default function PosCheckout({
             <>
               <Link
                 href="/"
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-950 hover:text-slate-100">
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Back to Dashboard</span>
                 <span className="sm:hidden">Back</span>
@@ -789,25 +800,25 @@ export default function PosCheckout({
               >
                 <Link
                   href="/"
-                  className="font-medium text-slate-500 transition-colors hover:text-indigo-300"
+                  className="font-medium text-slate-500 transition-colors hover:text-indigo-600"
                 >
                   Dashboard
                 </Link>
                 <span aria-hidden className="text-slate-300">
                   /
                 </span>
-                <span className="font-semibold text-slate-100">Point of Sale</span>
+                <span className="font-semibold text-slate-900">Point of Sale</span>
               </nav>
             </>
           ) : (
             // Cashiers have no dashboard access, so swap the navigation for a
             // register title + operator badge instead of a dead link.
             <div className="flex min-w-0 items-center gap-3">
-              <span className="truncate text-base font-semibold tracking-tight text-slate-100">
+              <span className="truncate text-base font-semibold tracking-tight text-slate-900">
                 &apos;InvPos Register&apos;
               </span>
-              <span className="hidden items-center gap-2 rounded-full bg-indigo-500/15 px-3 py-1.5 text-sm font-medium text-indigo-300 ring-1 ring-indigo-500/30 md:inline-flex">
-                <span className="h-2 w-2 rounded-full bg-indigo-500/150" />
+              <span className="hidden items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 ring-1 ring-indigo-200 md:inline-flex">
+                <span className="h-2 w-2 rounded-full bg-indigo-500" />
                 {cashier.name} · {cashier.role.charAt(0) + cashier.role.slice(1).toLowerCase()}
               </span>
             </div>
@@ -815,18 +826,18 @@ export default function PosCheckout({
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 ring-1 ring-slate-700">
-            <span className="h-2 w-2 rounded-full bg-indigo-500/150" />
+          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="hidden sm:inline">Register #1 · </span>Online
           </span>
-          <span className="hidden items-center gap-2 rounded-full bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 md:inline-flex">
+          <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 md:inline-flex">
             {cashier.name}
           </span>
           <TransactionHistory canVoid={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'} />
           <button
             type="button"
             onClick={() => lockRegister()}
-            className="inline-flex items-center rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-950"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
           >
             Lock
           </button>
@@ -836,22 +847,33 @@ export default function PosCheckout({
       {/* ── Split screen: catalog (left) + cart (right) ───────────────── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Product catalog */}
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-slate-800">
-          {/* Catalog toolbar: search + category filter chips */}
-          <div className="border-b border-slate-800 bg-slate-950 px-4 py-3 sm:px-6">
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-slate-200">
+          {/* Catalog toolbar: prominent search + category filter pills */}
+          <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
                 aria-hidden
               />
               <input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products or SKU…"
+                placeholder="Search products, barcode, or SKU…"
+                aria-label="Search products, barcode, or SKU"
                 autoComplete="off"
-                className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 pl-9 pr-3 text-sm text-slate-100 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
               />
+              {search !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear product search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <CategoryChip
@@ -874,16 +896,27 @@ export default function PosCheckout({
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
             {filtered.length === 0 ? (
-              <p className="py-16 text-center text-sm text-slate-500">
-                {products.length === 0
-                  ? 'No products stocked yet.'
-                  : `No products match "${search.trim()}".`}
-              </p>
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+                  <Search className="h-6 w-6 text-slate-400" aria-hidden />
+                </div>
+                <p className="text-base font-semibold text-slate-900">
+                  {products.length === 0 ? 'No products stocked yet' : 'No products found'}
+                </p>
+                <p className="mt-1 max-w-xs text-sm text-slate-500">
+                  {products.length === 0
+                    ? 'Add products from the Inventory page to start selling.'
+                    : `Nothing matches "${search.trim()}". Try a different name, SKU, or category.`}
+                </p>
+              </div>
             ) : (
               filtered.map(([category, items]) => (
-                <div key={category} className="mb-6">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div key={category} className="mb-6 last:mb-0">
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     {category}
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                      {items.length}
+                    </span>
                   </h2>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
                     {items.map((p) => {
@@ -896,35 +929,40 @@ export default function PosCheckout({
                           disabled={out}
                           onClick={() => addToCart(p)}
                           aria-label={`Add ${p.name} to order`}
-                          className="group relative flex min-h-[116px] flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 text-left shadow-sm transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-md enabled:hover:border-indigo-500/50 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                          className={[
+                            'group relative flex min-h-[112px] flex-col rounded-xl border bg-white p-3 text-left shadow-sm transition-all duration-150',
+                            out
+                              ? 'cursor-not-allowed border-slate-200 opacity-60'
+                              : 'border-slate-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md active:translate-y-0 active:scale-[0.98]',
+                          ].join(' ')}
                         >
                           {out && (
-                            <span className="absolute right-3 top-3 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400 ring-1 ring-red-500/30">
+                            <span className="absolute right-2.5 top-2.5 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-600 ring-1 ring-rose-200">
                               Out
                             </span>
                           )}
-                          <p className="min-w-0 truncate pr-10 text-sm font-semibold text-slate-100 group-hover:text-indigo-300">
+                          <p className="min-w-0 truncate pr-9 text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
                             {p.name}
                           </p>
-                          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-400">
+                          <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-wide text-slate-400">
                             {p.sku}
                           </p>
-                          <p className="mt-auto pt-3 text-sm font-semibold text-indigo-300">
+                          <p className="mt-auto pt-2.5 text-base font-bold tabular-nums text-slate-900">
                             {money(p.price)}
                           </p>
                           <p
                             className={
                               out
-                                ? 'mt-0.5 text-xs text-red-500'
+                                ? 'mt-0.5 text-xs font-medium text-rose-600'
                                 : low
                                   ? 'mt-0.5 text-xs font-medium text-amber-600'
-                                  : 'mt-0.5 text-xs text-slate-400'
+                                  : 'mt-0.5 text-xs text-slate-500'
                             }
                           >
                             {out
                               ? 'Out of stock'
                               : low
-                                ? `${p.stock} left — low`
+                                ? `Low stock · ${p.stock} left`
                                 : `${p.stock} in stock`}
                           </p>
                         </button>
@@ -942,12 +980,12 @@ export default function PosCheckout({
 
       {/* ── Mobile: sticky cart summary bar ────────────────────────────── */}
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-slate-800 bg-slate-900 px-4 py-3 shadow-[0_-4px_12px_rgba(15,23,42,0.06)] md:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] md:hidden">
           <div>
             <p className="text-xs text-slate-500">
               {cart.length} item{cart.length === 1 ? '' : 's'}
             </p>
-            <p className="text-base font-semibold text-slate-100">{money(total)}</p>
+            <p className="text-lg font-bold tabular-nums text-slate-900">{money(total)}</p>
           </div>
           <button
             type="button"
@@ -984,12 +1022,12 @@ export default function PosCheckout({
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
             >
-              <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-                <h2 className="text-base font-semibold text-slate-100">Current Order</h2>
+              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <h2 className="text-base font-bold text-slate-900">Current Order</h2>
                 <button
                   type="button"
                   onClick={() => setCartOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                   aria-label="Close cart"
                 >
                   <X className="h-5 w-5" />
@@ -1025,13 +1063,13 @@ export default function PosCheckout({
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 340, damping: 28 }}
             >
-            <div className="flex items-start justify-between border-b border-slate-700 px-5 py-4">
+            <div className="flex items-start justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 ring-1 ring-indigo-500/30">
-                  <CheckCircle2 className="h-5 w-5 text-indigo-300" />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-200">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 </span>
                 <div>
-                  <h2 className="text-base font-semibold tracking-tight text-slate-100">
+                  <h2 className="text-base font-bold tracking-tight text-slate-900">
                     Sale Complete
                   </h2>
                   <p className="mt-0.5 text-sm text-slate-500">
@@ -1042,7 +1080,7 @@ export default function PosCheckout({
               <button
                 type="button"
                 onClick={() => setCompleted(null)}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -1066,18 +1104,18 @@ export default function PosCheckout({
               />
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-700 px-5 py-4">
+            <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
               <button
                 type="button"
                 onClick={() => setCompleted(null)}
-                className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950"
+                className="inline-flex items-center rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 New Sale
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98]"
               >
                 <Printer className="h-4 w-4" />
                 Print Receipt
@@ -1106,7 +1144,7 @@ export default function PosCheckout({
             transition={{ duration: 0.15 }}
           >
             <motion.div
-              className="w-full max-w-sm overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
+              className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -1115,13 +1153,13 @@ export default function PosCheckout({
               aria-modal="true"
               aria-label="Collect cash payment"
             >
-              <div className="border-b border-slate-700 px-5 py-4">
-                <h2 className="text-base font-semibold tracking-tight text-slate-100">
+              <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                <h2 className="text-base font-bold tracking-tight text-slate-900">
                   Collect Cash
                 </h2>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  Amount due{' '}
-                  <span className="font-semibold tabular-nums text-slate-100">
+                <p className="mt-0.5 flex items-baseline justify-between text-sm text-slate-500">
+                  <span>Amount due</span>
+                  <span className="text-lg font-bold tabular-nums text-slate-900">
                     {money(total)}
                   </span>
                 </p>
@@ -1130,7 +1168,7 @@ export default function PosCheckout({
               <div className="px-5 py-4">
                 <label
                   htmlFor="tendered-input"
-                  className="block text-xs font-medium uppercase tracking-wide text-slate-500"
+                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Tendered amount
                 </label>
@@ -1144,16 +1182,16 @@ export default function PosCheckout({
                   value={tenderedRaw}
                   onChange={(e) => setTenderedRaw(e.target.value)}
                   placeholder="0.00"
-                  className="mt-1.5 h-11 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 font-mono text-lg tabular-nums text-slate-100 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                  className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-mono text-xl font-bold tabular-nums text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                 />
                 {/* Quick-tender chips: exact total + the smallest clean bill. */}
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {quickTenderOptions.map((option) => (
                     <button
                       key={option.label}
                       type="button"
                       onClick={() => setTenderedRaw(String(option.value))}
-                      className="rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-indigo-500/50 hover:text-indigo-300"
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold tabular-nums text-slate-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.97]"
                     >
                       {option.label}
                     </button>
@@ -1161,31 +1199,32 @@ export default function PosCheckout({
                 </div>
 
                 {tenderedValue === null ? (
-                  <p className="mt-3 text-xs text-slate-400">
+                  <p className="mt-3 text-xs text-slate-500">
                     Enter the amount the customer handed over.
                   </p>
                 ) : tenderedValue < total ? (
-                  <p className="mt-3 text-xs font-medium text-red-400">
-                    Tendered amount is less than the total due.
+                  <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                    <span aria-hidden>⚠</span>
+                    <span>Tendered amount is less than the total due.</span>
                   </p>
                 ) : (
-                  <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100">
-                    <span className="text-sm font-medium text-emerald-800">
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
+                    <span className="text-sm font-semibold text-emerald-800">
                       Change due
                     </span>
-                    <span className="text-xl font-bold tabular-nums text-emerald-700">
+                    <span className="text-2xl font-bold tabular-nums text-emerald-700">
                       {money(round2(tenderedValue - total))}
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-slate-700 px-5 py-4">
+              <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                 <button
                   type="button"
                   onClick={() => setCashStepOpen(false)}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1193,7 +1232,7 @@ export default function PosCheckout({
                   type="button"
                   onClick={() => void completeSale(tenderedValue)}
                   disabled={tenderedValue === null || tenderedValue < total || pending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                 >
                   {pending ? 'Processing…' : 'Complete Sale'}
                 </button>
@@ -1226,10 +1265,10 @@ function CategoryChip({
       onClick={onClick}
       aria-pressed={active}
       className={[
-        'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition active:scale-[0.97]',
+        'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition active:scale-[0.97]',
         active
-          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-          : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-300',
+          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
+          : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700',
       ].join(' ')}
     >
       {children}
