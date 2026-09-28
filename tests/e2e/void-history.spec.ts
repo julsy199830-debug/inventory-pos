@@ -61,9 +61,24 @@ async function completeCashSale(page: import('@playwright/test').Page) {
   await expect(page.locator('text=Sale Complete').first()).toBeHidden({ timeout: 10000 });
 }
 
+/**
+ * The transaction-history panel, scoped to its own dialog.
+ *
+ * The register's product search is also `type="search"`, and it renders earlier
+ * in the DOM than this portal'd panel, so a bare `input[type="search"]`
+ * resolves to the wrong box. Every history locator must go through this.
+ */
+function historyPanel(page: import('@playwright/test').Page) {
+  return page.locator('div[role="dialog"]:has(h2:has-text("Transactions"))');
+}
+
+function historySearch(page: import('@playwright/test').Page) {
+  return historyPanel(page).locator('input[type="search"]').first();
+}
+
 async function openHistory(page: import('@playwright/test').Page) {
   await page.locator('button:has-text("Transactions")').first().click();
-  await expect(page.locator('input[type="search"]').first()).toBeVisible({ timeout: 10000 });
+  await expect(historySearch(page)).toBeVisible({ timeout: 10000 });
 }
 
 test.describe('POS Transaction History & Void', () => {
@@ -78,12 +93,12 @@ test.describe('POS Transaction History & Void', () => {
     await expect(page.locator('text=Completed').first()).toBeVisible({ timeout: 10000 });
 
     // Search: a nonsense query yields the empty state (server-side filtering)
-    await page.locator('input[type="search"]').first().fill('zzz-no-such-transaction');
-    await expect(page.locator('text=No transactions found for this filter.').first()).toBeVisible({ timeout: 10000 });
-    await page.locator('input[type="search"]').first().fill('');
+    await historySearch(page).fill('zzz-no-such-transaction');
+    await expect(historyPanel(page).locator('text=No transactions found for this filter.').first()).toBeVisible({ timeout: 10000 });
+    await historySearch(page).fill('');
 
     // Open sale details on the first (newest) completed row
-    await page.locator('text=Completed').first().click();
+    await historyPanel(page).locator('text=Completed').first().click();
     await expect(page.locator('text=Sale details').first()).toBeVisible({ timeout: 10000 });
 
     // Cash rows present
@@ -99,10 +114,10 @@ test.describe('POS Transaction History & Void', () => {
     await completeCashSale(page);
 
     await openHistory(page);
-    await expect(page.locator('text=Completed').first()).toBeVisible({ timeout: 10000 });
+    await expect(historyPanel(page).locator('text=Completed').first()).toBeVisible({ timeout: 10000 });
 
     // Open details for the newest completed sale
-    await page.locator('text=Completed').first().click();
+    await historyPanel(page).locator('text=Completed').first().click();
     await expect(page.locator('text=Sale details').first()).toBeVisible({ timeout: 10000 });
 
     // ADMIN sees the void control

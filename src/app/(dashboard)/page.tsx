@@ -422,8 +422,8 @@ function Panel({
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-200">{title}</h2>
-          {caption && <p className="mt-0.5 text-xs text-slate-400">{caption}</p>}
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
+          {caption && <p className="mt-0.5 text-xs text-slate-500">{caption}</p>}
         </div>
       </div>
       <div className="flex-1 p-4">{children}</div>

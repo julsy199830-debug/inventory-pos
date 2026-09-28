@@ -275,7 +275,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
         <Modal open title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
           <form onSubmit={pay} className="space-y-3">
             <p className="text-sm text-slate-500">
-              Outstanding debt: <span className="font-semibold text-red-400">{f(paying.currentBalance)}</span>
+              Outstanding debt: <span className="font-semibold text-rose-600">{f(paying.currentBalance)}</span>
             </p>
             <input className={input} placeholder="Amount *" type="number" min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} required />
             <select className={input} value={payment.method} onChange={(e) => setPayment({ ...payment, method: e.target.value })}>
@@ -296,17 +296,17 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
       {viewing && statement && (
         <Modal open title={`Statement — ${statement.customer.name}`} onClose={() => setViewing(null)}>
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-lg bg-slate-950 p-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Credit Limit</p>
-              <p className="text-sm font-semibold">{f(statement.customer.creditLimit)}</p>
+              <p className="text-sm font-semibold text-slate-900">{f(statement.customer.creditLimit)}</p>
             </div>
-            <div className="rounded-lg bg-red-500/10 p-3">
-              <p className="text-xs text-red-500">Current Debt</p>
-              <p className="text-sm font-semibold text-red-400">{f(statement.customer.currentBalance)}</p>
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+              <p className="text-xs text-rose-600">Current Debt</p>
+              <p className="text-sm font-semibold text-rose-700">{f(statement.customer.currentBalance)}</p>
             </div>
-            <div className="rounded-lg bg-slate-950 p-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Loyalty Points</p>
-              <p className="text-sm font-semibold">{statement.customer.loyaltyPoints}</p>
+              <p className="text-sm font-semibold text-slate-900">{statement.customer.loyaltyPoints}</p>
             </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
@@ -321,11 +321,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
               <tbody className="divide-y divide-slate-200/80">
                 {statement.entries.map((e) => (
                   <tr key={e.id}>
-                    <td className="py-2 text-slate-300">{fd(e.date)}</td>
+                    <td className="py-2 text-slate-600">{fd(e.date)}</td>
                     <td className="py-2">
                       <span className={e.type === "SALE"
-                        ? "rounded bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400"
-                        : "rounded bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300"}>
+                        ? "rounded bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700"
+                        : "rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"}>
                         {e.type === "SALE" ? "On Account" : "Payment"} · {e.paymentMethod}
                       </span>
                     </td>
