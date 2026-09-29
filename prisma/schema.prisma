@@ -48,6 +48,13 @@ model Product {
   updatedAt          DateTime            @updatedAt
   supplierId         String?
   supplier           Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  /// Optional product photo, stored as an absolute http(s) URL or a
+  /// LAN-relative path. Nullable + no default, so every existing row reads back
+  /// as null and renders the UI's generated placeholder instead of a broken
+  /// image. Deliberately a URL rather than an uploaded blob: this POS is
+  /// self-hosted on a LAN where `next/image`'s remote optimizer cannot reach
+  /// arbitrary hosts, so the browser fetches the image directly.
+  imageUrl           String?
   category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   saleItems          SaleItem[]
   movements          StockMovement[]
@@ -57,6 +64,15 @@ model Product {
   // not create a second Product↔Supplier relationship here — Product.supplierId remains
   // the existing optional preferred-supplier link.
   purchaseOrderItems PurchaseOrderItem[]
+
+  // These two were created by the `add_suppliers` / `add_category_model`
+  // migrations but their `@@index` declarations were later lost from this
+  // schema, which left `prisma migrate dev` permanently blocked behind a
+  // "reset the database" prompt. Both are real query paths (filtering the
+  // catalog by category, and resolving a supplier's products), so the
+  // declarations are restored here to match the migration history.
+  @@index([categoryId])
+  @@index([supplierId])
 }
 
 /// A product category. Replaces the old free-text `Product.category` string so

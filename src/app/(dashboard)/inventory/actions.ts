@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
   asStockMovementType,
+  INVALID_IMAGE_URL,
+  parseImageUrl,
   type ActionResult,
   type MutationResult,
   type StockMovementType,
@@ -146,6 +148,13 @@ export async function createProduct(
   const priceStr = load(formData, "price");
   const costStr = load(formData, "cost");
   const stockStr = load(formData, "stock");
+  const imageUrl = parseImageUrl(load(formData, "imageUrl"));
+  if (imageUrl === INVALID_IMAGE_URL) {
+    return {
+      ok: false,
+      error: "Image must be a full http(s) URL (e.g. https://…) or left blank.",
+    };
+  }
 
   // ── Required-field & shape validation (server-authoritative) ───────────
   if (!name) return { ok: false, error: "Product name is required." };
@@ -178,6 +187,7 @@ export async function createProduct(
           price: Math.round(price * 100) / 100,
           cost: Math.round(cost * 100) / 100,
           stock,
+          imageUrl,
         },
       });
       await tx.stockMovement.create({
@@ -249,6 +259,13 @@ export async function updateProduct(
   const price = priceStr != null ? Number(priceStr) : NaN;
   const cost = costStr != null ? Number(costStr) : NaN;
   const stock = stockStr != null ? Number(stockStr) : NaN;
+  const imageUrl = parseImageUrl(load(formData, "imageUrl"));
+  if (imageUrl === INVALID_IMAGE_URL) {
+    return {
+      ok: false,
+      error: "Image must be a full http(s) URL (e.g. https://…) or left blank.",
+    };
+  }
 
   if (!Number.isFinite(price) || price < 0)
     return { ok: false, error: "Retail price must be a non-negative number." };
@@ -275,6 +292,7 @@ export async function updateProduct(
           price: Math.round(price * 100) / 100,
           cost: Math.round(cost * 100) / 100,
           stock,
+          imageUrl,
         },
       });
       // Only audit an actual stock change — a pure price/name edit logs no

@@ -49,6 +49,8 @@ export type EditableProduct = {
   cost: string;
   /** Numeric string of the current stock, e.g. "34". */
   stock: string;
+  /** Stored product photo reference, or null when the product has no image. */
+  imageUrl: string | null;
 };
 
 export default function EditProductDialog({
@@ -251,6 +253,18 @@ export default function EditProductDialog({
                     required
                     disabled={pending}
                     defaultValue={product.stock}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Image URL" htmlFor="imageUrl">
+                  <input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    inputMode="url"
+                    disabled={pending}
+                    defaultValue={product.imageUrl ?? ""}
+                    placeholder="https://… or /images/item.jpg"
                     className={inputCls}
                   />
                 </Field>

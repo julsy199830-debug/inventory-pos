@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { createSale, type CreateSaleResult } from '@/app/actions/sales'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
+import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import TransactionHistory from './TransactionHistory'
 import type { Role } from '@/lib/types'
@@ -40,6 +41,8 @@ export type PosProduct = {
   price: number
   stock: number
   category: string
+  /** Optional product photo; null renders the initials tile. */
+  imageUrl: string | null
 }
 
 export type PosCustomer = {
@@ -941,6 +944,19 @@ export default function PosCheckout({
                               Out
                             </span>
                           )}
+                          {/* Visual product recognition: a cashier reads the shelf,
+                              not the SKU. The tile is rendered ONLY for products
+                              that actually have a photo — an empty placeholder
+                              box on every card would just add clutter and push
+                              the grid below the fold, which slows the register
+                              down. Photoless products keep the compact card. */}
+                          {p.imageUrl ? (
+                            <ProductThumb
+                              imageUrl={p.imageUrl}
+                              name={p.name}
+                              className="mb-2 aspect-[4/3] w-full"
+                            />
+                          ) : null}
                           <p className="min-w-0 truncate pr-9 text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
                             {p.name}
                           </p>

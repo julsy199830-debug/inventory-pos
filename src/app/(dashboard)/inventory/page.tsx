@@ -15,6 +15,7 @@ import LowStockBanner from "./LowStockBanner";
 import StockControls from "./StockControls";
 import StockHistoryDialog from "./StockHistoryDialog";
 import ExportCsvButton from "./ExportCsvButton";
+import ProductThumb from "@/app/_components/ui/ProductThumb";
 
 /** Sorting direction, ascending or descending. */
 type Order = "asc" | "desc";
@@ -50,6 +51,9 @@ type Product = {
    * app-wide default, else {@link LOW_STOCK_THRESHOLD}. Drives the stock badge
    * + status pill so they reflect the category-tuned cutoff, not a blanket 10. */
   threshold: number;
+  /** Stored product photo reference, or null when the product has none. Drives
+   * the row thumbnail; `ProductThumb` renders an initials tile for null. */
+  imageUrl: string | null;
 };
 
 /** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
@@ -138,6 +142,7 @@ export default async function InventoryPage({
       stock: p.stock,
       rawPrice: p.price,
       rawCost: p.cost,
+      imageUrl: p.imageUrl,
       // Effective low-stock cutoff: the category overrides the app-wide default,
       // else LOW_STOCK_THRESHOLD (matches the rule in lib/types.stockStatusAt).
       threshold: p.category?.lowStockThreshold ?? LOW_STOCK_THRESHOLD,
@@ -278,6 +283,9 @@ export default async function InventoryPage({
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
+                <th className="w-14 px-4 py-3">
+                  <span className="sr-only">Image</span>
+                </th>
                 <th className="px-4 py-3 font-medium">SKU / Barcode</th>
                 <th className="px-4 py-3 font-medium">Product Name</th>
                 <th className="px-4 py-3 font-medium">Category</th>
@@ -307,6 +315,13 @@ export default async function InventoryPage({
             <tbody className="divide-y divide-slate-200/80">
               {products.map((p) => (
                 <tr key={p.sku} className="transition-colors hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <ProductThumb
+                      imageUrl={p.imageUrl}
+                      name={p.name}
+                      size="sm"
+                    />
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
                     {p.sku}
                   </td>
@@ -340,6 +355,7 @@ export default async function InventoryPage({
                           price: String(p.rawPrice),
                           cost: String(p.rawCost),
                           stock: String(p.stock),
+                          imageUrl: p.imageUrl,
                         }}
                         categories={categoryOptions}
                       />

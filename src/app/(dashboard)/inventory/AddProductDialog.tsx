@@ -206,6 +206,17 @@ export default function AddProductDialog({
                     className={inputCls}
                   />
                 </Field>
+                <Field label="Image URL" htmlFor="imageUrl">
+                  <input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    inputMode="url"
+                    disabled={pending}
+                    placeholder="https://… or /images/item.jpg"
+                    className={inputCls}
+                  />
+                </Field>
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">

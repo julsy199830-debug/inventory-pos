@@ -14,6 +14,7 @@ export default async function POSPage() {
         sku: true,
         price: true,
         stock: true,
+        imageUrl: true,
         category: { select: { name: true } },
       },
     }),
@@ -36,6 +37,7 @@ export default async function POSPage() {
     sku: p.sku,
     price: p.price,
     stock: p.stock,
+    imageUrl: p.imageUrl,
     category: p.category?.name ?? 'Uncategorized',
   }))
 

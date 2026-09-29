@@ -40,6 +40,9 @@ export default function InventoryLoading() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-white text-xs font-medium uppercase tracking-wide text-slate-500">
+                <th className="w-14 px-5 py-3">
+                  <span className="sr-only">Image</span>
+                </th>
                 <th className="px-5 py-3 font-medium">SKU / Barcode</th>
                 <th className="px-5 py-3 font-medium">Product Name</th>
                 <th className="px-5 py-3 font-medium">Category</th>
@@ -47,11 +50,15 @@ export default function InventoryLoading() {
                 <th className="px-5 py-3 font-medium">Cost Price</th>
                 <th className="px-5 py-3 font-medium">Stock Level</th>
                 <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {ROWS.map((row) => (
                 <tr key={row}>
+                  <td className="px-5 py-3">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 animate-pulse" />
+                  </td>
                   <td className="px-5 py-3">
                     <div className="h-3.5 w-20 rounded bg-slate-100 animate-pulse" />
                   </td>
@@ -72,6 +79,9 @@ export default function InventoryLoading() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="h-5 w-24 rounded-full bg-slate-100 animate-pulse" />
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="ml-auto h-6 w-20 rounded bg-slate-100 animate-pulse" />
                   </td>
                 </tr>
               ))}

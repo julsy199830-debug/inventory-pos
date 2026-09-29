@@ -159,3 +159,53 @@ export type ActionResult<T extends Record<string, unknown> | void = void> =
 export type MutationResult<T = void> =
   | (T extends void ? { ok: true } : { ok: true; data: T })
   | { ok: false; error: string };
+
+// ── Product image URLs ─────────────────────────────────────────────────────
+
+/**
+ * Sentinel returned by {@link parseImageUrl} for a value that is present but
+ * unusable. Distinct from `null` (which means "no image, and that is fine") so
+ * a caller can tell "cleared it" apart from "you typed nonsense" without a
+ * second return channel.
+ */
+export const INVALID_IMAGE_URL = Symbol("invalid-image-url");
+
+/**
+ * Normalize a user-supplied product image reference.
+ *
+ * Accepts an absolute `http(s)` URL or a root-relative path (`/images/x.jpg`),
+ * which is what a self-hosted LAN install actually wants — an image served by
+ * the store's own Next server or a NAS share. Anything else (a `javascript:`
+ * payload, a `data:` URI, a bare word) is rejected, because `imageUrl` is
+ * rendered into an `<img src>` and we don't want a stored-XSS foothold or a
+ * broken image on every POS tile.
+ *
+ * An empty/absent value normalizes to `null` — that is how a product ends up
+ * with "no photo" and shows the generated placeholder instead.
+ *
+ * Returns `INVALID_IMAGE_URL` for present-but-invalid input; see that symbol.
+ */
+export function parseImageUrl(
+  raw: string | null | undefined,
+): string | null | typeof INVALID_IMAGE_URL {
+  const value = (raw ?? "").trim();
+  if (value === "") return null;
+  if (value.length > 2000) return INVALID_IMAGE_URL;
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return INVALID_IMAGE_URL;
+    }
+    return url.toString();
+  } catch {
+    return INVALID_IMAGE_URL;
+  }
+}
+
+/** `true` when the product has a usable stored photo. Narrows away the sentinel. */
+export function hasProductImage(
+  imageUrl: string | null | undefined,
+): imageUrl is string {
+  return typeof imageUrl === "string" && imageUrl.trim() !== "";
+}
