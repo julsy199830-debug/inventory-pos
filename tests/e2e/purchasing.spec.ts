@@ -107,13 +107,35 @@ test.describe('Purchasing (Phase 1 UI)', () => {
     await page.locator('#po-product-1').selectOption({ label: `${productName} (${productSku})` });
     await page.locator('#po-qty-1').fill('2');
     await page.locator('#po-cost-1').fill('10.5');
+    // Identify the PO we just created by DIFFING against the numbers already on
+    // the page, rather than by taking `.first()`. `.first()` silently assumes
+    // newest-first ordering, so in a full-suite run - where
+    // `purchase-receiving.spec.ts` has already created and received POs - it can
+    // pick a stale row and then assert against the wrong record's status. The
+    // set difference is correct whatever the list is sorted by.
+    //
+    // The baseline MUST be taken while the dialog is still open: submitting
+    // closes it and revalidates the list, so a snapshot after the click already
+    // contains the new PO and the difference is always empty.
+    const PO_NUMBER = /^PO-\d{6}-\d{6}$/;
+    const before = new Set(await page.locator('a').allTextContents());
+
     await page.locator('button:has-text("Create draft")').click();
     await expect(page.locator('h2:has-text("New purchase order")')).toBeHidden({ timeout: 15000 });
-    // The new PO shows up in the list as a Draft (revalidatePath refresh).
-    const poLink = page.locator('a').filter({ hasText: /^PO-\d{6}-\d{6}$/ }).first();
-    await expect(poLink).toBeVisible({ timeout: 15000 });
-    createdPoNumber = (await poLink.textContent()) ?? '';
-    expect(createdPoNumber).toMatch(/^PO-\d{6}-\d{6}$/);
+
+    await expect
+      .poll(
+        async () => {
+          const now = await page.locator('a').allTextContents();
+          return now.find((t) => PO_NUMBER.test(t.trim()) && !before.has(t)) ?? null;
+        },
+        { timeout: 15000 },
+      )
+      .not.toBeNull();
+    const after = await page.locator('a').allTextContents();
+    createdPoNumber =
+      after.find((t) => PO_NUMBER.test(t.trim()) && !before.has(t)) ?? '';
+    expect(createdPoNumber).toMatch(PO_NUMBER);
     await expect(page.locator('tr', { hasText: createdPoNumber })).toContainText('Draft');
   });
 

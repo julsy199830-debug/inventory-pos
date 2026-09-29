@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import AddSupplierDialog from "./AddSupplierDialog";
 import DeleteSupplierButton from "./DeleteSupplierButton";
+import SupplierPerformancePanel from "./SupplierPerformancePanel";
+import { getSupplierPerformance } from "./supplier-data";
+import { getStoreSettings } from "@/app/actions/settings";
 import EditSupplierDialog from "./EditSupplierDialog";
 
 type Supplier = {
@@ -28,7 +31,13 @@ export default async function SuppliersPage({
 }) {
   // Awaited query-string filter: q is the text search. Drawn from the awaited
   // Promise<searchParams> (see the page file convention docs).
-  const { q = "" } = await searchParams;
+  const sp = await searchParams;
+  const { q = "" } = sp;
+  const [performance, settings] = await Promise.all([
+    getSupplierPerformance(sp.range),
+    getStoreSettings(),
+  ]);
+  const currencySymbol = settings?.currencySymbol ?? "P";
   const query = Array.isArray(q) ? q[0] ?? "" : q;
   const term = query.trim().toLowerCase();
 
@@ -86,6 +95,15 @@ export default async function SuppliersPage({
           </p>
         </div>
       </header>
+
+      {/* Phase 2: the ordering / receiving position. The supplier roster below
+          answers "who do we work with"; this answers "what have we committed to
+          and what is still outstanding", which is a different question. */}
+      <SupplierPerformancePanel
+        data={performance}
+        currencySymbol={currencySymbol}
+        activeRange={Array.isArray(sp.range) ? sp.range[0] : sp.range ?? ""}
+      />
 
       {/* Controls row. The search box is its own GET form so submitting (Enter in
           the search field) updates the URL searchParams, which re-renders this

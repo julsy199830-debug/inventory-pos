@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
+import EmployeePerformancePanel from "./EmployeePerformancePanel";
+import { getEmployeePerformance } from "./performance-data";
+import { getStoreSettings } from "@/app/actions/settings";
 import EditEmployeeDialog from "./EditEmployeeDialog";
 import DeleteEmployeeButton from "./DeleteEmployeeButton";
 import ToggleActiveButton from "./ToggleActiveButton";
@@ -58,7 +61,13 @@ type EmployeeRow = {
  *  Employees summary predates wiring it in). */
 const CURRENCY = "₱";
 
-export default async function EmployeesPage() {
+export default async function EmployeesPage({
+  searchParams,
+}: {
+  // searchParams is a Promise in this Next.js version - see the page file
+  // convention docs on handling filtering with searchParams.
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   // Fetched in parallel: the roster, every shift (with totals for performance),
   // and the store-wide completed-sale aggregate (feeds the "Live sales (all
   // cashiers)" summary tile — the per-employee shift ledgers are windowed
@@ -161,6 +170,18 @@ export default async function EmployeesPage() {
   // clocked in, so it must not be derived from the shift-ledger figures above.
   const totalLiveSales = Math.round((storeAgg._sum.totalAmount ?? 0) * 100) / 100;
 
+  // Phase 2: the sales-activity report for the chosen window. Fetched here
+  // rather than inside a component so it shares this page's single render pass
+  // and its auth check. Optional `searchParams` means the plain `/employees`
+  // link still works - it just falls back to the default range.
+  const sp = (await searchParams) ?? {};
+  const rangeToken = sp.range;
+  const [performance, settings] = await Promise.all([
+    getEmployeePerformance(rangeToken),
+    getStoreSettings(),
+  ]);
+  const currencySymbol = settings?.currencySymbol ?? "P";
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -183,6 +204,15 @@ export default async function EmployeesPage() {
             revalidates this page so the new row streams in. */}
         <AddEmployeeDialog />
       </header>
+
+      {/* Phase 2: the sales-activity report. Sits directly under the header so
+          "how is each cashier doing" is the first thing answered, with the
+          roster and shift controls below it. */}
+      <EmployeePerformancePanel
+        data={performance}
+        currencySymbol={currencySymbol}
+        activeRange={Array.isArray(rangeToken) ? rangeToken[0] : rangeToken ?? ""}
+      />
 
       {/* Performance summary tiles — quick KPIs derived from the shift + sale
           aggregates above. Mirrors the supplier header's compact stat style. */}
