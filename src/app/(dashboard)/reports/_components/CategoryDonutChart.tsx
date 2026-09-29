@@ -25,7 +25,7 @@ export default function CategoryDonutChart({
   return (
     <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
       <div>
-        <h2 className="text-base font-semibold text-slate-100">
+        <h2 className="text-base font-semibold text-slate-900">
           Category Share
         </h2>
         <p className="text-sm text-slate-500">Revenue mix — last 30 days.</p>
@@ -74,10 +74,10 @@ export default function CategoryDonutChart({
 
         {data.length > 0 && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Total
             </p>
-            <p className="text-lg font-semibold text-slate-100">
+            <p className="text-lg font-semibold text-slate-900">
               {formatMoney(total, currencySymbol)}
             </p>
           </div>
@@ -97,8 +97,8 @@ export default function CategoryDonutChart({
                   backgroundColor: DONUT_PALETTE[i % DONUT_PALETTE.length],
                 }}
               />
-              <span className="truncate text-slate-300">{slice.category}</span>
-              <span className="ml-auto font-semibold text-slate-100">
+              <span className="truncate text-slate-600">{slice.category}</span>
+              <span className="ml-auto font-semibold text-slate-900">
                 {slice.percent.toFixed(1)}%
               </span>
             </li>
@@ -135,7 +135,7 @@ function DonutTooltip({
         />
         {entry.name}
       </p>
-      <p className="mt-0.5 text-sm font-semibold text-slate-100">
+      <p className="mt-0.5 text-sm font-semibold text-slate-900">
         {formatMoney(Number(entry.value ?? 0), currencySymbol)}
         <span className="ml-1.5 font-medium text-slate-500">
           ({percent.toFixed(1)}%)

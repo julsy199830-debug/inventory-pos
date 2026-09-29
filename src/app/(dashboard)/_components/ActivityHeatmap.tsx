@@ -77,7 +77,7 @@ export default function ActivityHeatmap({
                 <span className="text-[10px] font-semibold tracking-tight text-slate-600">
                   {slot.hour}
                 </span>
-                <span className="text-[8px] font-medium tracking-tight text-slate-400">
+                <span className="text-[8px] font-medium tracking-tight text-slate-500">
                   {slot.meridiem}
                 </span>
               </span>

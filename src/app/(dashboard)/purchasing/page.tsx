@@ -73,16 +73,16 @@ export default async function PurchasingPage({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Purchasing
           </h1>
           <p className="text-sm text-slate-500">
             Showing{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {orders.length.toLocaleString()}
             </span>{" "}
             of{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {allOrders.length.toLocaleString()}
             </span>{" "}
             purchase orders
@@ -110,7 +110,7 @@ export default async function PurchasingPage({
             type="search"
             defaultValue={query}
             placeholder="Search by PO number or supplier…"
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
           />
         </div>
 
@@ -188,27 +188,27 @@ export default async function PurchasingPage({
                     <td className="px-4 py-3">
                       <Link
                         href={`/purchasing/${po.id}`}
-                        className="font-mono text-sm font-medium text-indigo-300 hover:text-indigo-200"
+                        className="font-mono text-sm font-medium text-indigo-700 hover:text-indigo-600"
                       >
                         {po.poNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-200">
+                    <td className="px-4 py-3 text-slate-700">
                       {po.supplierName}
                     </td>
                     <td className="px-4 py-3">
                       <PoStatusBadge status={po.status} />
                     </td>
-                    <td className="px-4 py-3 text-slate-400">
+                    <td className="px-4 py-3 text-slate-500">
                       {formatDate(po.orderDate)}
                     </td>
-                    <td className="px-4 py-3 text-slate-400">
+                    <td className="px-4 py-3 text-slate-500">
                       {formatDate(po.expectedDate)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600">
                       {po.itemCount.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-100">
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-900">
                       {formatPrice(po.total)}
                     </td>
                     <td className="px-4 py-3">

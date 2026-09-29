@@ -182,14 +182,14 @@ export default async function InventoryPage({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Inventory Management
           </h1>
           <p className="text-sm text-slate-500">
             Showing{" "}
-            <span className="font-medium text-slate-100">{products.length.toLocaleString()}</span>
+            <span className="font-medium text-slate-900">{products.length.toLocaleString()}</span>
             {" "}of{" "}
-            <span className="font-medium text-slate-100">{total.toLocaleString()}</span>{" "}
+            <span className="font-medium text-slate-900">{total.toLocaleString()}</span>{" "}
             SKU items
           </p>
         </div>
@@ -202,7 +202,7 @@ export default async function InventoryPage({
       <form className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1">
           <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -307,14 +307,14 @@ export default async function InventoryPage({
             <tbody className="divide-y divide-slate-200/80">
               {products.map((p) => (
                 <tr key={p.sku} className="transition-colors hover:bg-slate-50">
-                  <td className="px-4 py-3 font-mono text-xs font-medium text-slate-200">
+                  <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
                     {p.sku}
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-100">{p.name}</td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3 font-medium text-slate-900">{p.name}</td>
+                  <td className="px-4 py-3 text-slate-600">
                     {p.categoryName ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-slate-100">{p.retail}</td>
+                  <td className="px-4 py-3 text-slate-900">{p.retail}</td>
                   <td className="px-4 py-3 text-slate-500">{p.cost}</td>
                   <td className="px-4 py-3">
                     <StockBadge stock={p.stock} threshold={p.threshold} />
@@ -363,7 +363,7 @@ export default async function InventoryPage({
 const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
   out: { badge: "bg-red-500/100/20 text-red-300", status: "Out of Stock" },
   low: { badge: "bg-red-500/10 text-red-300", status: "Low Stock" },
-  ok: { badge: "bg-indigo-500/15 text-indigo-300", status: "In Stock" },
+  ok: { badge: "bg-indigo-50 text-indigo-700", status: "In Stock" },
 };
 
 /**
@@ -385,7 +385,7 @@ function StockBadge({
       ? "bg-red-500/100/20 text-red-300"
       : status === "low"
         ? "bg-red-500/10 text-red-300"
-        : "bg-slate-800 text-slate-200";
+        : "bg-slate-100 text-slate-700";
   const label = stock <= 0 ? "0 in stock" : `${stock} in stock`;
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
@@ -446,13 +446,13 @@ function SortColumnHeader({
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-slate-500 transition-colors hover:text-slate-100"
+      className="inline-flex items-center gap-1 text-slate-500 transition-colors hover:text-slate-900"
       aria-sort={isActive ? (order === "asc" ? "ascending" : "descending") : "none"}
     >
       {label}
       {isActive && (
         <svg
-          className="h-3 w-3 text-slate-100"
+          className="h-3 w-3 text-slate-900"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
           fill="none"

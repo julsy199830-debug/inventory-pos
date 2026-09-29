@@ -190,7 +190,7 @@ export default function CreatePurchaseOrderDialog({
             {/* Line items — each row posts productId_N/orderedQty_N/unitCost_N */}
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   Line items
                 </p>
                 <button

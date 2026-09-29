@@ -142,7 +142,7 @@ export default function Sidebar({
             .toUpperCase()}
         </div>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-medium text-slate-100">
+          <p className="truncate text-sm font-medium text-slate-900">
             {user.name}
           </p>
           <span className="mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200">
@@ -158,7 +158,7 @@ export default function Sidebar({
           if (items.length === 0) return null;
           return (
             <div key={section.key}>
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                 {section.title}
               </p>
               <div className="flex flex-col gap-1">
@@ -181,7 +181,7 @@ export default function Sidebar({
                           "h-5 w-5 shrink-0 transition-colors",
                           active
                             ? "text-indigo-600"
-                            : "text-slate-400 group-hover:text-slate-700",
+                            : "text-slate-500 group-hover:text-slate-700",
                         ].join(" ")}
                       />
                       {item.label}

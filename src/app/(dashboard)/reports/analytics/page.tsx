@@ -100,7 +100,7 @@ export default async function SalesAnalyticsPage() {
 function PageHeader() {
   return (
     <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
         Sales Analytics
       </h1>
       <p className="text-sm text-slate-500">
@@ -129,7 +129,7 @@ function KpiTile({
   return (
     <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-150">
       <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-100">
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         {value}
       </p>
       {badge ? (
@@ -137,8 +137,8 @@ function KpiTile({
           className={[
             "mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
             badgeTone === "blue"
-              ? "bg-indigo-500/15 text-indigo-300"
-              : "bg-slate-800 text-slate-500",
+              ? "bg-indigo-50 text-indigo-700"
+              : "bg-slate-100 text-slate-500",
           ].join(" ")}
         >
           {badge}

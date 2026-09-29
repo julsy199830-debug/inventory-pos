@@ -69,7 +69,7 @@ export default async function PurchaseOrderDetailPage({
       <div className="space-y-3">
         <Link
           href="/purchasing"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-600"
         >
           <span aria-hidden>←</span>
           Back to purchasing
@@ -78,7 +78,7 @@ export default async function PurchaseOrderDetailPage({
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
-              <h1 className="font-mono text-2xl font-semibold tracking-tight text-slate-100">
+              <h1 className="font-mono text-2xl font-semibold tracking-tight text-slate-900">
                 {po.poNumber}
               </h1>
               <PoStatusBadge status={po.status} />
@@ -86,7 +86,7 @@ export default async function PurchaseOrderDetailPage({
             <p className="text-sm text-slate-500">
               {po.itemCount.toLocaleString()}{" "}
               {po.itemCount === 1 ? "item" : "items"} ·{" "}
-              <span className="font-medium text-slate-300">
+              <span className="font-medium text-slate-600">
                 {formatPrice(po.total)}
               </span>{" "}
               total · created by {po.createdByName}
@@ -126,12 +126,12 @@ export default async function PurchaseOrderDetailPage({
         {meta.map((m) => (
           <div
             key={m.label}
-            className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm"
+            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
           >
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {m.label}
             </p>
-            <p className="mt-1 truncate text-sm font-medium text-slate-200">
+            <p className="mt-1 truncate text-sm font-medium text-slate-700">
               {m.value}
             </p>
           </div>
@@ -139,9 +139,9 @@ export default async function PurchaseOrderDetailPage({
       </div>
 
       {po.notes && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-100">Notes</h2>
-          <p className="mt-1.5 whitespace-pre-wrap text-sm text-slate-300">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">Notes</h2>
+          <p className="mt-1.5 whitespace-pre-wrap text-sm text-slate-600">
             {po.notes}
           </p>
         </div>
@@ -172,23 +172,23 @@ export default async function PurchaseOrderDetailPage({
               ) : (
                 po.items.map((item) => (
                   <tr key={item.id} className="transition-colors hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">
                       {item.productSku}
                     </td>
-                    <td className="px-4 py-3 text-slate-200">{item.productName}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                    <td className="px-4 py-3 text-slate-700">{item.productName}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600">
                       {item.orderedQty.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-500">
                       {item.receivedQty.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600">
                       {item.stock.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600">
                       {formatPrice(item.unitCost)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-100">
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-900">
                       {formatPrice(item.lineTotal)}
                     </td>
                   </tr>
@@ -206,7 +206,7 @@ export default async function PurchaseOrderDetailPage({
                 </td>
                 <td
                   colSpan={2}
-                  className="px-4 py-3 text-right text-base font-semibold text-slate-100"
+                  className="px-4 py-3 text-right text-base font-semibold text-slate-900"
                 >
                   {formatPrice(po.total)}
                 </td>
@@ -221,17 +221,17 @@ export default async function PurchaseOrderDetailPage({
         </p>
 
         {history.length > 0 && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-100">Receiving history</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Receiving history</h2>
             <div className="mt-3 space-y-3">
               {history.map((receipt) => (
-                <div key={receipt.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm">
+                <div key={receipt.id} className="rounded-xl border border-slate-200 bg-white/40 p-3 text-sm">
                   <div className="flex flex-wrap justify-between gap-2">
-                    <span className="font-mono text-slate-200">{receipt.referenceNumber}</span>
+                    <span className="font-mono text-slate-700">{receipt.referenceNumber}</span>
                     <span className="text-slate-500">{formatDateTime(receipt.receivedAt)} · {receipt.receivedByName}</span>
                   </div>
-                  {receipt.notes && <p className="mt-1 text-slate-400">{receipt.notes}</p>}
-                  <ul className="mt-2 space-y-1 text-slate-300">
+                  {receipt.notes && <p className="mt-1 text-slate-500">{receipt.notes}</p>}
+                  <ul className="mt-2 space-y-1 text-slate-600">
                     {receipt.items.map((item) => <li key={`${receipt.id}-${item.productSku}`}>{item.productName} ({item.productSku}): {item.receivedQty}</li>)}
                   </ul>
                 </div>

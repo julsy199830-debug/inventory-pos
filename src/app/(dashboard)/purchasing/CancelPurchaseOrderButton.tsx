@@ -48,12 +48,12 @@ export default function CancelPurchaseOrderButton({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-red-400 hover:bg-slate-950 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-red-600 hover:bg-white disabled:opacity-50"
       >
         {pending ? "Cancelling…" : "Cancel order"}
       </button>
       {error && (
-        <p role="alert" className="mt-1.5 text-xs font-medium text-red-400">
+        <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">
           {error}
         </p>
       )}

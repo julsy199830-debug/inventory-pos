@@ -47,13 +47,13 @@ export default function SalesBarChart({
     <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-100">Sales Volume</h2>
+          <h2 className="text-base font-semibold text-slate-900">Sales Volume</h2>
           <p className="text-sm text-slate-500">
             Revenue by payment method —{" "}
             {period === "month" ? "last 6 months" : "last 8 weeks"}.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg bg-slate-800 p-1">
+        <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
           <PeriodButton active={period === "month"} onClick={() => setPeriod("month")}>
             Monthly
           </PeriodButton>
@@ -63,7 +63,7 @@ export default function SalesBarChart({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-5 text-sm text-slate-300">
+      <div className="mt-4 flex items-center gap-5 text-sm text-slate-600">
         <LegendChip color={BLUE_600} label="Cash" />
         <LegendChip color={SKY_400} label="Card / Credit" />
       </div>
@@ -198,19 +198,19 @@ function VolumeTooltip({
       {payload.map((entry, i) => (
         <p
           key={i}
-          className="mt-1 flex items-center gap-1.5 text-sm text-slate-200"
+          className="mt-1 flex items-center gap-1.5 text-sm text-slate-700"
         >
           <span
             className="h-2 w-2 rounded-full"
             style={{ backgroundColor: entry.color }}
           />
           <span className="font-medium">{entry.name}</span>
-          <span className="ml-auto pl-4 font-semibold text-slate-100">
+          <span className="ml-auto pl-4 font-semibold text-slate-900">
             {formatMoney(Number(entry.value ?? 0), currencySymbol)}
           </span>
         </p>
       ))}
-      <p className="mt-1.5 border-t border-slate-100 pt-1.5 text-xs font-semibold text-slate-100">
+      <p className="mt-1.5 border-t border-slate-100 pt-1.5 text-xs font-semibold text-slate-900">
         Total {formatMoney(total, currencySymbol)}
       </p>
     </div>

@@ -56,7 +56,7 @@ export default function OrderPurchaseOrderButton({
         {pending ? "Ordering…" : "Mark as ordered"}
       </button>
       {error && (
-        <p role="alert" className="mt-1.5 text-xs font-medium text-red-400">
+        <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">
           {error}
         </p>
       )}

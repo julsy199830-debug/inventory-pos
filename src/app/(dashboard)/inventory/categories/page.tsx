@@ -58,11 +58,11 @@ export default async function CategoriesPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Categories
           </h1>
           <p className="text-sm text-slate-500">
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {total.toLocaleString()}
             </span>{" "}
             categor{total === 1 ? "y" : "ies"}
@@ -70,7 +70,7 @@ export default async function CategoriesPage() {
         </div>
         <Link
           href="/inventory"
-          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-100"
+          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
         >
           ← Back to inventory
         </Link>
@@ -84,7 +84,7 @@ export default async function CategoriesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500">
           Each category sets its own low-stock threshold (default{" "}
-          <span className="font-medium text-slate-100">{LOW_STOCK_THRESHOLD}</span>
+          <span className="font-medium text-slate-900">{LOW_STOCK_THRESHOLD}</span>
           ); the inventory page uses it to flag Low/Out of Stock.
         </p>
         <AddCategoryDialog />
@@ -105,14 +105,14 @@ export default async function CategoriesPage() {
             <tbody className="divide-y divide-slate-200/80">
               {categories.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium text-slate-100">{c.name}</td>
+                  <td className="px-5 py-3 font-medium text-slate-900">{c.name}</td>
                   <td className="px-5 py-3">
                     <ProductCountPill count={c.productCount} />
                   </td>
-                  <td className="px-5 py-3 text-slate-300">
+                  <td className="px-5 py-3 text-slate-600">
                     {c.lowStockThreshold}
                     {c.lowStockThreshold !== LOW_STOCK_THRESHOLD && (
-                      <span className="ml-1.5 text-xs text-slate-400">
+                      <span className="ml-1.5 text-xs text-slate-500">
                         (default {LOW_STOCK_THRESHOLD})
                       </span>
                     )}
@@ -154,8 +154,8 @@ export default async function CategoriesPage() {
 function ProductCountPill({ count }: { count: number }) {
   const color =
     count === 0
-      ? "bg-slate-800 text-slate-300"
-      : "bg-indigo-500/15 text-indigo-300";
+      ? "bg-slate-100 text-slate-600"
+      : "bg-indigo-50 text-indigo-700";
   const label = count === 1 ? "1 product" : `${count} products`;
   return (
     <span

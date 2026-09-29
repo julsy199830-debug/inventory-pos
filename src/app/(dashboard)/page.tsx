@@ -255,14 +255,14 @@ export default async function Home({
       {/* ── Top navigation bar ─────────────────────────────────────────── */}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-white px-5 py-5 sm:px-7">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
             <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
             InvPos · Overview
           </div>
           <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
             Welcome back, {firstName}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-400">
+          <p className="mt-0.5 text-sm text-slate-500">
             {RANGE_LABELS[rangeKey]} performance across {categoryCount.toLocaleString()}{" "}
             categor{categoryCount === 1 ? "y" : "ies"} and {productCount.toLocaleString()} products.
           </p>
@@ -293,7 +293,7 @@ export default async function Home({
         </nav>
         <Link
           href="/reports"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-3.5 py-2 text-sm font-semibold text-indigo-300 transition hover:border-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-200"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
         >
           Reports
         </Link>
@@ -389,14 +389,14 @@ function MetricCard({
         >
           <Icon className="h-5 w-5" />
         </span>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
           {label}
         </p>
       </div>
       <p className="mt-4 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
         {value}
       </p>
-      {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -441,8 +441,8 @@ function CategoryBars({
 }) {
   if (categories.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-700">
-        <p className="text-sm text-slate-400">No category sales in this window.</p>
+      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300">
+        <p className="text-sm text-slate-500">No category sales in this window.</p>
       </div>
     );
   }
@@ -452,12 +452,12 @@ function CategoryBars({
       {categories.map((category) => (
         <div key={category.name} className="min-w-0">
           <div className="flex items-center justify-between gap-3 text-xs">
-            <span className="truncate font-medium text-slate-300">{category.name}</span>
-            <span className="tabular-nums text-slate-400">
+            <span className="truncate font-medium text-slate-600">{category.name}</span>
+            <span className="tabular-nums text-slate-500">
               {fmtMoney(category.revenue, symbol)} · {category.share.toFixed(1)}%
             </span>
           </div>
-          <div className="mt-1 h-2 rounded-full bg-slate-800">
+          <div className="mt-1 h-2 rounded-full bg-slate-100">
             <div
               className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
               style={{ width: `${Math.max(4, (category.revenue / max) * 100)}%` }}
@@ -479,8 +479,8 @@ function RecentSalesList({
 }) {
   if (sales.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-700">
-        <p className="text-sm text-slate-400">No completed sales yet.</p>
+      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300">
+        <p className="text-sm text-slate-500">No completed sales yet.</p>
       </div>
     );
   }
@@ -493,12 +493,12 @@ function RecentSalesList({
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3">
-              <p className="truncate text-sm font-medium text-slate-200">{sale.customer}</p>
+              <p className="truncate text-sm font-medium text-slate-700">{sale.customer}</p>
               <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
                 {fmtMoney(sale.total, symbol)}
               </p>
             </div>
-            <p className="mt-0.5 truncate text-xs text-slate-400">
+            <p className="mt-0.5 truncate text-xs text-slate-500">
               {sale.cashier} · {paymentMethodLabel(sale.method)} ·{" "}
               {sale.time.toLocaleString("en-US", {
                 month: "short",
@@ -512,7 +512,7 @@ function RecentSalesList({
                 {sale.categoryPills.map((pill) => (
                   <span
                     key={pill}
-                    className="inline-flex rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300 ring-1 ring-indigo-500/30"
+                    className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200"
                   >
                     {pill}
                   </span>

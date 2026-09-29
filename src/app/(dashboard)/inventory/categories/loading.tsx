@@ -13,44 +13,44 @@ export default function CategoriesLoading() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <div className="h-7 w-40 rounded-md bg-slate-800 animate-pulse" />
-          <div className="h-4 w-28 rounded bg-slate-800 animate-pulse" />
+          <div className="h-7 w-40 rounded-md bg-slate-100 animate-pulse" />
+          <div className="h-4 w-28 rounded bg-slate-100 animate-pulse" />
         </div>
       </header>
 
       {/* Controls row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="h-4 w-64 rounded bg-slate-800 animate-pulse" />
+        <div className="h-4 w-64 rounded bg-slate-100 animate-pulse" />
         {/* Add Category button */}
         <div className="h-10 w-36 rounded-lg bg-indigo-600 animate-pulse" />
       </div>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-950 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-300 bg-white text-xs font-medium uppercase tracking-wide text-slate-500">
                 <th className="px-5 py-3 font-medium">Category Name</th>
                 <th className="px-5 py-3 font-medium">Products</th>
                 <th className="px-5 py-3 font-medium">Low-stock threshold</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200">
               {ROWS.map((row) => (
                 <tr key={row}>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-32 rounded bg-slate-800 animate-pulse" />
+                    <div className="h-3.5 w-32 rounded bg-slate-100 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-5 w-20 rounded-full bg-slate-800 animate-pulse" />
+                    <div className="h-5 w-20 rounded-full bg-slate-100 animate-pulse" />
                   </td>
                   <td className="px-5 py-3">
-                    <div className="h-3.5 w-12 rounded bg-slate-800 animate-pulse" />
+                    <div className="h-3.5 w-12 rounded bg-slate-100 animate-pulse" />
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <div className="ml-auto h-7 w-16 rounded-md bg-slate-800 animate-pulse" />
+                    <div className="ml-auto h-7 w-16 rounded-md bg-slate-100 animate-pulse" />
                   </td>
                 </tr>
               ))}

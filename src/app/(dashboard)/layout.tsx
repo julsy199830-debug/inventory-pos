@@ -49,7 +49,7 @@ export default async function DashboardLayout({
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white">IP</span>
               <span>
                 <span className="block text-base font-bold text-slate-900">InvPos</span>
-                <span className="block text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Inventory & Sales</span>
+                <span className="block text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inventory & Sales</span>
               </span>
             </Link>
             <Link href="/pos" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm">Point of Sale</Link>

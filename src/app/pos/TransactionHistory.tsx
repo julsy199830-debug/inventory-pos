@@ -139,7 +139,7 @@ export default function TransactionHistory({ canVoid }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-950 hover:text-slate-100"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900"
       >
         <ReceiptIcon className="h-4 w-4" />
         <span className="hidden sm:inline">Transactions</span>
@@ -157,7 +157,7 @@ export default function TransactionHistory({ canVoid }: Props) {
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
                 aria-hidden
               />
               <input
@@ -166,10 +166,10 @@ export default function TransactionHistory({ canVoid }: Props) {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search sale ID, customer, or cashier…"
                 autoComplete="off"
-                className="h-10 w-full rounded-xl border border-slate-800 bg-slate-950 pl-9 pr-3 text-sm text-slate-100 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
               />
             </div>
-            <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1">
+            <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1">
               {(
                 [
                   ['recent', 'Last 7 days'],
@@ -183,7 +183,7 @@ export default function TransactionHistory({ canVoid }: Props) {
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                     scope === value
                       ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   {label}
@@ -195,13 +195,13 @@ export default function TransactionHistory({ canVoid }: Props) {
           {loading ? (
             <p className="py-10 text-center text-sm text-slate-500">Loading transactions…</p>
           ) : error ? (
-            <p className="py-10 text-center text-sm text-red-400">{error}</p>
+            <p className="py-10 text-center text-sm text-red-600">{error}</p>
           ) : sales.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-500">
               No transactions found for this filter.
             </p>
           ) : (
-            <ul className="max-h-[50vh] divide-y divide-slate-800 overflow-y-auto rounded-xl border border-slate-800">
+            <ul className="max-h-[50vh] divide-y divide-slate-200 overflow-y-auto rounded-xl border border-slate-200">
               {sales.map((s) => {
                 const voided = s.status !== 'Completed'
                 return (
@@ -209,11 +209,11 @@ export default function TransactionHistory({ canVoid }: Props) {
                     <button
                       type="button"
                       onClick={() => openDetails(s.id)}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-800/50"
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-100"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-100">
-                          <span className="font-mono text-xs text-slate-400">#{s.id.slice(0, 8)}</span>
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          <span className="font-mono text-xs text-slate-500">#{s.id.slice(0, 8)}</span>
                           {' · '}
                           {fmtDateTime(s.createdAt)}
                         </p>
@@ -227,13 +227,13 @@ export default function TransactionHistory({ canVoid }: Props) {
                         <span
                           className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${
                             voided
-                              ? 'bg-red-500/15 text-red-400 ring-red-500/30'
-                              : 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30'
+                              ? 'bg-red-500/15 text-red-600 ring-red-500/30'
+                              : 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/30'
                           }`}
                         >
                           {voided ? 'Voided' : 'Completed'}
                         </span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-100">
+                        <span className="text-sm font-semibold tabular-nums text-slate-900">
                           {money(s.totalAmount)}
                         </span>
                       </div>
@@ -260,20 +260,20 @@ export default function TransactionHistory({ canVoid }: Props) {
         {detailsLoading ? (
           <p className="py-10 text-center text-sm text-slate-500">Loading sale…</p>
         ) : detailsError ? (
-          <p className="py-10 text-center text-sm text-red-400">{detailsError}</p>
+          <p className="py-10 text-center text-sm text-red-600">{detailsError}</p>
         ) : details ? (
           <div className="flex flex-col gap-4">
             {/* Meta */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="font-mono text-sm text-slate-300">#{details.id.slice(0, 8)}</p>
+                <p className="font-mono text-sm text-slate-600">#{details.id.slice(0, 8)}</p>
                 <p className="text-xs text-slate-500">{fmtDateTime(details.createdAt)}</p>
               </div>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${
                   detailsVoided
-                    ? 'bg-red-500/15 text-red-400 ring-red-500/30'
-                    : 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30'
+                    ? 'bg-red-500/15 text-red-600 ring-red-500/30'
+                    : 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/30'
                 }`}
               >
                 {detailsVoided ? 'Voided' : 'Completed'}
@@ -282,25 +282,25 @@ export default function TransactionHistory({ canVoid }: Props) {
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
               <dt className="text-slate-500">Cashier</dt>
-              <dd className="text-right text-slate-200">{details.cashierName ?? '—'}</dd>
+              <dd className="text-right text-slate-700">{details.cashierName ?? '—'}</dd>
               <dt className="text-slate-500">Customer</dt>
-              <dd className="text-right text-slate-200">{details.customerName ?? 'Walk-in'}</dd>
+              <dd className="text-right text-slate-700">{details.customerName ?? 'Walk-in'}</dd>
               <dt className="text-slate-500">Payment</dt>
-              <dd className="text-right text-slate-200">{METHOD_LABEL[details.paymentMethod] ?? details.paymentMethod}</dd>
+              <dd className="text-right text-slate-700">{METHOD_LABEL[details.paymentMethod] ?? details.paymentMethod}</dd>
             </dl>
 
             {/* Items */}
-            <div className="rounded-xl border border-slate-800">
-              <ul className="divide-y divide-slate-800">
+            <div className="rounded-xl border border-slate-200">
+              <ul className="divide-y divide-slate-200">
                 {details.items.map((it) => (
                   <li key={it.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                     <div className="min-w-0">
-                      <p className="truncate text-slate-200">{it.productName}</p>
+                      <p className="truncate text-slate-700">{it.productName}</p>
                       <p className="text-xs text-slate-500">
                         {it.quantity} × {money(it.priceAtSale)}
                       </p>
                     </div>
-                    <span className="shrink-0 tabular-nums text-slate-100">
+                    <span className="shrink-0 tabular-nums text-slate-900">
                       {money(it.quantity * it.priceAtSale)}
                     </span>
                   </li>
@@ -311,21 +311,21 @@ export default function TransactionHistory({ canVoid }: Props) {
             {/* Totals */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
               <dt className="text-slate-500">Subtotal</dt>
-              <dd className="text-right tabular-nums text-slate-200">{money(details.subtotal)}</dd>
+              <dd className="text-right tabular-nums text-slate-700">{money(details.subtotal)}</dd>
               <dt className="text-slate-500">Discount</dt>
-              <dd className="text-right tabular-nums text-slate-200">−{money(details.discountAmount)}</dd>
+              <dd className="text-right tabular-nums text-slate-700">−{money(details.discountAmount)}</dd>
               <dt className="text-slate-500">Tax</dt>
-              <dd className="text-right tabular-nums text-slate-200">{money(details.tax)}</dd>
-              <dt className="border-t border-slate-800 pt-1 font-semibold text-slate-300">Total</dt>
-              <dd className="border-t border-slate-800 pt-1 text-right font-semibold tabular-nums text-slate-100">
+              <dd className="text-right tabular-nums text-slate-700">{money(details.tax)}</dd>
+              <dt className="border-t border-slate-200 pt-1 font-semibold text-slate-600">Total</dt>
+              <dd className="border-t border-slate-200 pt-1 text-right font-semibold tabular-nums text-slate-900">
                 {money(details.totalAmount)}
               </dd>
               {details.tendered != null && (
                 <>
                   <dt className="text-slate-500">Tendered</dt>
-                  <dd className="text-right tabular-nums text-slate-200">{money(details.tendered)}</dd>
+                  <dd className="text-right tabular-nums text-slate-700">{money(details.tendered)}</dd>
                   <dt className="text-slate-500">Change</dt>
-                  <dd className="text-right tabular-nums text-slate-200">{money(details.change ?? 0)}</dd>
+                  <dd className="text-right tabular-nums text-slate-700">{money(details.change ?? 0)}</dd>
                 </>
               )}
             </dl>
@@ -371,10 +371,10 @@ export default function TransactionHistory({ canVoid }: Props) {
         {details && (
           <div className="flex flex-col gap-4">
             {/* Sale summary */}
-            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm">
+            <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-slate-300">#{details.id.slice(0, 8)}</span>
-                <span className="font-semibold tabular-nums text-slate-100">{money(details.totalAmount)}</span>
+                <span className="font-mono text-slate-600">#{details.id.slice(0, 8)}</span>
+                <span className="font-semibold tabular-nums text-slate-900">{money(details.totalAmount)}</span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 {METHOD_LABEL[details.paymentMethod] ?? details.paymentMethod}
@@ -404,7 +404,7 @@ export default function TransactionHistory({ canVoid }: Props) {
 
             {/* Reason — preset chips + Other */}
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-slate-200">Reason for void</p>
+              <p className="text-sm font-medium text-slate-700">Reason for void</p>
               {!otherMode ? (
                 <div className="flex flex-wrap gap-2">
                   {PRESET_REASONS.map((preset) => (
@@ -415,7 +415,7 @@ export default function TransactionHistory({ canVoid }: Props) {
                       className={`rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition ${
                         reason === preset
                           ? 'bg-red-600 text-white ring-red-500'
-                          : 'text-slate-300 ring-slate-700 hover:bg-slate-800'
+                          : 'text-slate-600 ring-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       {preset}
@@ -427,7 +427,7 @@ export default function TransactionHistory({ canVoid }: Props) {
                       setOtherMode(true)
                       setReason('')
                     }}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-300 ring-1 ring-slate-700 transition hover:bg-slate-800"
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
                   >
                     Other…
                   </button>
@@ -440,13 +440,13 @@ export default function TransactionHistory({ canVoid }: Props) {
                   placeholder="Describe the reason…"
                   autoFocus
                   maxLength={200}
-                  className="h-10 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-100 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                 />
               )}
             </div>
 
             {voidError && (
-              <p className="rounded-lg bg-red-500/10 p-2.5 text-sm text-red-400 ring-1 ring-red-500/30">{voidError}</p>
+              <p className="rounded-lg bg-red-500/10 p-2.5 text-sm text-red-600 ring-1 ring-red-500/30">{voidError}</p>
             )}
 
             <div className="flex items-center justify-end gap-2">
@@ -454,7 +454,7 @@ export default function TransactionHistory({ canVoid }: Props) {
                 type="button"
                 onClick={() => setVoidOpen(false)}
                 disabled={voidPending}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 disabled:opacity-50"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
               >
                 Cancel
               </button>

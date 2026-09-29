@@ -118,7 +118,7 @@ export function LoginForm({
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           placeholder={selected ? "Your 4–6 digit PIN" : "Select your name first"}
-          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100"
+          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-slate-900 shadow-sm transition placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100"
         />
       </div>
 

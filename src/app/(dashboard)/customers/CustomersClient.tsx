@@ -24,7 +24,7 @@ const fd = (d: Date) =>
     minute: "2-digit",
   });
 const input =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
 const primary =
   "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50";
 const ghost =
@@ -111,7 +111,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-0">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Customers</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Customers</h1>
           <p className="mt-1 text-sm text-slate-500">Directory, credit limits, and debt tracking (“utang”).</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -180,11 +180,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
           <tbody className="divide-y divide-slate-200/80">
             {filtered.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-100">{r.name}</td>
-                <td className="px-4 py-3 text-slate-300">{r.phone ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-300">{f(r.creditLimit)}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>
+                <td className="px-4 py-3 text-slate-600">{r.phone ?? "—"}</td>
+                <td className="px-4 py-3 text-slate-600">{f(r.creditLimit)}</td>
                 <td className="px-4 py-3">
-                  <span className={r.currentBalance > 0 ? "font-semibold text-red-400" : "text-slate-400"}>
+                  <span className={r.currentBalance > 0 ? "font-semibold text-red-600" : "text-slate-500"}>
                     {f(r.currentBalance)}
                   </span>
                 </td>
@@ -233,7 +233,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">No customers found.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No customers found.</td>
               </tr>
             )}
           </tbody>
@@ -337,7 +337,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                 ))}
                 {statement.entries.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="py-8 text-center text-slate-400">No credit activity yet.</td>
+                    <td colSpan={3} className="py-8 text-center text-slate-500">No credit activity yet.</td>
                   </tr>
                 )}
               </tbody>

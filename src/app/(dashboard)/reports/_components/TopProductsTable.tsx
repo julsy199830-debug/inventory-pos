@@ -21,7 +21,7 @@ export default function TopProductsTable({
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-100">
+        <h2 className="text-base font-semibold text-slate-900">
           Top Selling Products
         </h2>
         <p className="text-sm text-slate-500">
@@ -48,7 +48,7 @@ export default function TopProductsTable({
               {products.map((product, i) => (
                 <tr key={product.productId} className="hover:bg-slate-50">
                   <td className="px-5 py-3">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300 ring-1 ring-indigo-500/30">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
                       {i + 1}
                     </span>
                   </td>
@@ -56,14 +56,14 @@ export default function TopProductsTable({
                     <div className="flex items-center gap-3">
                       <ProductThumb product={product} />
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-100">
+                        <p className="truncate font-medium text-slate-900">
                           {product.name}
                         </p>
                         <p className="truncate text-xs text-slate-500">
                           {product.sku}
                           {product.category ? (
                             <>
-                              <span className="text-slate-300"> · </span>
+                              <span className="text-slate-600"> · </span>
                               {product.category}
                             </>
                           ) : null}
@@ -71,10 +71,10 @@ export default function TopProductsTable({
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-right font-medium text-slate-100">
+                  <td className="px-5 py-3 text-right font-medium text-slate-900">
                     {product.unitsSold.toLocaleString()}
                   </td>
-                  <td className="px-5 py-3 text-right font-semibold text-indigo-300">
+                  <td className="px-5 py-3 text-right font-semibold text-indigo-700">
                     {formatMoney(product.revenue, currencySymbol)}
                   </td>
                 </tr>

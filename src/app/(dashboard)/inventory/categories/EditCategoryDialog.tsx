@@ -108,7 +108,7 @@ export default function EditCategoryDialog({
         onClick={() => setOpen(true)}
         aria-label={`Edit ${category.name}`}
         title={`Edit ${category.name}`}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+        className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
         <svg
           className="h-4 w-4"
@@ -135,15 +135,15 @@ export default function EditCategoryDialog({
           }}
         >
           <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-300 px-5 py-4">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">
                 Edit Category
               </h2>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
+                className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
                 aria-label="Close"
               >
                 <svg
@@ -206,7 +206,7 @@ export default function EditCategoryDialog({
               </Field>
 
               <p className="text-xs text-slate-500">
-                A product is <span className="font-medium text-slate-200">Low Stock</span> when its stock is below this threshold (0 is always Out of Stock). Raising it flags high-velocity lines sooner; the inventory badges re-flow on save.
+                A product is <span className="font-medium text-slate-700">Low Stock</span> when its stock is below this threshold (0 is always Out of Stock). Raising it flags high-velocity lines sooner; the inventory badges re-flow on save.
               </p>
 
               <div className="flex justify-end gap-3 pt-2">
@@ -214,7 +214,7 @@ export default function EditCategoryDialog({
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
+                  className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -235,7 +235,7 @@ export default function EditCategoryDialog({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-slate-950";
+  "w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-white";
 
 /** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
 function Field({

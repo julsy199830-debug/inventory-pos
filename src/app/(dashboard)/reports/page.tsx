@@ -100,10 +100,10 @@ export default async function ReportsPage({
       <div className="no-print">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
               Reports
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               End-of-day sales summary & Z-Report — completed sales only.
             </p>
           </div>
@@ -111,7 +111,7 @@ export default async function ReportsPage({
             <form action="/reports" method="get" className="flex items-center gap-3">
               <label
                 htmlFor="report-date"
-                className="text-sm font-medium text-slate-300"
+                className="text-sm font-medium text-slate-600"
               >
                 Date
               </label>
@@ -200,7 +200,7 @@ function KpiCard({
         : "text-slate-900";
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-400">{label}</p>
+      <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className={`mt-2 text-2xl font-semibold ${color}`}>{value}</p>
     </div>
   );

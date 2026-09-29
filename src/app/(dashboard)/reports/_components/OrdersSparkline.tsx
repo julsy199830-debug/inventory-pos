@@ -34,7 +34,7 @@ export default function OrdersSparkline({
         className="flex items-center justify-center"
         style={{ minHeight: height }}
       >
-        <p className="text-xs text-slate-400">No orders yet</p>
+        <p className="text-xs text-slate-500">No orders yet</p>
       </div>
     );
   }
@@ -83,8 +83,8 @@ function SparklineTooltip({
   if (!active || !payload?.length) return null;
   const value = Number(payload[0].value ?? 0);
   return (
-    <div className="rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 shadow-lg">
-      <p className="text-xs font-semibold text-slate-100">
+    <div className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 shadow-lg">
+      <p className="text-xs font-semibold text-slate-900">
         {label}: {value.toLocaleString()}{" "}
         {value === 1 ? "order" : "orders"}
       </p>

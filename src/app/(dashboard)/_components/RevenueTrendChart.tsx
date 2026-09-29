@@ -55,7 +55,7 @@ export default function RevenueTrendChart({
     <div className="h-72">
       {!hasSales ? (
         <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             No completed sales in this window yet.
           </p>
         </div>

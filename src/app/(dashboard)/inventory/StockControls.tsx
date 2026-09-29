@@ -68,7 +68,7 @@ export default function StockControls({
         onClick={() => adjust(-1)}
         disabled={pending}
         aria-label="Decrease stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -85,7 +85,7 @@ export default function StockControls({
       </button>
       {/* Compact numeric readout so the inline control doubles as a stock
           gauge without duplicating the dedicated count pill column. */}
-      <span className="min-w-[1.75rem] text-center font-mono text-xs font-medium text-slate-200">
+      <span className="min-w-[1.75rem] text-center font-mono text-xs font-medium text-slate-700">
         {displayed}
       </span>
       <button
@@ -93,7 +93,7 @@ export default function StockControls({
         onClick={() => adjust(1)}
         disabled={pending}
         aria-label="Increase stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -109,7 +109,7 @@ export default function StockControls({
         </svg>
       </button>
       {error && (
-        <span role="alert" className="ml-1 text-xs font-medium text-red-400">
+        <span role="alert" className="ml-1 text-xs font-medium text-red-600">
           {error}
         </span>
       )}

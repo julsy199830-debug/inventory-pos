@@ -70,7 +70,7 @@ export default function StockHistoryDialog({
         onClick={onOpen}
         aria-label={`Stock history for ${productName}`}
         title={`Stock history for ${productName}`}
-        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
       >
         <svg
           className="h-4 w-4"
@@ -96,10 +96,10 @@ export default function StockHistoryDialog({
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
-            <div className="flex items-start justify-between border-b border-slate-700 px-5 py-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-slate-300 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold tracking-tight text-slate-100">
+                <h2 className="text-base font-semibold tracking-tight text-slate-900">
                   Stock History
                 </h2>
                 <p className="mt-0.5 max-w-sm truncate text-sm text-slate-500">
@@ -110,7 +110,7 @@ export default function StockHistoryDialog({
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
                 aria-label="Close"
               >
                 <svg
@@ -174,13 +174,13 @@ const TYPE_STYLES: Record<StockMovementType, string> = {
   SALE: "bg-red-50 text-red-700 border-red-200",
   ADJUSTMENT: "bg-amber-50 text-amber-800 border-amber-200",
   DAMAGE: "bg-orange-100 text-orange-700 border-orange-200",
-  VOID: "bg-slate-500/20 text-slate-300 border-slate-400",
+  VOID: "bg-slate-500/20 text-slate-600 border-slate-400",
 };
 
 /** One movement: type badge + signed quantity on top, timestamp + note below. */
 function MovementRow({ movement }: { movement: StockMovementView }) {
   return (
-    <li className="rounded-lg border border-slate-800 p-4">
+    <li className="rounded-lg border border-slate-200 p-4">
       <div className="flex items-center justify-between">
         <span
           className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${TYPE_STYLES[movement.type]}`}
@@ -216,8 +216,8 @@ function signedQuantity(quantity: number): string {
 
 /** Green for increases, red for decreases, neutral gray for a zero delta. */
 function quantityColor(quantity: number): string {
-  if (quantity > 0) return "text-indigo-300";
-  if (quantity < 0) return "text-red-400";
+  if (quantity > 0) return "text-indigo-700";
+  if (quantity < 0) return "text-red-600";
   return "text-slate-500";
 }
 
@@ -243,10 +243,10 @@ function LoadingSkeleton() {
           className="animate-pulse rounded-lg border border-slate-100 p-4"
         >
           <div className="flex items-center justify-between">
-            <div className="h-5 w-24 rounded-full bg-slate-800" />
-            <div className="h-4 w-10 rounded bg-slate-800" />
+            <div className="h-5 w-24 rounded-full bg-slate-100" />
+            <div className="h-4 w-10 rounded bg-slate-100" />
           </div>
-          <div className="mt-3 h-3 w-2/3 rounded bg-slate-800" />
+          <div className="mt-3 h-3 w-2/3 rounded bg-slate-100" />
         </div>
       ))}
     </div>

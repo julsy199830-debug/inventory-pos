@@ -65,7 +65,7 @@ export default function RoleSelect({
       value={value}
       onChange={onChange}
       disabled={pending}
-      className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-2 py-1.5 text-xs text-slate-100 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="rounded-xl border border-slate-200 bg-white shadow-sm px-2 py-1.5 text-xs text-slate-900 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <option value="ADMIN">Admin</option>
       <option value="MANAGER">Manager</option>

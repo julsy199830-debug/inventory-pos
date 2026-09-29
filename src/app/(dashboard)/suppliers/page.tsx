@@ -70,16 +70,16 @@ export default async function SuppliersPage({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Suppliers
           </h1>
           <p className="text-sm text-slate-500">
             Showing{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {suppliers.length.toLocaleString()}
             </span>{" "}
             of{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {total.toLocaleString()}
             </span>{" "}
             suppliers
@@ -98,7 +98,7 @@ export default async function SuppliersPage({
       <div className="flex flex-wrap items-center gap-3">
         <form className="relative min-w-0 flex-1">
           <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -144,11 +144,11 @@ export default async function SuppliersPage({
             <tbody className="divide-y divide-slate-200/80">
               {suppliers.map((s) => (
                 <tr key={s.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-100">{s.name}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.contactName ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.email ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.phone ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.address ?? "—"}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900">{s.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{s.contactName ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{s.email ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{s.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{s.address ?? "—"}</td>
                   <td className="px-4 py-3">
                     <ProductCountPill count={s.productCount} />
                   </td>
@@ -190,12 +190,12 @@ export default async function SuppliersPage({
 function ProductCountPill({ count }: { count: number }) {
   const color =
     count === 0
-      ? "bg-slate-800 text-slate-300"
-      : "bg-indigo-500/15 text-indigo-300";
+      ? "bg-slate-100 text-slate-600"
+      : "bg-indigo-50 text-indigo-700";
   const label = count === 1 ? "1 product" : `${count} products`;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${color}`}
     >
       {label}
     </span>

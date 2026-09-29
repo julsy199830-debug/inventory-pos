@@ -407,7 +407,7 @@ export default function PosCheckout({
         </label>
         <div className="relative">
           <Barcode
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
             aria-hidden
           />
           <input
@@ -426,7 +426,7 @@ export default function PosCheckout({
             autoComplete="off"
             autoFocus
             placeholder="Scan or type a SKU, then Enter"
-            className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
       </div>
@@ -508,7 +508,7 @@ export default function PosCheckout({
         {cart.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-              <ShoppingCart className="h-7 w-7 text-slate-400" aria-hidden />
+              <ShoppingCart className="h-7 w-7 text-slate-500" aria-hidden />
             </div>
             <p className="text-sm font-semibold text-slate-900">
               No items yet. Tap a product to add it.
@@ -614,7 +614,7 @@ export default function PosCheckout({
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   {line.discount ? (
                     <>
-                      <span className="text-xs tabular-nums text-slate-400 line-through">
+                      <span className="text-xs tabular-nums text-slate-500 line-through">
                         {money(line.product.price * line.qty)}
                       </span>
                       <span className="text-sm font-bold tabular-nums text-violet-700">
@@ -634,7 +634,7 @@ export default function PosCheckout({
                       )
                     }
                     aria-label={`Remove ${line.product.name} from order`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -702,7 +702,7 @@ export default function PosCheckout({
               type="button"
               onClick={() => setCartDiscount(null)}
               aria-label="Clear order discount"
-              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700"
+              className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -804,7 +804,7 @@ export default function PosCheckout({
                 >
                   Dashboard
                 </Link>
-                <span aria-hidden className="text-slate-300">
+                <span aria-hidden className="text-slate-600">
                   /
                 </span>
                 <span className="font-semibold text-slate-900">Point of Sale</span>
@@ -852,7 +852,7 @@ export default function PosCheckout({
           <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
                 aria-hidden
               />
               <input
@@ -862,14 +862,14 @@ export default function PosCheckout({
                 placeholder="Search products, barcode, or SKU…"
                 aria-label="Search products, barcode, or SKU"
                 autoComplete="off"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
               />
               {search !== '' && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
                   aria-label="Clear product search"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -898,7 +898,7 @@ export default function PosCheckout({
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                  <Search className="h-6 w-6 text-slate-400" aria-hidden />
+                  <Search className="h-6 w-6 text-slate-500" aria-hidden />
                 </div>
                 <p className="text-base font-semibold text-slate-900">
                   {products.length === 0 ? 'No products stocked yet' : 'No products found'}
@@ -944,7 +944,7 @@ export default function PosCheckout({
                           <p className="min-w-0 truncate pr-9 text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
                             {p.name}
                           </p>
-                          <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-wide text-slate-400">
+                          <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-wide text-slate-500">
                             {p.sku}
                           </p>
                           <p className="mt-auto pt-2.5 text-base font-bold tabular-nums text-slate-900">
@@ -1012,7 +1012,7 @@ export default function PosCheckout({
             transition={{ duration: 0.2 }}
           >
             <div
-              className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
+              className="absolute inset-0 bg-white/45 backdrop-blur-sm"
               onClick={() => setCartOpen(false)}
             />
             <motion.div
@@ -1027,7 +1027,7 @@ export default function PosCheckout({
                 <button
                   type="button"
                   onClick={() => setCartOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                   aria-label="Close cart"
                 >
                   <X className="h-5 w-5" />
@@ -1080,7 +1080,7 @@ export default function PosCheckout({
               <button
                 type="button"
                 onClick={() => setCompleted(null)}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />

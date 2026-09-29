@@ -166,13 +166,13 @@ export default async function EmployeesPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Employees
           </h1>
           <p className="text-sm text-slate-500">
-            <span className="font-medium text-slate-100">{activeCount}</span> active
+            <span className="font-medium text-slate-900">{activeCount}</span> active
             of{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {employees.length.toLocaleString()}
             </span>{" "}
             employees
@@ -244,17 +244,17 @@ export default async function EmployeesPage() {
             <tbody className="divide-y divide-slate-200/80">
               {employees.map((e) => (
                 <tr key={e.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-100">
+                  <td className="px-4 py-3 font-medium text-slate-900">
                     {e.name}
                     {/* Inactive employees are dimmed so the roster reads at a
                         glance — visual only, the raw state drives the toggle. */}
                     {!e.active && (
-                      <span className="ml-2 text-xs font-normal text-slate-400">
+                      <span className="ml-2 text-xs font-normal text-slate-500">
                         (offboarded)
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{e.email}</td>
+                  <td className="px-4 py-3 text-slate-600">{e.email}</td>
                   <td className="px-4 py-3">
                     <RoleSelect id={e.id} role={e.role} />
                   </td>
@@ -265,8 +265,8 @@ export default async function EmployeesPage() {
                       name={e.name}
                     />
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
-                    <span className="font-medium text-slate-100">
+                  <td className="px-4 py-3 text-slate-600">
+                    <span className="font-medium text-slate-900">
                       {e.lifetimeCount.toLocaleString()}
                     </span>{" "}
                     sales ·{" "}
@@ -329,14 +329,14 @@ function SummaryTile({
 }) {
   const accent =
     tone === "blue"
-      ? "bg-indigo-500/15 text-indigo-300"
-      : "bg-slate-800 text-slate-200";
+      ? "bg-indigo-50 text-indigo-700"
+      : "bg-slate-100 text-slate-700";
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm p-4">
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-100">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
         {value}
       </p>
       <p className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${accent}`}>
@@ -358,7 +358,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-sm font-semibold tracking-tight text-slate-100">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
           On the clock
         </h2>
         <p className="text-xs text-slate-500">
@@ -381,7 +381,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
               className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-100">
+                <p className="truncate text-sm font-medium text-slate-900">
                   {e.name}
                 </p>
                 <p className="truncate text-xs text-slate-500">
@@ -390,7 +390,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">
-                  <span className="font-medium text-slate-100">
+                  <span className="font-medium text-slate-900">
                     {CURRENCY}
                     {e.liveSalesTotal.toLocaleString(undefined, {
                       minimumFractionDigits: 2,

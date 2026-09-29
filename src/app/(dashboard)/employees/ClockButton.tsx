@@ -67,7 +67,7 @@ export default function ClockButton({
             ? 'Clock Out'
             : 'Clock In'}
       </button>
-      {error && <span className="text-xs text-red-400">{error}</span>}
+      {error && <span className="text-xs text-red-600">{error}</span>}
     </div>
   )
 }

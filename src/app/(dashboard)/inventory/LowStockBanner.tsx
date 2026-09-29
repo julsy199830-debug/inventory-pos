@@ -62,7 +62,7 @@ export default function LowStockBanner({
         </svg>
 
         <div className="min-w-0 flex-1 space-y-2.5">
-          <p className="text-sm font-semibold text-indigo-200">
+          <p className="text-sm font-semibold text-indigo-600">
             {items.length.toLocaleString()}{" "}
             {items.length === 1 ? "product needs" : "products need"} attention
           </p>
@@ -93,10 +93,10 @@ export default function LowStockBanner({
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {low.map((item) => (
                   <li key={item.id}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-slate-900 px-2.5 py-0.5 text-xs text-amber-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-white px-2.5 py-0.5 text-xs text-amber-300">
                       <span className="font-medium">{item.name}</span>
-                      <span className="font-mono text-amber-400">({item.sku})</span>
-                      <span className="text-amber-400">
+                      <span className="font-mono text-amber-600">({item.sku})</span>
+                      <span className="text-amber-600">
                         {item.stock.toLocaleString()} left
                       </span>
                     </span>
@@ -111,7 +111,7 @@ export default function LowStockBanner({
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="rounded-lg p-1 text-blue-400 transition-colors hover:bg-indigo-500/20 hover:text-indigo-300"
+          className="rounded-lg p-1 text-blue-600 transition-colors hover:bg-indigo-100 hover:text-indigo-700"
           aria-label="Dismiss low-stock alert"
         >
           <svg

@@ -56,7 +56,7 @@ export default function EditEmployeeDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-1 text-sm font-medium text-slate-200 hover:bg-slate-950"
+        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-1 text-sm font-medium text-slate-700 hover:bg-white"
       >
         Edit
       </button>
@@ -64,21 +64,21 @@ export default function EditEmployeeDialog({
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold text-slate-100">Edit Employee</h2>
+            <h2 className="mb-4 text-lg font-semibold text-slate-900">Edit Employee</h2>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200">
+                <label className="block text-sm font-medium text-slate-700">
                   Name
                 </label>
                 <input
                   name="name"
                   required
                   defaultValue={employee.name}
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200">
+                <label className="block text-sm font-medium text-slate-700">
                   Email
                 </label>
                 <input
@@ -86,13 +86,13 @@ export default function EditEmployeeDialog({
                   type="email"
                   required
                   defaultValue={employee.email}
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200">
+                <label className="block text-sm font-medium text-slate-700">
                   PIN{' '}
-                  <span className="font-normal text-slate-400">
+                  <span className="font-normal text-slate-500">
                     (leave blank to keep current)
                   </span>
                 </label>
@@ -102,17 +102,17 @@ export default function EditEmployeeDialog({
                   pattern="\d{4,6}"
                   maxLength={6}
                   placeholder="4–6 digits"
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200">
+                <label className="block text-sm font-medium text-slate-700">
                   Role
                 </label>
                 <select
                   name="role"
                   defaultValue={employee.role}
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
@@ -120,27 +120,27 @@ export default function EditEmployeeDialog({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200">
+                <label className="block text-sm font-medium text-slate-700">
                   Password{' '}
-                  <span className="font-normal text-slate-400">
+                  <span className="font-normal text-slate-500">
                     (leave blank to keep current)
                   </span>
                 </label>
                 <input
                   name="password"
                   type="password"
-                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
-              {error && <p className="text-sm text-red-400">{error}</p>}
+              {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:opacity-50"
+                  className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
                 >
                   Cancel
                 </button>

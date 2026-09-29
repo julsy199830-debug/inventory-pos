@@ -26,7 +26,7 @@ const STATUS_META: Record<PoStatus, { label: string; cls: string }> = {
 export default function PoStatusBadge({ status }: { status: PoStatus }) {
   const meta = STATUS_META[status] ?? {
     label: status,
-    cls: "bg-slate-800 text-slate-300",
+    cls: "bg-slate-100 text-slate-600",
   };
   return (
     <span

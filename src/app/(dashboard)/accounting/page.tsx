@@ -111,12 +111,12 @@ export default async function AccountingPage({
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Accounting
           </h1>
           <p className="text-sm text-slate-500">
             Financial summary for{" "}
-            <span className="font-medium text-slate-100">
+            <span className="font-medium text-slate-900">
               {PRESET_LABELS[preset]}
             </span>{" "}
             — completed sales only.
@@ -176,7 +176,7 @@ export default async function AccountingPage({
           margin column colors by sign so a loss can't masquerade as a win. */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-100">
+          <h2 className="text-base font-semibold text-slate-900">
             Profit by Product
           </h2>
           <p className="mt-0.5 text-sm text-slate-500">

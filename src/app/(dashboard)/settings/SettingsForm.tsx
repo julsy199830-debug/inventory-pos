@@ -106,7 +106,7 @@ export default function SettingsForm({
       {saved && !pending && (
         <p
           role="status"
-          className="rounded-lg border border-blue-200 bg-indigo-500/15 px-3 py-2 text-sm text-indigo-300"
+          className="rounded-lg border border-blue-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700"
         >
           Settings saved.
         </p>
@@ -166,7 +166,7 @@ export default function SettingsForm({
             className={inputCls}
           />
           {!taxRateValid && (
-            <p className="mt-1 text-xs text-red-400">
+            <p className="mt-1 text-xs text-red-600">
               Enter a number between 0 and 100.
             </p>
           )}
@@ -186,7 +186,7 @@ export default function SettingsForm({
             className={inputCls}
           />
           {!currencySymbolValid && (
-            <p className="mt-1 text-xs text-red-400">
+            <p className="mt-1 text-xs text-red-600">
               Must be 8 characters or fewer.
             </p>
           )}
@@ -207,7 +207,7 @@ export default function SettingsForm({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100";
 
 /** Labeled field wrapper — keeps the form DRY (matches the supplier dialogs). */
 function Field({

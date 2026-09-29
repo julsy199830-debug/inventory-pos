@@ -42,11 +42,11 @@ export default function Breadcrumbs() {
             <ChevronRight className="h-3.5 w-3.5 text-slate-600" aria-hidden />
           )}
           {c.current ? (
-            <span className="font-semibold text-slate-100">{c.label}</span>
+            <span className="font-semibold text-slate-900">{c.label}</span>
           ) : (
             <Link
               href={c.href}
-              className="font-medium text-slate-400 transition-colors hover:text-indigo-300"
+              className="font-medium text-slate-500 transition-colors hover:text-indigo-700"
             >
               {c.label}
             </Link>

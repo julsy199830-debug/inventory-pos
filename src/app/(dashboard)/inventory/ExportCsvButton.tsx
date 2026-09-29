@@ -44,7 +44,7 @@ export default function ExportCsvButton({ rows }: { rows: InventoryExportRow[] }
       type="button"
       onClick={onExport}
       disabled={rows.length === 0}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 shadow-sm px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
     >
       <svg
         className="h-4 w-4"
