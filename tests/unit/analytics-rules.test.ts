@@ -581,8 +581,8 @@ check("refunds and voids are attributed to whoever processed them", () => {
   const rows = employeePerformance(
     STAFF,
     [sale({ cashierId: "u1", totalAmount: 200 })],
-    [{ id: "r", amount: 30, reason: "x", createdAt: at("2026-03-02"), processedById: "u2" }],
-    [{ id: "v", totalAmount: 40, voidReason: "x", voidedAt: at("2026-03-02"), voidedById: "u2" }],
+    [{ id: "r", amount: 30, reason: "x", createdAt: at("2026-03-02"), cashierId: "u2" }],
+    [{ id: "v", totalAmount: 40, voidReason: "x", voidedAt: at("2026-03-02"), voidedBy: "u2" }],
     RANGE,
   );
   const ben = rows.find((r) => r.name === "Ben");

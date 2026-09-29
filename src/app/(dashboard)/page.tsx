@@ -1,70 +1,359 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { requirePageAuth } from "@/lib/session";
 import {
   Banknote,
-  BarChart3,
-  Clock3,
+  Boxes,
   Package,
   Receipt,
-  Tags,
-  Wallet,
+  RotateCcw,
+  TrendingUp,
 } from "lucide-react";
-import ActivityHeatmap from "./_components/ActivityHeatmap";
-import RevenueTrendChart, { type TrendPoint } from "./_components/RevenueTrendChart";
+import { getStoreSettings } from "@/app/actions/settings";
+import { RANGE_LABELS, resolveRange } from "@/lib/analytics";
+import { Panel } from "@/app/_components/ui/Panel";
+import { RangeTabs } from "@/app/_components/ui/RangeTabs";
+import { ShareBars } from "@/app/_components/ui/ShareBars";
+import { StatCard } from "@/app/_components/ui/StatCard";
+import ActivityByHour from "./_components/ActivityByHour";
+import RevenueTrendChart from "./_components/RevenueTrendChart";
+import { getDashboardData } from "./dashboard-data";
 
 /**
- * Dashboard home — live store overview in the dark charcoal redesign.
+ * Dashboard home (Phase 2) - the daily business picture a storekeeper opens
+ * first.
  *
- * A Server Component that computes every figure directly from Prisma (no mock
- * numbers), fed by the same row of completed `Sale`s used everywhere else in
- * the app. The `?range=week|month|year` query (awaited via the Promise
- * `searchParams` prop, matching the inventory/accounting page convention)
- * drives the window for the metric cards, revenue trend, category bars, and
- * the day×hour heatmap; the toggle in the top nav is plain links, so the page
- * stays statically prerenderable with zero client navigation state.
+ * A Server Component. Every figure comes from `getDashboardData`, which runs
+ * one query per resource and hands the rows to the pure helpers in
+ * `lib/analytics`, so each card is describing the same window of the same
+ * sales. That is a deliberate change from the previous dashboard, which
+ * queried separately per card and re-derived totals in JSX - which is why its
+ * cards disagreed with each other and with the reports page.
  *
- * Layout mirrors the visual reference: a charcoal sheet with a top navigation
- * bar (greeting + timeframe), four metric cards, a category-volume bar panel,
- * and a bottom row of three cards — Analytics (Recharts area), Activity by
- * time (heatmap), and Recent transactions.
+ * Reading order, top to bottom, mirrors what a manager asks in this order:
+ * how did today go, is anything about to run out, what is selling, how are we
+ * trading by hour, and who closed the last few sales.
+ *
+ * Range selection is URL-driven (`?range=`) via plain links, matching the
+ * inventory and audit-log filters, so a view can be bookmarked or shared and
+ * the page stays statically prerenderable with no client navigation state.
  */
+export default async function DashboardPage({
+  searchParams,
+}: {
+  // searchParams is a Promise in this Next.js version - see the page file
+  // convention docs on handling filtering with searchParams.
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { range } = await searchParams;
+  const rangeKey = resolveRange(range);
+  const [data, settings] = await Promise.all([
+    getDashboardData(rangeKey),
+    getStoreSettings(),
+  ]);
+  const symbol = settings?.currencySymbol ?? "P";
+  const { totals, today, valuation, adjustments } = data;
 
-type RangeKey = "week" | "month" | "year";
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Dashboard
+          </h1>
+          {/* The window is its own element so it can be read (and asserted on)
+              independently of the label beside it. */}
+          <p className="mt-1 text-sm text-slate-500">
+            {RANGE_LABELS[rangeKey]}{" "}
+            <span className="tabular-nums text-slate-400">
+              {data.range.from} to {data.range.to}
+            </span>
+          </p>
+        </div>
+        <RangeTabs active={rangeKey} short />
+      </header>
 
-const RANGE_DEFS: { key: RangeKey; label: string; days: number }[] = [
-  { key: "week", label: "Week", days: 6 },
-  { key: "month", label: "Month", days: 29 },
-  { key: "year", label: "Year", days: 364 },
-];
+      {/* Today's own numbers, kept separate from the selected range so "Today"
+          is never a function of which window happens to be open. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Today's sales"
+          value={money(today.revenue, symbol)}
+          hint={`${today.transactions} transaction${today.transactions === 1 ? "" : "s"}`}
+          icon={<Banknote className="h-4 w-4" aria-hidden />}
+        />
+        <StatCard
+          label="Revenue"
+          value={money(totals.revenue, symbol)}
+          change={data.revenueChange}
+          icon={<TrendingUp className="h-4 w-4" aria-hidden />}
+        />
+        <StatCard
+          label="Transactions"
+          value={totals.transactions.toLocaleString("en-US")}
+          change={data.transactionChange}
+          hint={`avg ${money(totals.averageOrder, symbol)}`}
+          icon={<Receipt className="h-4 w-4" aria-hidden />}
+        />
+        <StatCard
+          label="Inventory value"
+          value={money(valuation.retailValue, symbol)}
+          hint={`at cost ${money(valuation.costValue, symbol)}`}
+          icon={<Boxes className="h-4 w-4" aria-hidden />}
+          href="/inventory"
+        />
+      </div>
 
-const RANGE_LABELS: Record<RangeKey, string> = {
-  week: "This week",
-  month: "This month",
-  year: "This year",
-};
+      {/* Restock pressure and leakage: the two things that quietly cost a
+          store money, so they sit above the merchandising panels. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <StatCard
+          label="Needs restock"
+          value={String(valuation.outOfStock + valuation.lowStock)}
+          hint={`${valuation.outOfStock} out, ${valuation.lowStock} low`}
+          tone={valuation.outOfStock > 0 ? "danger" : valuation.lowStock > 0 ? "warning" : "default"}
+          icon={<Package className="h-4 w-4" aria-hidden />}
+          href="/inventory?status=low"
+        />
+        <StatCard
+          label="Value at risk"
+          value={money(valuation.atRiskValue, symbol)}
+          hint="retail value sitting on low lines"
+          tone={valuation.atRiskValue > 0 ? "warning" : "default"}
+          icon={<Boxes className="h-4 w-4" aria-hidden />}
+        />
+        <StatCard
+          label="Refunds & voids"
+          value={money(adjustments.totalGivenBack, symbol)}
+          hint={
+            adjustments.ratePercent == null
+              ? "no sales in this window"
+              : `${adjustments.ratePercent.toFixed(1)}% of gross sales`
+          }
+          tone={adjustments.totalGivenBack > 0 ? "warning" : "default"}
+          icon={<RotateCcw className="h-4 w-4" aria-hidden />}
+          href="/reports"
+        />
+      </div>
 
-const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <Panel
+          title="Sales trend"
+          subtitle={
+            data.trend.length > 60 ? "Monthly totals" : "Daily totals"
+          }
+          className="xl:col-span-2"
+        >
+          <RevenueTrendChart
+            data={data.trend.map((p) => ({ label: p.label, revenue: p.revenue }))}
+            currencySymbol={symbol}
+          />
+        </Panel>
 
-/** Normalize `?range=` into a known preset; anything unrecognized falls back
- *  to "month" (the same token-strict convention as the accounting page). */
-function resolveRange(value: string | string[] | undefined): RangeKey {
-  const token = Array.isArray(value) ? value[0] : value;
-  return RANGE_DEFS.some((r) => r.key === token) ? (token as RangeKey) : "month";
+        <Panel
+          title="Activity by time"
+          subtitle="Busiest hours, from actual sales"
+        >
+          <ActivityByHour buckets={data.hours} currencySymbol={symbol} />
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel
+          title="Top-selling products"
+          subtitle="By revenue in this window"
+          action={
+            <Link
+              href="/reports"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              Full report
+            </Link>
+          }
+        >
+          <ShareBars
+            tone="indigo"
+            rows={data.top.map((row) => ({
+              label: row.label,
+              detail: row.detail,
+              value: money(row.revenue, symbol),
+              share: row.share,
+            }))}
+          />
+        </Panel>
+
+        <Panel title="Sales by category" subtitle="Where the revenue comes from">
+          <ShareBars
+            tone="emerald"
+            rows={data.categories.map((row) => ({
+              label: row.label,
+              value: money(row.revenue, symbol),
+              share: row.share,
+            }))}
+          />
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Panel title="By payment method" subtitle="Share of revenue">
+          <ShareBars
+            tone="slate"
+            rows={data.payments.map((row) => ({
+              label: paymentLabel(row.label),
+              value: money(row.revenue, symbol),
+              share: row.share,
+            }))}
+          />
+        </Panel>
+
+        <Panel
+          title="Restock list"
+          subtitle="Out of stock first, then nearest to empty"
+          action={
+            <Link
+              href="/inventory?status=low"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              Inventory
+            </Link>
+          }
+        >
+          {data.alerts.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">
+              Every product is above its low-stock threshold.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {data.alerts.map((alert) => (
+                <li key={alert.id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">
+                      {alert.name}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {alert.sku} - {alert.categoryName}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      alert.status === "out"
+                        ? "shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700"
+                        : "shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700"
+                    }
+                  >
+                    {alert.status === "out" ? "Out" : `${alert.stock} left`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel
+          title="Cashier activity"
+          subtitle="Sales handled in this window"
+          action={
+            <Link
+              href="/employees"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              All staff
+            </Link>
+          }
+        >
+          {data.employees.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">
+              No staff records yet.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {data.employees.slice(0, 6).map((row) => (
+                <li key={row.id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">
+                      {row.name}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {row.role.toLowerCase()} - {row.transactions} sale
+                      {row.transactions === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                    {money(row.revenue, symbol)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <Panel
+        title="Recent transactions"
+        subtitle="Most recent sales in this window"
+        bodyClassName="px-0 py-0"
+      >
+        {data.recent.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm font-medium text-slate-700">No completed sales yet</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Sales appear here as soon as the register rings one up.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {data.recent.map((sale) => (
+              <li key={sale.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700"
+                    aria-hidden
+                  >
+                    {sale.customer.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-800">
+                      {sale.customer}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {sale.cashier} - {paymentLabel(sale.method)} -{" "}
+                      {sale.at.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {sale.status !== "Completed" ? (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      {sale.status}
+                    </span>
+                  ) : null}
+                  <span className="text-sm font-semibold tabular-nums text-slate-900">
+                    {money(sale.total, symbol)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </div>
+  );
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-function fmtMoney(value: number, symbol: string): string {
-  const signed = value < 0 ? "-" : "";
-  return `${signed}${symbol}${Math.abs(value).toLocaleString("en-US", {
+/** Format a figure as store currency, with the sign carried outside the glyph. */
+function money(value: number, symbol: string): string {
+  const body = Math.abs(value).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+  return `${value < 0 ? "-" : ""}${symbol}${body}`;
 }
 
-function paymentMethodLabel(method: string): string {
+/** "STORE_CREDIT" -> "Store credit". Mirrors the POS's own payment labels. */
+function paymentLabel(method: string): string {
   if (method === "CASH") return "Cash";
   if (method === "CARD") return "Card";
   if (method === "STORE_CREDIT") return "Store credit";
@@ -72,456 +361,4 @@ function paymentMethodLabel(method: string): string {
     .split("_")
     .map((word) => (word[0] ?? "").toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
-}
-
-/** The slice of a `Sale` the dashboard needs, with the joins resolved. */
-type SaleForOverview = {
-  totalAmount: number;
-  createdAt: Date;
-  customer: { name: string } | null;
-  cashier: { name: string } | null;
-  items: {
-    quantity: number;
-    priceAtSale: number;
-    product: { category: { name: string } | null } | null;
-  }[];
-};
-
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
-
-function monthKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth()}`;
-}
-
-/** Revenue per time bucket: daily for week/month windows, monthly for year. */
-function buildTrend(
-  rangeKey: RangeKey,
-  sales: SaleForOverview[],
-  now: Date,
-): TrendPoint[] {
-  const totals = new Map<string, number>();
-  const keyFor = (d: Date) => (rangeKey === "year" ? monthKey(d) : dayKey(d));
-  for (const sale of sales) {
-    const key = keyFor(sale.createdAt);
-    totals.set(key, round2((totals.get(key) ?? 0) + sale.totalAmount));
-  }
-
-  const points: TrendPoint[] = [];
-  if (rangeKey === "year") {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      points.push({
-        label: SHORT_MONTHS[d.getMonth()],
-        revenue: totals.get(monthKey(d)) ?? 0,
-      });
-    }
-  } else {
-    const days = RANGE_DEFS.find((r) => r.key === rangeKey)!.days;
-    for (let i = days; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      points.push({
-        label: rangeKey === "week" ? DAY_SHORT[d.getDay()] : `${d.getMonth() + 1}/${d.getDate()}`,
-        revenue: totals.get(dayKey(d)) ?? 0,
-      });
-    }
-  }
-  return points;
-}
-
-type CategoryVolume = { name: string; revenue: number; share: number };
-
-/** Per-category revenue share for the horizontal volume bars. */
-function buildCategoryVolume(sales: SaleForOverview[]): CategoryVolume[] {
-  const totals = new Map<string, number>();
-  let grand = 0;
-  for (const sale of sales) {
-    for (const item of sale.items) {
-      const name = item.product?.category?.name ?? "Uncategorized";
-      const amount = item.quantity * item.priceAtSale;
-      totals.set(name, (totals.get(name) ?? 0) + amount);
-      grand += amount;
-    }
-  }
-  return Array.from(totals.entries())
-    .map(([name, revenue]) => ({
-      name,
-      revenue: round2(revenue),
-      share: grand > 0 ? (revenue / grand) * 100 : 0,
-    }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 8);
-}
-
-/** 7 (days, Monday-first) × 8 (3-hour slots) sale-count matrix. */
-function buildHeatmap(
-  sales: SaleForOverview[],
-): { matrix: number[][]; maxCell: number } {
-  const matrix = Array.from({ length: 7 }, () => Array.from({ length: 8 }, () => 0));
-  for (const sale of sales) {
-    const day = (sale.createdAt.getDay() + 6) % 7; // Monday = 0
-    const slot = Math.min(7, Math.floor(sale.createdAt.getHours() / 3));
-    matrix[day][slot] += 1;
-  }
-  const maxCell = Math.max(1, ...matrix.flat());
-  return { matrix, maxCell };
-}
-
-type RecentSale = {
-  id: string;
-  time: Date;
-  total: number;
-  method: string;
-  customer: string;
-  cashier: string;
-  categoryPills: string[];
-};
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const user = await requirePageAuth();
-
-  const { range } = await searchParams;
-  const rangeKey = resolveRange(range);
-  const days = RANGE_DEFS.find((r) => r.key === rangeKey)!.days;
-
-  // Window: local midnight `days` back → now (POS days run on local wall-clock).
-  const now = new Date();
-  const windowStart = new Date(now);
-  windowStart.setHours(0, 0, 0, 0);
-  windowStart.setDate(windowStart.getDate() - days);
-
-  const [sales, settings, productCount, categoryCount] = await Promise.all([
-    prisma.sale.findMany({
-      where: { status: "Completed", createdAt: { gte: windowStart } },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        totalAmount: true,
-        subtotal: true,
-        tax: true,
-        paymentMethod: true,
-        createdAt: true,
-        customer: { select: { name: true } },
-        cashier: { select: { name: true } },
-        items: {
-          select: {
-            quantity: true,
-            priceAtSale: true,
-            product: { select: { category: { select: { name: true } } } },
-          },
-        },
-      },
-    }),
-    prisma.storeSetting.findFirst(),
-    prisma.product.count(),
-    prisma.category.count(),
-  ]);
-
-  const symbol = settings?.currencySymbol ?? "₱";
-  const firstName = user.name.split(/\s+/)[0] || user.name;
-
-  const revenue = round2(sales.reduce((sum, sale) => sum + sale.totalAmount, 0));
-  const orders = sales.length;
-  const itemsSold = sales.reduce(
-    (sum, sale) => sum + sale.items.reduce((a, item) => a + item.quantity, 0),
-    0,
-  );
-  const avgOrderValue = orders > 0 ? revenue / orders : 0;
-
-  const trend = buildTrend(rangeKey, sales, now);
-  const categoryVolume = buildCategoryVolume(sales);
-  const { matrix: heatmap, maxCell } = buildHeatmap(sales);
-
-  const recentSales: RecentSale[] = sales.slice(0, 8).map((sale) => ({
-    id: sale.id,
-    time: sale.createdAt,
-    total: sale.totalAmount,
-    method: sale.paymentMethod,
-    customer: sale.customer?.name ?? "Guest",
-    cashier: sale.cashier?.name ?? "—",
-    categoryPills: Array.from(
-      new Set(sale.items.map((item) => item.product?.category?.name ?? "Uncategorized")),
-    ).slice(0, 3),
-  }));
-
-  return (
-      <div className="mx-1 rounded-2xl border border-slate-200/80 bg-white/55 p-5 shadow-sm shadow-slate-900/5 backdrop-blur-md">
-      {/* ── Top navigation bar ─────────────────────────────────────────── */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-white px-5 py-5 sm:px-7">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
-            InvPos · Overview
-          </div>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
-            Welcome back, {firstName}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {RANGE_LABELS[rangeKey]} performance across {categoryCount.toLocaleString()}{" "}
-            categor{categoryCount === 1 ? "y" : "ies"} and {productCount.toLocaleString()} products.
-          </p>
-        </div>
-
-        <nav
-          aria-label="Reporting timeframe"
-          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1"
-        >
-          {RANGE_DEFS.map((r) => {
-            const active = r.key === rangeKey;
-            return (
-              <Link
-                key={r.key}
-                href={`/?range=${r.key}`}
-                aria-current={active ? "page" : undefined}
-                className={[
-                  "rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors",
-                  active
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/25"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                ].join(" ")}
-              >
-                {r.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <Link
-          href="/reports"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
-        >
-          Reports
-        </Link>
-      </header>
-
-      {/* ── Headline metric cards ─────────────────────────────────────── */}
-      <section className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={Banknote}
-          label="Total Revenue"
-          value={fmtMoney(revenue, symbol)}
-          hint={`${orders.toLocaleString()} completed order${orders === 1 ? "" : "s"} · ${RANGE_LABELS[rangeKey].toLowerCase()}`}
-          gradient="from-indigo-500 to-violet-600"
-        />
-        <MetricCard
-          icon={Receipt}
-          label="Total Sales"
-          value={orders.toLocaleString()}
-          hint="Completed transactions in window"
-          gradient="from-violet-500 to-fuchsia-500"
-        />
-        <MetricCard
-          icon={Wallet}
-          label="Avg. Order Value"
-          value={fmtMoney(avgOrderValue, symbol)}
-          hint="Revenue ÷ completed orders"
-          gradient="from-indigo-400 to-indigo-600"
-        />
-        <MetricCard
-          icon={Package}
-          label="Items Sold"
-          value={itemsSold.toLocaleString()}
-          hint={`Across ${categoryVolume.length} active categor${categoryVolume.length === 1 ? "y" : "ies"}`}
-          gradient="from-violet-400 to-indigo-500"
-        />
-      </section>
-
-      {/* ── Bottom section: Analytics / Activity / Categories / Recent ── */}
-      <div className="grid grid-cols-1 gap-5 pt-6 lg:grid-cols-3">
-        <Panel
-          title="Analytics"
-          caption="Revenue trend · income over time"
-          icon={BarChart3}
-          className="lg:col-span-2"
-        >
-          <RevenueTrendChart data={trend} currencySymbol={symbol} />
-        </Panel>
-
-        <Panel
-          title="Activity by time"
-          caption="Peak sales hours · day × 3-hour slot"
-          icon={Clock3}
-        >
-          <ActivityHeatmap matrix={heatmap} maxCell={maxCell} />
-        </Panel>
-
-        <Panel title="Category Volume" caption="Revenue share by category" icon={Tags}>
-          <CategoryBars categories={categoryVolume} symbol={symbol} />
-        </Panel>
-
-        <Panel
-          title="Recent Transactions"
-          caption="Latest completed sales"
-          icon={Receipt}
-          className="lg:col-span-2"
-        >
-          <RecentSalesList sales={recentSales} symbol={symbol} />
-        </Panel>
-      </div>
-    </div>
-  );
-}
-
-/** One dark headline stat tile with a vibrant indigo/violet icon chip. */
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  gradient,
-}: {
-  icon: typeof Banknote;
-  label: string;
-  value: string;
-  hint?: string;
-  gradient: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/60 p-5 shadow-sm shadow-slate-900/5 backdrop-blur-md">
-      <div className="flex items-center gap-2.5">
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-md shadow-indigo-500/20`}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-          {label}
-        </p>
-      </div>
-      <p className="mt-4 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
-        {value}
-      </p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-    </div>
-  );
-}
-
-/** Charcoal panel shell shared by the bottom cards. */
-function Panel({
-  title,
-  caption,
-  icon: Icon,
-  children,
-  className = "",
-}: {
-  title: string;
-  caption?: string;
-  icon: typeof BarChart3;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/60 shadow-sm shadow-slate-900/5 backdrop-blur-md ${className}`}>
-      <div className="flex items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/60 px-4 py-3.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
-          <Icon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
-          {caption && <p className="mt-0.5 text-xs text-slate-500">{caption}</p>}
-        </div>
-      </div>
-      <div className="flex-1 p-4">{children}</div>
-    </section>
-  );
-}
-
-/** Horizontal revenue-share bars — deepest indigo for the top line. */
-function CategoryBars({
-  categories,
-  symbol,
-}: {
-  categories: CategoryVolume[];
-  symbol: string;
-}) {
-  if (categories.length === 0) {
-    return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300">
-        <p className="text-sm text-slate-500">No category sales in this window.</p>
-      </div>
-    );
-  }
-  const max = categories[0].revenue;
-  return (
-    <div className="space-y-3">
-      {categories.map((category) => (
-        <div key={category.name} className="min-w-0">
-          <div className="flex items-center justify-between gap-3 text-xs">
-            <span className="truncate font-medium text-slate-600">{category.name}</span>
-            <span className="tabular-nums text-slate-500">
-              {fmtMoney(category.revenue, symbol)} · {category.share.toFixed(1)}%
-            </span>
-          </div>
-          <div className="mt-1 h-2 rounded-full bg-slate-100">
-            <div
-              className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
-              style={{ width: `${Math.max(4, (category.revenue / max) * 100)}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Live feed of the most recent completed sales. */
-function RecentSalesList({
-  sales,
-  symbol,
-}: {
-  sales: RecentSale[];
-  symbol: string;
-}) {
-  if (sales.length === 0) {
-    return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300">
-        <p className="text-sm text-slate-500">No completed sales yet.</p>
-      </div>
-    );
-  }
-  return (
-    <ul className="divide-y divide-slate-200/80">
-      {sales.map((sale) => (
-        <li key={sale.id} className="flex items-start gap-3 px-3 py-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/90 to-violet-600/90 text-xs font-bold text-white">
-            {sale.customer.slice(0, 1).toUpperCase() || "G"}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <p className="truncate text-sm font-medium text-slate-700">{sale.customer}</p>
-              <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
-                {fmtMoney(sale.total, symbol)}
-              </p>
-            </div>
-            <p className="mt-0.5 truncate text-xs text-slate-500">
-              {sale.cashier} · {paymentMethodLabel(sale.method)} ·{" "}
-              {sale.time.toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </p>
-            {sale.categoryPills.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {sale.categoryPills.map((pill) => (
-                  <span
-                    key={pill}
-                    className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200"
-                  >
-                    {pill}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
 }

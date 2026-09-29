@@ -936,8 +936,8 @@ export type ShiftLike = { employeeId: string; clockIn: Date; clockOut: Date | nu
 export function employeePerformance(
   employees: EmployeeLike[],
   sales: SaleForTotals[],
-  refunds: (RefundLike & { processedById?: string | null })[],
-  voids: (VoidLike & { voidedById?: string | null })[],
+  refunds: (RefundLike & { cashierId?: string | null })[],
+  voids: (VoidLike & { voidedBy?: string | null })[],
   range: { from: string; to: string },
   shifts: ShiftLike[] = [],
 ): EmployeePerformance[] {
@@ -988,7 +988,7 @@ export function employeePerformance(
   }
 
   for (const refund of refunds) {
-    const id = refund.processedById;
+    const id = refund.cashierId;
     if (!id || !byId.has(id) || !inRange(refund.createdAt, range)) continue;
     const row = byId.get(id)!;
     row.refundCount += 1;
@@ -996,7 +996,7 @@ export function employeePerformance(
   }
 
   for (const v of voids) {
-    const id = v.voidedById;
+    const id = v.voidedBy;
     if (!id || !byId.has(id) || !v.voidedAt || !inRange(v.voidedAt, range)) continue;
     byId.get(id)!.voidCount += 1;
   }
