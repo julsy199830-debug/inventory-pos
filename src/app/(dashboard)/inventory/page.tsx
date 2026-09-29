@@ -12,12 +12,17 @@ import CategoryFilter from "./CategoryFilter";
 import DeleteProductButton from "./DeleteProductButton";
 import EditProductDialog from "./EditProductDialog";
 import LowStockBanner from "./LowStockBanner";
+import StockStatusFilter from "./StockStatusFilter";
 import StockControls from "./StockControls";
 import StockCountDialog from "./StockCountDialog";
 import StockHistoryDialog from "./StockHistoryDialog";
 import ExportCsvButton from "./ExportCsvButton";
 import ProductImportDialog from "./ProductImportDialog";
 import ProductThumb from "@/app/_components/ui/ProductThumb";
+import { Panel } from "@/app/_components/ui/Panel";
+import { ShareBars } from "@/app/_components/ui/ShareBars";
+import { StatCard } from "@/app/_components/ui/StatCard";
+import { categoryInsights, inventoryValuation } from "@/lib/analytics";
 
 /** Sorting direction, ascending or descending. */
 type Order = "asc" | "desc";
@@ -25,12 +30,61 @@ type Order = "asc" | "desc";
 /** Allowable sort columns, keyed by the URL value. Sort is only ever applied to
  * Retail Price (price) and Stock Level (stock); any other ?sort= token falls
  * back to the default SKU ascending ordering. */
-type SortField = "price" | "stock";
+type SortField = "price" | "stock" | "value" | "name";
 const SORT_FIELDS: Record<string, SortField> = {
   price: "price",
   stock: "stock",
+  value: "value",
+  name: "name",
 };
 const DEFAULT_ORDER: Order = "asc";
+
+/**
+ * The display name for a category id, for the empty-state summary.
+ *
+ * The URL carries an id, not a name, so the message has to resolve it. Falls
+ * back to the raw id rather than rendering "undefined": a category deleted
+ * after a filter was bookmarked is exactly the case where the user needs to be
+ * told what they were looking at.
+ */
+function categoryNameFor(
+  id: string,
+  categories: { id: string; name: string }[],
+): string {
+  return categories.find((c) => c.id === id)?.name ?? id;
+}
+
+/** Stock-state filter. `all` keeps every row; `low` and `out` are the two states
+ * a storekeeper actually triages. Both are derived from the product's CATEGORY
+ * threshold, not the blanket default, so the filter can never disagree with the
+ * status badge rendered on the same row. */
+type StatusFilter = "all" | "low" | "out";
+const STATUS_FILTERS: Record<string, StatusFilter> = {
+  all: "all",
+  low: "low",
+  out: "out",
+};
+
+/**
+ * The comparable value for a numeric sort column, on a mapped product row.
+ *
+ * `value` is the retail value of the line (`stock * price`) rather than a
+ * stored column: it is the figure a storekeeper means by "biggest" when
+ * deciding what to reorder, and deriving it here rather than in SQL guarantees
+ * it can never disagree with the Stock Value column on the same row.
+ */
+function sortValue(product: Product, field: SortField): number {
+  switch (field) {
+    case "price":
+      return product.rawPrice;
+    case "stock":
+      return product.stock;
+    case "value":
+      return product.stock * product.rawPrice;
+    default:
+      return 0;
+  }
+}
 
 type Product = {
   id: string;
@@ -83,8 +137,12 @@ export default async function InventoryPage({
   // against the actual category set below so a stale URL (a category deleted
   // after it was bookmarked) falls back to `"all"` rather than showing an
   // empty table.
-  const { q = "", category = "all", sort, order } = await searchParams;
+  const { q = "", category = "all", status = "all", sort, order } = await searchParams;
   const query = Array.isArray(q) ? q[0] ?? "" : q;
+  const rawStatus = Array.isArray(status) ? status[0] ?? "all" : status;
+  // An unrecognised ?status= token falls back to "all" rather than showing an
+  // empty table, so a stale bookmark degrades to the full catalog.
+  const statusFilter: StatusFilter = STATUS_FILTERS[rawStatus] ?? "all";
   const rawCategory = Array.isArray(category) ? category[0] ?? "all" : category;
   const rawSort = Array.isArray(sort) ? sort[0] : sort;
   const rawOrder = Array.isArray(order) ? order[0] : order;
@@ -128,10 +186,17 @@ export default async function InventoryPage({
       const matchesTerm =
         term === "" ||
         p.name.toLowerCase().includes(term) ||
-        p.sku.toLowerCase().includes(term);
+        p.sku.toLowerCase().includes(term) ||
+        (p.category?.name ?? "").toLowerCase().includes(term);
       const matchesCategory =
         activeCategory === "all" || p.categoryId === activeCategory;
-      return matchesTerm && matchesCategory;
+      // The status filter uses the SAME category-aware threshold the badge on
+      // this row uses, so a filtered list can never contradict the row it shows.
+      // `out` is exactly zero; `low` is below the cutoff but still sellable.
+      const status = stockStatusAt(p.stock, p.category?.lowStockThreshold);
+      const matchesStatus = statusFilter === "all" || status === statusFilter;
+
+      return matchesTerm && matchesCategory && matchesStatus;
     })
     .map((p) => ({
       id: p.id,
@@ -157,11 +222,19 @@ export default async function InventoryPage({
     .sort((a, b) => {
       if (!sortField) return 0;
       const dir = sortOrder === "asc" ? 1 : -1;
-      const av = sortField === "price" ? a.rawPrice : a.stock;
-      const bv = sortField === "price" ? b.rawPrice : b.stock;
+      // Text columns compare case-insensitively and fall back to SKU, so equal
+      // names still produce one stable order rather than reshuffling per render.
+      if (sortField === "name") {
+        const cmp = a.name.localeCompare(b.name, undefined, {
+          sensitivity: "base",
+        });
+        return cmp !== 0 ? cmp * dir : a.sku.localeCompare(b.sku);
+      }
+      const av = sortValue(a, sortField);
+      const bv = sortValue(b, sortField);
       if (av < bv) return -dir;
       if (av > bv) return dir;
-      return 0;
+      return a.sku.localeCompare(b.sku);
     });
 
   // Products flagged by the low-stock banner: any row whose stock status is
@@ -178,6 +251,41 @@ export default async function InventoryPage({
       status: stockStatusAt(p.stock, p.threshold),
       threshold: p.threshold,
     }));
+
+  // ── Phase 2 derived figures ────────────────────────────────────────────────
+  //
+  // Computed from `rows`, the UNFILTERED catalog, so the status tabs keep
+  // showing the real size of the restock queue. Deriving them from the
+  // already-filtered list would make the counts collapse to whatever the
+  // current filter allows, which defeats the point: the tabs exist to tell you
+  // how much is waiting on the other side.
+  const catalogForStats = rows.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku,
+    stock: p.stock,
+    price: p.price,
+    cost: p.cost,
+    category: p.category,
+  }));
+
+  const statusCounts: Record<StatusFilter, number> = {
+    all: rows.length,
+    low: 0,
+    out: 0,
+  };
+  for (const p of rows) {
+    const status = stockStatusAt(p.stock, p.category?.lowStockThreshold);
+    if (status === "out") statusCounts.out += 1;
+    else if (status === "low") statusCounts.low += 1;
+  }
+
+  // Valuation answers for the WHOLE catalog, not the filtered page. A
+  // storekeeper asking "what is my stock worth" is asking about the shop, and a
+  // figure that silently changed meaning when they typed in the search box
+  // would be worse than showing no figure at all.
+  const valuation = inventoryValuation(catalogForStats);
+  const categoryBreakdown = categoryInsights(catalogForStats).slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -230,6 +338,39 @@ export default async function InventoryPage({
         </div>
 
         <CategoryFilter categories={categoryOptions} active={activeCategory} />
+
+        {/* Phase 2: stock-state tabs, carrying the text search and category
+            through so the filters compose rather than replacing one another. */}
+        <StockStatusFilter
+          active={statusFilter}
+          counts={statusCounts}
+          baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
+        />
+
+        {/* Phase 2: what the shelf is worth. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Retail value"
+            value={formatPrice(valuation.retailValue)}
+            hint={`${valuation.units.toLocaleString("en-US")} units across ${valuation.skus} SKUs`}
+          />
+          <StatCard
+            label="Cost value"
+            value={formatPrice(valuation.costValue)}
+            hint="what the stock is on hand for"
+          />
+          <StatCard
+            label="Gross margin"
+            value={`${valuation.marginPercent.toFixed(1)}%`}
+            hint={`${formatPrice(valuation.marginValue)} on the shelf`}
+          />
+          <StatCard
+            label="Value at risk"
+            value={formatPrice(valuation.atRiskValue)}
+            hint="retail value sitting on low lines"
+            tone={valuation.atRiskValue > 0 ? "warning" : "default"}
+          />
+        </div>
 
         {/* "Add New Product" trigger + modal. Client island (manages open
             state); submits to the createProduct Server Action, which inserts
@@ -298,6 +439,31 @@ export default async function InventoryPage({
         </Link>
       </form>
 
+      {/* Phase 2: per-category rollup, so "where is my money sitting" and
+          "what is running out" are answerable without exporting anything. */}
+      <Panel
+        title="Category insights"
+        subtitle="Units, value and stock health per category"
+        action={
+          <Link
+            href="/inventory/categories"
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+          >
+            Manage
+          </Link>
+        }
+      >
+        <ShareBars
+          tone="indigo"
+          rows={categoryBreakdown.map((row) => ({
+            label: row.name,
+            detail: categoryDetail(row),
+            value: formatPrice(row.retailValue),
+            share: row.unitShare,
+          }))}
+        />
+      </Panel>
+
       {/* Data table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -308,7 +474,18 @@ export default async function InventoryPage({
                   <span className="sr-only">Image</span>
                 </th>
                 <th className="px-4 py-3 font-medium">SKU / Barcode</th>
-                <th className="px-4 py-3 font-medium">Product Name</th>
+                {/* Phase 2: the name is sortable too. In a long catalog
+                    alphabetical is the fastest way to find a line, and it was
+                    previously unreachable without a client-side resort. */}
+                <th className="px-4 py-3 font-medium">
+                  <SortColumnHeader
+                    field="name"
+                    label="Product Name"
+                    activeField={sortField}
+                    order={sortOrder}
+                    baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">
                   <SortColumnHeader
@@ -316,17 +493,29 @@ export default async function InventoryPage({
                     label="Retail Price"
                     activeField={sortField}
                     order={sortOrder}
-                    baseQuery={{ q: query, category: activeCategory }}
+                    baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
                   />
                 </th>
                 <th className="px-4 py-3 font-medium">Cost Price</th>
+                {/* Phase 2: the retail value of the line on hand. This is the
+                    number that decides reorder priority, and it is sortable
+                    because "biggest by value" is the usual restocking question. */}
+                <th className="px-4 py-3 font-medium">
+                  <SortColumnHeader
+                    field="value"
+                    label="Stock Value"
+                    activeField={sortField}
+                    order={sortOrder}
+                    baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">
                   <SortColumnHeader
                     field="stock"
                     label="Stock Level"
                     activeField={sortField}
                     order={sortOrder}
-                    baseQuery={{ q: query, category: activeCategory }}
+                    baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
                   />
                 </th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -334,7 +523,39 @@ export default async function InventoryPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80">
-              {products.map((p) => (
+              {/* Phase 2 empty state. Previously a filter that matched nothing
+                  rendered a bare header over an empty body, which reads as a
+                  broken page rather than as "nothing matches". This says which
+                  filters are active and gives a way back out. */}
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-14 text-center">
+                    <p className="text-sm font-medium text-slate-700">
+                      No products match these filters
+                    </p>
+                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
+                      {[
+                        query.trim() ? `search "${query.trim()}"` : null,
+                        activeCategory !== "all"
+                          ? `category "${categoryNameFor(activeCategory, categoryOptions)}"`
+                          : null,
+                        statusFilter !== "all"
+                          ? `stock ${statusFilter === "out" ? "out of stock" : "low"}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    <Link
+                      href="/inventory"
+                      className="mt-4 inline-block rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Clear all filters
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                products.map((p) => (
                 <tr key={p.sku} className="transition-colors hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <ProductThumb
@@ -352,6 +573,12 @@ export default async function InventoryPage({
                   </td>
                   <td className="px-4 py-3 text-slate-900">{p.retail}</td>
                   <td className="px-4 py-3 text-slate-500">{p.cost}</td>
+                  {/* Phase 2: the same `stock * price` the "Stock Value" sort
+                      uses, so the column a storekeeper reads always agrees with
+                      the order they clicked. */}
+                  <td className="px-4 py-3 tabular-nums text-slate-700">
+                    {formatPrice(p.stock * p.rawPrice)}
+                  </td>
                   <td className="px-4 py-3">
                     <StockBadge stock={p.stock} threshold={p.threshold} />
                   </td>
@@ -384,7 +611,8 @@ export default async function InventoryPage({
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
@@ -398,9 +626,18 @@ export default async function InventoryPage({
 // whether you're reading the count pill or the status pill, and the per-category
 // threshold (not a blanket 10) decides the cutoff — see {@link stockStatusAt}.
 const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
-  out: { badge: "bg-red-500/100/20 text-red-300", status: "Out of Stock" },
-  low: { badge: "bg-red-500/10 text-red-300", status: "Low Stock" },
-  ok: { badge: "bg-indigo-50 text-indigo-700", status: "In Stock" },
+  out: {
+    badge: "bg-red-50 text-red-700 ring-1 ring-red-200",
+    status: "Out of Stock",
+  },
+  low: {
+    badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+    status: "Low Stock",
+  },
+  ok: {
+    badge: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    status: "In Stock",
+  },
 };
 
 /**
@@ -419,9 +656,9 @@ function StockBadge({
   const status = stockStatusAt(stock, threshold);
   const color =
     status === "out"
-      ? "bg-red-500/100/20 text-red-300"
+      ? "bg-red-50 text-red-700 ring-1 ring-red-200"
       : status === "low"
-        ? "bg-red-500/10 text-red-300"
+        ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
         : "bg-slate-100 text-slate-700";
   const label = stock <= 0 ? "0 in stock" : `${stock} in stock`;
   return (
@@ -448,6 +685,28 @@ function StatusPill({
 }
 
 /**
+ * The subtitle under a category row: how many SKUs, and whether any of them
+ * need attention.
+ *
+ * The "all healthy" branch matters as much as the warning one. Without it the
+ * panel would be silent about the categories that are fine, and a storekeeper
+ * would have to open each one to confirm there was nothing to do.
+ */
+function categoryDetail(row: {
+  skus: number;
+  lowStock: number;
+  outOfStock: number;
+}): string {
+  const skus = `${row.skus} SKU${row.skus === 1 ? "" : "s"}`;
+  const needs = row.lowStock + row.outOfStock;
+  if (needs === 0) return `${skus} - all healthy`;
+  const parts: string[] = [];
+  if (row.outOfStock > 0) parts.push(`${row.outOfStock} out of stock`);
+  if (row.lowStock > 0) parts.push(`${row.lowStock} low`);
+  return `${skus} - ${parts.join(", ")}`;
+}
+
+/**
  * A sortable column header rendered as a relative-positioned anchor. Clicking
  * sets ?sort=<field> in the URL and toggles ?order= asc↔desc on the active
  * column (or starts fresh at asc when switching columns). It preserves the
@@ -466,7 +725,7 @@ function SortColumnHeader({
   label: string;
   activeField: SortField | undefined;
   order: Order;
-  baseQuery: { q: string; category: string };
+  baseQuery: { q: string; category: string; status: string };
 }) {
   const isActive = activeField === field;
   const nextOrder: Order = isActive && order === "asc" ? "desc" : "asc";
@@ -475,6 +734,12 @@ function SortColumnHeader({
   if (baseQuery.q) params.set("q", baseQuery.q);
   if (baseQuery.category && baseQuery.category !== "all") {
     params.set("category", baseQuery.category);
+  }
+  // Phase 2: sorting must preserve the stock-state filter too. Losing it on a
+  // sort click would silently widen a low-stock list back to the whole catalog,
+  // which looks like the filter broke rather than like a navigation.
+  if (baseQuery.status && baseQuery.status !== "all") {
+    params.set("status", baseQuery.status);
   }
   params.set("sort", field);
   if (nextOrder === "desc") params.set("order", "desc");
