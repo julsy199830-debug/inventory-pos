@@ -21,6 +21,12 @@ import {
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createSale, type CreateSaleResult } from '@/app/actions/sales'
+import {
+  earnedPointsFor,
+  maxRedeemablePoints,
+  redemptionValueFor,
+  totalAfterRedemption,
+} from '@/lib/loyalty'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
@@ -98,6 +104,13 @@ type CompletedSale = {
   discount: number
   tax: number
   total: number
+  /** Phase 1d: points spent and the peso value they were worth, for the
+   *  receipt's Loyalty rows. 0 / 0 for an ordinary sale. */
+  redeemedPoints?: number
+  redemptionAmount?: number
+  /** Phase 1d: points this sale earned, so the receipt can show the balance
+   *  movement in one place. */
+  earnedPoints?: number
   paymentMethod: string
   /** Cash only: amount handed over, for the receipt's Tendered/Change rows. */
   tendered?: number | null
@@ -133,6 +146,10 @@ export default function PosCheckout({
   // Cash tender step: modal open flag + the raw tendered-amount input value.
   const [cashStepOpen, setCashStepOpen] = useState(false)
   const [tenderedRaw, setTenderedRaw] = useState('')
+  // Loyalty points to spend on this sale (Phase 1d). 0 = no redemption. Reset
+  // whenever the customer changes, because points belong to an account and a
+  // leftover value from the previous customer would be silently wrong.
+  const [redeemPoints, setRedeemPoints] = useState(0)
   // Ref onto the barcode box so a scan-in-empty-area can focus it for the next
   // physical scan (keyboard-emulation scanners type into whatever is focused).
   const scanInputRef = useRef<HTMLInputElement>(null)
@@ -258,7 +275,21 @@ export default function PosCheckout({
 
   const taxRatePercent = store.taxRate ?? 0
   const tax = round2(taxable * (taxRatePercent / 100))
-  const total = round2(taxable + tax)
+
+  // Loyalty redemption (Phase 1d). The point value, the cap and the resulting
+  // total all come from the SAME shared lib the server action uses, so the
+  // figure the cashier reads is the figure that gets written to the ledger.
+  const selectedCustomerForPoints = customers.find((c) => c.id === customerId)
+  const availablePoints = selectedCustomerForPoints?.loyaltyPoints ?? 0
+  // The cap is min(balance, what the cart can absorb): points can never be worth
+  // more than the goods, and never more than the customer holds.
+  const maxRedeemable = maxRedeemablePoints(availablePoints, taxable)
+  const redeemPointsApplied = Math.min(Math.max(0, Math.floor(redeemPoints)), maxRedeemable)
+  const redemptionValue = redemptionValueFor(redeemPointsApplied, taxable)
+  const total = totalAfterRedemption(taxable, tax, redemptionValue)
+  // Points this sale will earn — shown so the cashier can see the net effect of
+  // redeeming before committing.
+  const willEarnPoints = earnedPointsFor(taxable, redemptionValue)
 
   // Cash step: the parsed tendered amount (null while empty/invalid) and the
   // quick-tender chips — exact total plus the smallest clean bill ≥ due.
@@ -324,6 +355,9 @@ export default function PosCheckout({
       })),
       tendered: tenderedAmount,
       change: tenderedAmount != null && tenderedAmount >= total ? round2(tenderedAmount - total) : null,
+      // Phase 1d: the pre-clamped value is sent, but the server re-clamps
+      // authoritatively — the cap above only exists to keep the UI honest.
+      redeemPoints: redeemPointsApplied,
     })
 
     setPending(false)
@@ -346,6 +380,9 @@ export default function PosCheckout({
         discount: discountAmount,
         tax,
         total,
+        redeemedPoints: redeemPointsApplied,
+        redemptionAmount: redemptionValue,
+        earnedPoints: willEarnPoints,
         paymentMethod,
         tendered: tenderedAmount,
         change,
@@ -445,7 +482,12 @@ export default function PosCheckout({
         <select
           id="customer-select"
           value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
+          onChange={(e) => {
+            setCustomerId(e.target.value)
+            // Points belong to an account: clear any redemption staged against
+            // the previous customer rather than carrying it over.
+            setRedeemPoints(0)
+          }}
           className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
         >
           <option value="">Walk-in Customer</option>
@@ -456,6 +498,73 @@ export default function PosCheckout({
           ))}
         </select>
       </div>
+
+      {/* Loyalty redemption (Phase 1d). Only meaningful once a customer is
+          attached, so the whole block is hidden for a walk-in rather than shown
+          disabled — an inert control on a busy counter is just noise. */}
+      {selectedCustomerForPoints && maxRedeemable > 0 && (
+        <div className="border-b border-slate-200 bg-indigo-50/40 px-5 py-3">
+          <div className="flex items-baseline justify-between">
+            <label
+              htmlFor="redeem-points"
+              className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+            >
+              Redeem Points
+            </label>
+            <span className="text-xs font-medium text-slate-600">
+              {availablePoints.toLocaleString()} pts available
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <input
+              id="redeem-points"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={maxRedeemable}
+              step={1}
+              disabled={pending}
+              value={redeemPoints === 0 ? '' : String(redeemPoints)}
+              placeholder="0"
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw.trim() === '') {
+                  setRedeemPoints(0)
+                  return
+                }
+                const n = Number(raw)
+                // Ignore a non-numeric/partial entry rather than writing NaN
+                // into the total; the clamp below keeps it inside the balance.
+                if (Number.isFinite(n) && n >= 0) setRedeemPoints(Math.floor(n))
+              }}
+              className="h-10 w-24 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+            <button
+              type="button"
+              onClick={() => setRedeemPoints(maxRedeemable)}
+              disabled={pending || maxRedeemable === 0}
+              className="h-10 rounded-xl border border-indigo-200 bg-white px-3 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Redeem max
+            </button>
+            {redeemPointsApplied > 0 && (
+              <button
+                type="button"
+                onClick={() => setRedeemPoints(0)}
+                disabled={pending}
+                className="text-xs font-medium text-slate-500 underline underline-offset-2 transition hover:text-slate-700 disabled:opacity-50"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500" data-testid="redemption-summary">
+            {redeemPointsApplied > 0
+              ? `Using ${redeemPointsApplied.toLocaleString()} pts = ${money(redemptionValue)} off · will earn ${willEarnPoints} pts`
+              : `1 pt = ${store.currencySymbol}0.01 · up to ${maxRedeemable.toLocaleString()} pts on this cart`}
+          </p>
+        </div>
+      )}
 
       {/* Payment method — segmented control, touch-friendly. */}
       <div className="border-b border-slate-200 px-5 py-3">
@@ -727,6 +836,12 @@ export default function PosCheckout({
           <dt>Tax ({store.taxRate}%)</dt>
           <dd className="tabular-nums">{money(tax)}</dd>
         </div>
+        {redemptionValue > 0 && (
+          <div className="flex justify-between font-medium text-emerald-700">
+            <dt>Loyalty ({redeemPointsApplied.toLocaleString()} pts)</dt>
+            <dd className="tabular-nums">−{money(redemptionValue)}</dd>
+          </div>
+        )}
       </dl>
       <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5">
         <span className="text-sm font-semibold text-indigo-700">Grand Total</span>
@@ -1114,6 +1229,9 @@ export default function PosCheckout({
                 discount={completed.discount}
                 tax={completed.tax}
                 total={completed.total}
+                redeemedPoints={completed.redeemedPoints}
+                redemptionAmount={completed.redemptionAmount}
+                earnedPoints={completed.earnedPoints}
                 paymentMethod={completed.paymentMethod}
                 tendered={completed.tendered}
                 change={completed.change}

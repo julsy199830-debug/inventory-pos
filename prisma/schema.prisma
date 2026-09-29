@@ -31,6 +31,7 @@ model User {
   updatedAt              DateTime          @updatedAt
   customerPayments       CustomerPayment[]
   sales                  Sale[]
+  saleRefunds            SaleRefund[]
   shifts                 Shift[]
   purchaseOrders         PurchaseOrder[]
   receivedPurchaseOrders PurchaseReceipt[]
@@ -207,12 +208,56 @@ model Sale {
   tendered       Float?
   /// Cash-only: change due back to the customer. Null for non-CASH payments.
   change         Float?
+  /// Loyalty points SPENT by the customer at checkout (Phase 1d). 0 for the
+  /// overwhelming majority of sales. Stored on the sale so the void action can
+  /// hand the points back and so a receipt/history can show the redemption
+  /// without re-deriving it. Paired with `earnedPoints`, this is the complete
+  /// point movement a sale caused.
+  redeemedPoints Int        @default(0)
+  /// Peso value credited for `redeemedPoints` (points × 0.01, capped at the
+  /// taxable base). Already deducted from `totalAmount` at checkout.
+  redemptionAmount Float    @default(0)
+  /// Running total refunded against this sale (Phase 1d). Capped at
+  /// `totalAmount` by the refund action, so it can never exceed what was paid.
+  /// The per-event detail lives in {@link SaleRefund}.
+  refundedAmount  Float     @default(0)
   cashier        User?      @relation(fields: [cashierId], references: [id])
   customer       Customer?  @relation(fields: [customerId], references: [id])
   items          SaleItem[]
+  refunds        SaleRefund[]
 
   @@index([customerId])
   @@index([cashierId])
+}
+
+/// One partial-refund event against a {@link Sale} (Phase 1d).
+///
+/// A sale can be refunded several times (one item today, another next week), so
+/// the *event* needs its own row to keep a real audit trail: who refunded, when,
+/// how much, and why. This mirrors the existing `CustomerPayment` pattern — a
+/// ledger of events hanging off a parent — rather than overloading `Sale` with
+/// a single "last reason" string that would be lost on the second refund.
+///
+/// The line-level detail of each refund is recoverable from
+/// `SaleItem.refundedQuantity`, which is also what makes over-refunding
+/// impossible: a second refund of the same units has nothing left to take.
+model SaleRefund {
+  id        String   @id @default(uuid())
+  saleId    String
+  /// Peso amount returned to the customer. Summed into `Sale.refundedAmount`.
+  amount    Float
+  /// Why the cashier refunded. Required — an unexplained money-out is the thing
+  /// an audit exists to catch.
+  reason    String
+  /// SetNull so an offboarded cashier's refund records survive, matching the
+  /// `Sale.cashierId` / `CustomerPayment.cashierId` convention.
+  cashierId String?
+  createdAt DateTime @default(now())
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  cashier   User?    @relation(fields: [cashierId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@index([createdAt])
 }
 
 model SaleItem {
@@ -221,6 +266,10 @@ model SaleItem {
   productId   String
   quantity    Int
   priceAtSale Float
+  /// Units of this line already taken back by a partial refund (Phase 1d).
+  /// Always `0..quantity`; the refund action refuses anything larger, which is
+  /// what makes a sale impossible to refund twice for the same goods.
+  refundedQuantity Int     @default(0)
   product     Product @relation(fields: [productId], references: [id])
   sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
@@ -420,6 +469,13 @@ model PurchaseReceipt {
   purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
   receivedBy      User                  @relation(fields: [receivedById], references: [id], onDelete: Restrict)
   items           PurchaseReceiptItem[]
+
+  // Restored in Phase 1d: these two @@index declarations were lost from the
+  // datamodel while the migration history still creates them, which left the
+  // live database out of sync and made `prisma migrate dev` demand a
+  // destructive reset. Declaring them again reconciles the two.
+  @@index([purchaseOrderId])
+  @@index([receivedById])
 }
 
 model PurchaseReceiptItem {
@@ -431,6 +487,11 @@ model PurchaseReceiptItem {
   updatedAt           DateTime          @updatedAt
   purchaseReceipt     PurchaseReceipt   @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
   purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+
+  // Restored in Phase 1d alongside the PurchaseReceipt indexes above — see the
+  // note there for why these were re-declared rather than dropped.
+  @@index([purchaseReceiptId])
+  @@index([purchaseOrderItemId])
 }
 
 model ReceiptNumberCounter {

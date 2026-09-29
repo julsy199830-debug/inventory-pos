@@ -41,6 +41,9 @@ export default function Receipt({
   tax,
   total,
   discount = 0,
+  redeemedPoints = 0,
+  redemptionAmount = 0,
+  earnedPoints = 0,
   paymentMethod,
   tendered = null,
   change = null,
@@ -57,6 +60,12 @@ export default function Receipt({
   total: number
   /** Optional discount amount; a 0 value renders no Discount row. */
   discount?: number
+  /** Phase 1d: points spent at checkout. 0 renders no Loyalty rows. */
+  redeemedPoints?: number
+  /** Phase 1d: peso value credited for `redeemedPoints`. */
+  redemptionAmount?: number
+  /** Phase 1d: points this sale earned (0 for a guest sale). */
+  earnedPoints?: number
   paymentMethod: string
   /** Cash only: amount the customer handed over (renders a Tendered row). */
   tendered?: number | null
@@ -140,6 +149,18 @@ export default function Receipt({
           <span>Tax</span>
           <span>{money(tax)}</span>
         </div>
+        {redemptionAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Loyalty ({redeemedPoints} pts)</span>
+            <span>−{money(redemptionAmount)}</span>
+          </div>
+        )}
+        {earnedPoints > 0 && (
+          <div className="flex justify-between">
+            <span>Points earned</span>
+            <span>{earnedPoints}</span>
+          </div>
+        )}
         <div className="flex justify-between pt-0.5 text-sm font-bold">
           <span>Total</span>
           <span>{money(total)}</span>
