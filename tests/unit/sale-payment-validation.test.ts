@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import Module from "node:module";
+import type { CreateSaleInput } from "@/app/actions/sales";
 import path from "node:path";
 
 const MOCKS: Record<string, string> = {
@@ -10,9 +11,33 @@ const MOCKS: Record<string, string> = {
   "next/headers": path.resolve("tests/setup/mocks/next-headers.cjs"),
   "next/cache": path.resolve("tests/setup/mocks/next-cache.cjs"),
 };
-const originalResolve = (Module as unknown as { _resolveFilename: Function })._resolveFilename;
-(Module as unknown as { _resolveFilename: Function })._resolveFilename = function (request: string, ...rest: unknown[]) {
-  return MOCKS[request] ?? originalResolve.call(this, request, ...rest);
+/**
+ * The signature of Node's internal `Module._resolveFilename`, which this
+ * harness monkey-patches to redirect Next.js server-only imports at the mocks
+ * above.
+ *
+ * Typed explicitly rather than as `Function`: `Function` accepts any
+ * function-like value, so it type-checked nothing at the call site - including
+ * the `.apply(this, args)` forwarding below, which is the part most worth
+ * checking. The annotations are erased at compile time, so this changes no
+ * runtime behaviour.
+ */
+type ResolveFilenameArgs = [
+  request: string,
+  parent: unknown,
+  isMain: boolean,
+  options?: unknown,
+];
+type ResolveFilename = (...args: ResolveFilenameArgs) => string;
+const moduleResolver = Module as unknown as {
+  _resolveFilename: ResolveFilename;
+};
+const originalResolve = moduleResolver._resolveFilename;
+moduleResolver._resolveFilename = function (
+  this: unknown,
+  ...args: ResolveFilenameArgs
+): string {
+  return MOCKS[args[0]] ?? originalResolve.apply(this, args);
 };
 
 declare global { var __PO_TEST_COOKIES__: Record<string, string> | undefined; }
@@ -29,13 +54,21 @@ async function check(name: string, fn: () => void | Promise<void>): Promise<void
   catch (error) { failed += 1; console.error(`FAIL - ${name}: ${error instanceof Error ? error.message : String(error)}`); }
 }
 function asUser(id: string): void { globalThis.__PO_TEST_COOKIES__ = { "pos-cashier": id }; }
-function input(paymentMethod: string, extra: Record<string, unknown> = {}) {
+function input(
+  paymentMethod: string,
+  extra: Record<string, unknown> = {},
+): CreateSaleInput {
+  // Cast rather than a declared return type: these fixtures deliberately carry
+  // malformed and partial fields to exercise the REJECTION paths, so they do
+  // not structurally satisfy `CreateSaleInput`. Typing it explicitly means a
+  // field rename on the input type is caught here rather than surfacing as a
+  // silent no-op assertion at runtime.
   return {
     paymentMethod,
     subtotal: 100,
     items: [{ productId: PRODUCT_ID, quantity: 1 }],
     ...extra,
-  } as any;
+  } as unknown as CreateSaleInput;
 }
 
 async function main(): Promise<void> {
@@ -75,7 +108,7 @@ async function main(): Promise<void> {
     }
     async function rejectedWithoutMutation(payload: unknown): Promise<void> {
       const before = await snapshot();
-      const result = await createSale(payload as any);
+      const result = await createSale(payload as CreateSaleInput);
       assert.equal(result.ok, false, "request must be rejected");
       assert.deepEqual(await snapshot(), before, "rejected payment must not mutate sale data");
     }

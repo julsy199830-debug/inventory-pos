@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+
+/**
+ * `subscribe` for {@link useSyncExternalStore}: a no-op that never notifies.
+ * The "have we hydrated" value is constant for the lifetime of a page, so there
+ * is no external system to subscribe to.
+ */
+const noopSubscribe = () => () => {};
+/** Hydrated: true from the first client render onward. */
+const clientSnapshot = () => true;
+/** Not hydrated: false during SSR and the hydration render, so nothing portals. */
+const serverSnapshot = () => false;
 
 type ModalProps = {
   /** Whether the modal is open. */
@@ -48,11 +59,25 @@ export function Modal({
   className = "max-w-lg",
   busy = false,
 }: ModalProps & { busy?: boolean }) {
-  // `document` doesn't exist during SSR, so the portal can only be created
-  // after mount. Until then render nothing (the dialog isn't open yet in
-  // practice), which also keeps server/client markup identical.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // "Has this component hydrated yet?" - `document` does not exist during SSR,
+  // so `createPortal` can only run after mount. Until then we render nothing
+  // (the dialog is not open yet in practice), which also keeps the server and
+  // client markup identical.
+  //
+  // `useSyncExternalStore` is the sanctioned way to ask this, and it produces
+  // exactly the same output as the `useState` + `useEffect(() => setMounted(true))`
+  // pair it replaces: during SSR and the hydration render React calls
+  // `getServerSnapshot` (false, nothing is portalled), and from the first client
+  // render onward it calls `getSnapshot` (true). The only difference is internal
+  // - the old pair forced an extra render pass, this one does not.
+  //
+  // `subscribe` is a no-op because the value never changes within a page's
+  // lifetime, so there is nothing to listen to.
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    clientSnapshot,
+    serverSnapshot,
+  );
   // Lock the page behind the dialog: no background scrolling and no content
   // shifting as the scrollbar disappears. The original overflow is restored on
   // close (or on unmount) so nested/multiple modals can't leave the body stuck.

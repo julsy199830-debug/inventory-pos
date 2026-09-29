@@ -29,9 +29,36 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import type { ActionResult } from "@/lib/types";
+import type { ActionResult, PoStatus } from "@/lib/types";
 import { roleGuardError, getCashier } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
+/**
+ * Read a `code` off a caught value, or `undefined` if it has none.
+ *
+ * Replaces `err?.code` on an `any`. The optional chain is preserved exactly:
+ * a thrown non-object (a bare string, `undefined`) still yields `undefined`
+ * rather than throwing, so no error path changes behaviour.
+ */
+function prismaErrorCode(err: unknown): string | undefined {
+  if (typeof err !== "object" || err === null || !("code" in err)) return undefined;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
+}
+
+/**
+ * Read a `message` off a caught value, or `undefined` if it has none.
+ *
+ * Same reasoning as {@link prismaErrorCode}: a non-Error throw produces
+ * `undefined`, so the caller's `.includes(...)` is skipped exactly as the
+ * old `err?.message?.includes(...)` was.
+ */
+function errorMessage(err: unknown): string | undefined {
+  if (typeof err !== "object" || err === null || !("message" in err)) return undefined;
+  const message = (err as { message?: unknown }).message;
+  return typeof message === "string" ? message : undefined;
+}
+
+import type { Prisma } from "@/generated/prisma/client";
 
 /** Staff-only guard shared by every mutating action in this module. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -77,13 +104,13 @@ function loadDate(formData: FormData, key: string): string | undefined {
 }
 
 // ── Status vocabulary ──────────────────────────────────────────────────────
-// NOTE: this constant is deliberately NOT exported. A `"use server"` module may
-// only export async functions — exporting a value (`const ROLES`) once broke
-// every action in the employees module. `export type` is tolerated because it
-// erases at runtime, so `PoStatus` below is safe to re-export, but the *display*
-// list lives with the UI in `./PoStatusPill.tsx`.
-const PO_STATUSES = ["DRAFT", "ORDERED", "PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED"] as const;
-export type PoStatus = (typeof PO_STATUSES)[number];
+// The PO status vocabulary (`PO_STATUSES`) and the `PoStatus` type live in
+// `@/lib/types`, alongside `ROLES` and `STOCK_MOVEMENT_TYPES` - the repo's
+// established home for domain vocabularies. Neither can be declared here: a
+// `"use server"` module may only export async functions, and declaring an
+// exported value in one once broke every action in the employees module.
+// `PoStatusBadge` imports the type from `@/lib/types` directly; the *display*
+// list lives in `PoStatusBadge.tsx`.
 
 // Phase 1 + Phase 2 allowed transitions.
 // Phase 1: DRAFT → ORDERED, DRAFT → CANCELLED, ORDERED → CANCELLED
@@ -186,7 +213,7 @@ function padSequence(n: number): string {
  * transaction acquires a write lock, so concurrent creators get distinct
  * sequence numbers without MAX+1 race conditions.
  */
-async function allocatePoNumber(tx: any): Promise<string> {
+async function allocatePoNumber(tx: Prisma.TransactionClient): Promise<string> {
   const month = currentMonthKey();
   const counter = await tx.poNumberCounter.upsert({
     where: { month },
@@ -202,7 +229,7 @@ async function allocatePoNumber(tx: any): Promise<string> {
  * same pattern as {@link allocatePoNumber}, so concurrent receives get distinct
  * sequence numbers without race conditions.
  */
-async function allocateReceiptNumber(tx: any): Promise<string> {
+async function allocateReceiptNumber(tx: Prisma.TransactionClient): Promise<string> {
   const month = currentMonthKey();
   const counter = await tx.receiptNumberCounter.upsert({
     where: { month },
@@ -318,7 +345,7 @@ export async function createPurchaseOrder(
 
   // Allocate PO number and create everything atomically.
   try {
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const poNumber = await allocatePoNumber(tx);
       const po = await tx.purchaseOrder.create({
         data: {
@@ -352,8 +379,8 @@ export async function createPurchaseOrder(
       after: { poNumber: result.poNumber, status: "DRAFT" },
     });
     return { ok: true, poNumber: result.poNumber, id: result.id };
-  } catch (err: any) {
-    if (err?.code === "P2002") {
+  } catch (err: unknown) {
+    if (prismaErrorCode(err) === "P2002") {
       return { ok: false, error: "A purchase order with this number already exists. Please try again." };
     }
     return { ok: false, error: "Could not create the purchase order. Please try again." };
@@ -476,8 +503,8 @@ export async function updatePurchaseOrder(
           },
         },
       });
-    } catch (err: any) {
-      if (err?.code === "P2002") {
+    } catch (err: unknown) {
+      if (prismaErrorCode(err) === "P2002") {
         return { ok: false, error: "Duplicate product in order." };
       }
       return { ok: false, error: "Could not update the purchase order. Please try again." };
@@ -670,7 +697,7 @@ export async function receivePurchaseOrder(
   }
 
   try {
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Load the PO and its items with products for stock lookup.
       const po = await tx.purchaseOrder.findUnique({
         where: { id },
@@ -798,8 +825,8 @@ export async function receivePurchaseOrder(
         select: { orderedQty: true, receivedQty: true },
       });
 
-      const totalOrdered = updatedItems.reduce((s: number, it: any) => s + it.orderedQty, 0);
-      const totalReceived = updatedItems.reduce((s: number, it: any) => s + it.receivedQty, 0);
+      const totalOrdered = updatedItems.reduce((s: number, it) => s + it.orderedQty, 0);
+      const totalReceived = updatedItems.reduce((s: number, it) => s + it.receivedQty, 0);
 
       let status: PoStatus;
       if (totalReceived === 0) {
@@ -841,26 +868,27 @@ export async function receivePurchaseOrder(
       },
     });
     return { ok: true, ...result };
-  } catch (err: any) {
-    if (err?.message === "PURCHASE_ORDER_NOT_FOUND") {
+  } catch (err: unknown) {
+    if (errorMessage(err) === "PURCHASE_ORDER_NOT_FOUND") {
       return { ok: false, error: "Purchase order not found." };
     }
-    if (
-      err?.message?.includes("status") &&
-      err?.message?.includes("Cannot receive")
-    ) {
-      return { ok: false, error: err.message };
+    // Captured once so `unknown` can be narrowed soundly. Every `throw` in this
+    // transaction is `new Error(...)`, so `message` is always populated here and
+    // the four branches below behave exactly as they did when `err` was `any`.
+    const message = errorMessage(err) ?? "";
+    if (message.includes("status") && message.includes("Cannot receive")) {
+      return { ok: false, error: message };
     }
-    if (err?.message?.includes("already used") || err?.message?.includes("changed while")) {
-      return { ok: false, error: err.message };
+    if (message.includes("already used") || message.includes("changed while")) {
+      return { ok: false, error: message };
     }
     if (
-      err?.message?.includes("not found on this purchase order") ||
-      err?.message?.includes("cannot receive") ||
-      err?.message?.includes("positive") ||
-      err?.message?.includes("purchase-order line")
+      message.includes("not found on this purchase order") ||
+      message.includes("cannot receive") ||
+      message.includes("positive") ||
+      message.includes("purchase-order line")
     ) {
-      return { ok: false, error: err.message };
+      return { ok: false, error: message };
     }
     return { ok: false, error: "Could not record the receipt. Please try again." };
   }

@@ -210,12 +210,10 @@ export default function PosCheckout({
     )
 
   // ── Per-line discount editing ─────────────────────────────────────────────
-  const setLineDiscount = (id: string, discount: Discount | null) =>
-    setCart((prev) =>
-      prev.map((line) =>
-        line.product.id === id ? { ...line, discount } : line,
-      ),
-    )
+  // `setLineDiscount` used to live here as the primitive the other three
+  // wrapped. It had no remaining call sites - `toggleLineDiscount` and
+  // `updateLineDiscount` both build their own `setCart` call - so it was
+  // removed as dead code rather than left as an unused binding.
 
   /** Toggle a line's discount on (defaults to a familiar 10% off) or off. */
   const toggleLineDiscount = (id: string) =>

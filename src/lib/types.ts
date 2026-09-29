@@ -75,6 +75,29 @@ export function stockStatusAt(
  */
 export type StockMovementType = "RESTOCK" | "SALE" | "ADJUSTMENT" | "DAMAGE" | "VOID";
 
+// ── Purchase order status ────────────────────────────────────────────────────
+
+/**
+ * The lifecycle of a `PurchaseOrder`, as plain string literals.
+ *
+ * Lives here rather than in `purchasing/actions.ts` because that module is
+ * `"use server"`, and such a module may only export async functions —
+ * exporting a value from one once broke every action in the employees module.
+ * This file is the repo's established home for these vocabularies, alongside
+ * {@link ROLES} and {@link STOCK_MOVEMENT_TYPES}. `purchasing/actions.ts`
+ * re-exports the *type* (`export type` erases at runtime, so that is safe).
+ */
+export const PO_STATUSES = [
+  "DRAFT",
+  "ORDERED",
+  "PARTIALLY_RECEIVED",
+  "RECEIVED",
+  "CANCELLED",
+] as const;
+
+/** One of the {@link PO_STATUSES} literals. */
+export type PoStatus = (typeof PO_STATUSES)[number];
+
 /** All valid movement-type literals — useful for validation. */
 export const STOCK_MOVEMENT_TYPES: readonly StockMovementType[] = [
   "RESTOCK",

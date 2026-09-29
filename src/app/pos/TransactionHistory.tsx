@@ -575,7 +575,7 @@ export default function TransactionHistory({ canVoid }: Props) {
             {details.paymentMethod === 'STORE_CREDIT' && (
               <p className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                The customer's outstanding balance and loyalty points will be reversed. If the balance can no longer absorb the reversal, the void will be rejected.
+                The customer&apos;s outstanding balance and loyalty points will be reversed. If the balance can no longer absorb the reversal, the void will be rejected.
               </p>
             )}
 

@@ -1,4 +1,7 @@
-import type { PoStatus } from "../actions";
+// From `@/lib/types`, not from `../actions`: that module is `"use server"` and
+// may only export async functions, so the PO status vocabulary lives with the
+// other domain vocabularies and is imported from its real home.
+import type { PoStatus } from "@/lib/types";
 
 /**
  * Display vocabulary for PO statuses.

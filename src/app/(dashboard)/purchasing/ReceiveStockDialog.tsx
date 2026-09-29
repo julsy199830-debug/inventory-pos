@@ -27,7 +27,18 @@ export default function ReceiveStockDialog({
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const requestKeyRef = useRef<string>(crypto.randomUUID());
+  // A stable idempotency key for this dialog instance: generated once on mount,
+  // never changed, and READ during render (it is the `requestKey` hidden form
+  // field, which the server uses to make a retried receipt idempotent).
+  //
+  // This is state with a lazy initialiser rather than a ref, which is the
+  // idiomatic expression of "compute once, stable for the lifetime of this
+  // component" and satisfies the `react-hooks/refs` rule - reading
+  // `ref.current` during render is what that rule flags. The value the form
+  // receives is identical to the ref's: `useRef(crypto.randomUUID())` kept only
+  // the first call's result, and a lazy `useState` produces exactly that value
+  // once instead of discarding a fresh UUID on every render.
+  const [requestKey] = useState(() => crypto.randomUUID());
   const formRef = useRef<HTMLFormElement>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -82,7 +93,7 @@ export default function ReceiveStockDialog({
             <form ref={formRef} onSubmit={submit} className="mt-5 space-y-4">
               <input type="hidden" name="id" value={purchaseOrderId} />
               <input type="hidden" name="lineCount" value={items.length} />
-              <input type="hidden" name="requestKey" value={requestKeyRef.current} />
+              <input type="hidden" name="requestKey" value={requestKey} />
               {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full min-w-[680px] text-sm">

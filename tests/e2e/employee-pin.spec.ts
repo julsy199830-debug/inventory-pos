@@ -154,11 +154,10 @@ test.describe('Employee PIN storage (hash-only writes)', () => {
     await saveDialog(page);
 
     // The row exists with a valid versioned hash — the only credential.
-    let row: EmployeePinRow | undefined;
     await expect
       .poll(() => getEmployeeRow(EMP.email), { timeout: 15000 })
       .toBeDefined();
-    row = getEmployeeRow(EMP.email)!;
+    const row: EmployeePinRow = getEmployeeRow(EMP.email)!;
     expect(row.pinHash).toMatch(HASH_RE);
 
     // The created employee can sign in with the PIN through the real UI
@@ -173,11 +172,10 @@ test.describe('Employee PIN storage (hash-only writes)', () => {
     await page.locator('input[name="pin"]').fill(EMP.pin2);
     await saveDialog(page);
 
-    let row: EmployeePinRow | undefined;
     await expect
       .poll(() => getEmployeeRow(EMP.email)?.pinHash, { timeout: 15000 })
       .not.toBe(before);
-    row = getEmployeeRow(EMP.email)!;
+    const row: EmployeePinRow = getEmployeeRow(EMP.email)!;
     expect(row.pinHash).toMatch(HASH_RE);
 
     expect(await attemptLogin(page, EMP.name, EMP.pin1)).toBe(false); // old PIN dead
@@ -192,11 +190,10 @@ test.describe('Employee PIN storage (hash-only writes)', () => {
     // PIN left blank on purpose — the "keep current" affordance.
     await saveDialog(page);
 
-    let row: EmployeePinRow | undefined;
     await expect
       .poll(() => getEmployeeRow(EMP.email)?.name, { timeout: 15000 })
       .toBe(EMP.renamed);
-    row = getEmployeeRow(EMP.email)!;
+    const row: EmployeePinRow = getEmployeeRow(EMP.email)!;
     expect(row.pinHash).toBe(before); // byte-identical: never regenerated/cleared
   });
 

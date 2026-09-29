@@ -15,6 +15,19 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // CommonJS harness files.
+  //
+  // `require()` is the only valid import syntax in a `.cjs` module, so the
+  // TypeScript rule that bans it cannot apply here - there is no `import`
+  // alternative that Node would load from a `.cjs` file. Scoped by extension
+  // rather than by path so a future CommonJS helper is covered automatically,
+  // and so nothing in `src/` is affected.
+  {
+    files: ["**/*.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

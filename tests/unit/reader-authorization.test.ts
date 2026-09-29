@@ -10,9 +10,33 @@ const MOCKS: Record<string, string> = {
   "next/headers": path.resolve("tests/setup/mocks/next-headers.cjs"),
   "next/cache": path.resolve("tests/setup/mocks/next-cache.cjs"),
 };
-const originalResolve = (Module as unknown as { _resolveFilename: Function })._resolveFilename;
-(Module as unknown as { _resolveFilename: Function })._resolveFilename = function (request: string, ...rest: unknown[]) {
-  return MOCKS[request] ?? originalResolve.call(this, request, ...rest);
+/**
+ * The signature of Node's internal `Module._resolveFilename`, which this
+ * harness monkey-patches to redirect Next.js server-only imports at the mocks
+ * above.
+ *
+ * Typed explicitly rather than as `Function`: `Function` accepts any
+ * function-like value, so it type-checked nothing at the call site - including
+ * the `.apply(this, args)` forwarding below, which is the part most worth
+ * checking. The annotations are erased at compile time, so this changes no
+ * runtime behaviour.
+ */
+type ResolveFilenameArgs = [
+  request: string,
+  parent: unknown,
+  isMain: boolean,
+  options?: unknown,
+];
+type ResolveFilename = (...args: ResolveFilenameArgs) => string;
+const moduleResolver = Module as unknown as {
+  _resolveFilename: ResolveFilename;
+};
+const originalResolve = moduleResolver._resolveFilename;
+moduleResolver._resolveFilename = function (
+  this: unknown,
+  ...args: ResolveFilenameArgs
+): string {
+  return MOCKS[args[0]] ?? originalResolve.apply(this, args);
 };
 
 declare global { var __PO_TEST_COOKIES__: Record<string, string> | undefined; }
