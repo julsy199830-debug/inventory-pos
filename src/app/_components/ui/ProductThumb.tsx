@@ -39,7 +39,19 @@ export default function ProductThumb({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+  // A photo on a NAS can take a beat to arrive, and an image that pops in over a
+  // blank slate is jarring on the register grid. Track load state so we can show
+  // the initials underneath until the bytes are actually painted.
+  const [loaded, setLoaded] = useState(false);
   const showImage = Boolean(imageUrl) && !failed;
+  // Reset the flags when the source changes, otherwise a replaced photo would
+  // stay hidden waiting for a load event that already fired for the old one.
+  const [seenUrl, setSeenUrl] = useState(imageUrl);
+  if (imageUrl !== seenUrl) {
+    setSeenUrl(imageUrl);
+    setFailed(false);
+    setLoaded(false);
+  }
 
   const box =
     size === "sm"
@@ -65,8 +77,11 @@ export default function ProductThumb({
           alt={name}
           loading="lazy"
           decoding="async"
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
         />
       ) : null}
     </span>

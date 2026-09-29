@@ -1,7 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
+import {
+  buildStoredImageName,
+  formatImageBytes,
+  imageExtensionFor,
+  managedImageFileName,
+  MAX_PRODUCT_IMAGE_BYTES,
+  PRODUCT_IMAGE_PUBLIC_PREFIX,
+  safeImageToken,
+  sniffImageMime,
+  validateImageBytes,
+} from "@/lib/product-image";
 import {
   asStockMovementType,
   INVALID_IMAGE_URL,
@@ -52,7 +66,7 @@ function prismaCode(err: unknown): string | undefined {
 // on create AND update type-check unchanged.
 /** Result of {@link createProduct} / {@link updateProduct}. Echos back the
  *  row's `sku` so the client can confirm + close. */
-export type CreateProductResult = ActionResult<{ sku?: string }>;
+export type CreateProductResult = ActionResult<{ sku?: string; id?: string }>;
 
 /** Same shape as {@link CreateProductResult} — the edit dialog auto-closes on
  *  `ok` and the revalidated table streams the new values back in. */
@@ -177,6 +191,7 @@ export async function createProduct(
   // opening-stock audit row are written in one `prisma.$transaction` so a
   // movement write failure rolls the product write back with it — atomicity is
   // the whole point of the audit trail (see StockMovement in schema.prisma).
+  let createdId = "";
   try {
     await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({
@@ -190,6 +205,7 @@ export async function createProduct(
           imageUrl,
         },
       });
+      createdId = created.id;
       await tx.stockMovement.create({
         data: {
           productId: created.id,
@@ -217,7 +233,9 @@ export async function createProduct(
   }
 
   revalidatePath("/inventory");
-  return { ok: true, sku };
+  // `id` rides along so the Add dialog can attach a chosen photo to the row it
+  // just created, without a second manual step.
+  return { ok: true, sku, id: createdId };
 }
 
 /**
@@ -856,4 +874,150 @@ export async function deleteCategory(
   revalidatePath("/inventory/categories");
   revalidatePath("/inventory");
   return { ok: true };
+}
+
+// ── Product image upload / removal (Phase 1c) ───────────────────────────────
+
+/** Absolute directory that serves managed product photos. `public/` is served
+ *  statically by Next in both dev and `next start`, so an upload is a plain
+ *  filesystem write with no upload service, CDN or database blob. */
+const PRODUCT_IMAGE_DIR = path.join(process.cwd(), "public", "uploads", "products");
+
+/** Best-effort unlink. A missing file is success (the row is already clear); a
+ *  locked file must never fail the request, because the product's `imageUrl` is
+ *  the source of truth and it has already been cleared. */
+async function unlinkQuietly(fileName: string): Promise<void> {
+  try {
+    await unlink(path.join(PRODUCT_IMAGE_DIR, fileName));
+  } catch {
+    // Intentionally ignored — see the doc comment.
+  }
+}
+
+/** Result of {@link uploadProductImage} / {@link removeProductImage}. Carries the
+ *  resulting `imageUrl` so the client can update its preview without waiting for
+ *  the revalidated page. */
+export type ProductImageResult = MutationResult<{ imageUrl: string | null }>;
+
+/**
+ * Upload (or replace) a product's photo.
+ *
+ * Storage is deliberately the simplest thing that works for a self-hosted LAN
+ * register: a file under `public/uploads/products/`, referenced by a root-relative
+ * `Product.imageUrl` — the field Phase 1a already added. No schema change, no
+ * blob column, no external bucket.
+ *
+ * Security notes, because a Server Action is a public POST endpoint:
+ *  - the caller must be staff, exactly like every other inventory mutation;
+ *  - the bytes are identified by magic number, never by the client's declared
+ *    MIME type or filename, so a script-bearing document can never be stored and
+ *    later served same-origin;
+ *  - the stored name is a generated token, so user input never reaches the
+ *    filesystem path;
+ *  - the previous managed file is unlinked only after the row is updated, so a
+ *    failed write never destroys the photo the product still points at.
+ */
+export async function uploadProductImage(
+  formData: FormData,
+): Promise<ProductImageResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
+  const productId = load(formData, "id");
+  if (!productId) return { ok: false, error: "Missing product id." };
+
+  const entry = formData.get("image");
+  if (!(entry instanceof File)) {
+    return { ok: false, error: "Choose an image to upload." };
+  }
+  if (entry.size > MAX_PRODUCT_IMAGE_BYTES) {
+    return {
+      ok: false,
+      error: `Images must be ${formatImageBytes(MAX_PRODUCT_IMAGE_BYTES)} or smaller.`,
+    };
+  }
+
+  const bytes = new Uint8Array(await entry.arrayBuffer());
+  const invalid = validateImageBytes(bytes);
+  if (invalid) return { ok: false, error: invalid };
+
+  const extension = imageExtensionFor(sniffImageMime(bytes));
+  if (!extension) return { ok: false, error: "That file is not a supported image." };
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true, imageUrl: true },
+  });
+  if (!product) return { ok: false, error: "That product no longer exists." };
+
+  // `safeImageToken` is belt-and-braces: `randomUUID` is already a safe token,
+  // but sanitising here means the "user input never reaches the filesystem
+  // path" property holds by construction rather than by assumption.
+  const fileName = buildStoredImageName(extension, safeImageToken(randomUUID()));
+  const publicUrl = `${PRODUCT_IMAGE_PUBLIC_PREFIX}${fileName}`;
+
+  try {
+    await mkdir(PRODUCT_IMAGE_DIR, { recursive: true });
+    await writeFile(path.join(PRODUCT_IMAGE_DIR, fileName), bytes, { flag: "wx" });
+  } catch {
+    return { ok: false, error: "Could not save the image. Please try again." };
+  }
+
+  try {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { imageUrl: publicUrl },
+    });
+  } catch {
+    // The row still points at the old photo (or none), so the file we just
+    // wrote is an orphan — drop it rather than leaking bytes on every failure.
+    await unlinkQuietly(fileName);
+    return { ok: false, error: "Could not attach the image. Please try again." };
+  }
+
+  // Only now is it safe to drop the superseded file. Skipped when the product
+  // previously pointed at an external LAN/NAS image, which we don't own.
+  const previous = managedImageFileName(product.imageUrl);
+  if (previous && previous !== fileName) await unlinkQuietly(previous);
+
+  revalidatePath("/inventory");
+  revalidatePath("/pos");
+  return { ok: true, data: { imageUrl: publicUrl } };
+}
+
+/**
+ * Clear a product's photo and delete the managed file behind it.
+ *
+ * Idempotent: a product with no image is already in the desired state, so this
+ * reports success rather than erroring on a double-click. An image hosted
+ * elsewhere (a LAN/NAS URL typed into the dialog) is simply forgotten — the
+ * reference is dropped, but a file this app does not own is never unlinked.
+ */
+export async function removeProductImage(
+  formData: FormData,
+): Promise<ProductImageResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
+  const productId = load(formData, "id");
+  if (!productId) return { ok: false, error: "Missing product id." };
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true, imageUrl: true },
+  });
+  if (!product) return { ok: false, error: "That product no longer exists." };
+
+  try {
+    await prisma.product.update({ where: { id: productId }, data: { imageUrl: null } });
+  } catch {
+    return { ok: false, error: "Could not remove the image. Please try again." };
+  }
+
+  const managed = managedImageFileName(product.imageUrl);
+  if (managed) await unlinkQuietly(managed);
+
+  revalidatePath("/inventory");
+  revalidatePath("/pos");
+  return { ok: true, data: { imageUrl: null } };
 }

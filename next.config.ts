@@ -30,6 +30,15 @@ const nextConfig: NextConfig = {
    */
   experimental: {
     serverActions: {
+      /**
+       * Product photo uploads travel through a Server Action, which Next caps at
+       * 1MB by default. Our own ceiling is 2MB (`MAX_PRODUCT_IMAGE_BYTES`), so
+       * the transport limit is raised above it to leave room for the multipart
+       * envelope. A client that lies about a larger file is still rejected by
+       * the action, which checks the decoded size authoritatively — this limit
+       * only stops the framework truncating a legitimate upload first.
+       */
+      bodySizeLimit: '3mb',
       allowedOrigins: [
         'localhost:3000',
         '127.0.0.1:3000',

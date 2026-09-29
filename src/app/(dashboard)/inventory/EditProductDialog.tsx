@@ -3,6 +3,15 @@
 import { useRef, useState } from "react";
 import { updateProduct, type UpdateProductResult } from "./actions";
 import type { CategoryOption } from "./AddProductDialog";
+import { Modal } from "@/app/_components/ui/Modal";
+import ProductImageField from "./ProductImageField";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 /**
  * Modal for editing an existing product.
@@ -118,54 +127,19 @@ export default function EditProductDialog({
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
+        <Modal
+          open
+          onClose={onClose}
+          title="Edit Product"
+          description={product.name}
+          className="max-w-2xl"
+          busy={pending}
         >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-300 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900">
-                Edit Product
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={pending}
-                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
+          <form onSubmit={onSubmit} ref={formRef} className="space-y-4">
+            {/* Hidden id targets the row to update. */}
+            <input type="hidden" name="id" value={product.id} />
 
-            <form onSubmit={onSubmit} ref={formRef} className="space-y-4 px-5 py-5">
-              {/* Hidden id targets the row to update. */}
-              <input type="hidden" name="id" value={product.id} />
-
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-                >
-                  {error}
-                </p>
-              )}
+            <FormError>{error}</FormError>
 
               <Field label="Product name" htmlFor="name" required>
                 <input
@@ -256,70 +230,43 @@ export default function EditProductDialog({
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Image URL" htmlFor="imageUrl">
-                  <input
-                    id="imageUrl"
-                    name="imageUrl"
-                    type="url"
-                    inputMode="url"
-                    disabled={pending}
-                    defaultValue={product.imageUrl ?? ""}
-                    placeholder="https://… or /images/item.jpg"
-                    className={inputCls}
-                  />
-                </Field>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <section className="space-y-3 border-t border-slate-200 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Photo
+                </h3>
+                {/* Uploads/replace/remove act on the row immediately, so this is a
+                    standalone control rather than part of the form's submit — a
+                    clerk can fix a photo without re-saving the whole product. */}
+                <ProductImageField
+                  productId={product.id}
+                  productName={product.name}
+                  defaultImageUrl={product.imageUrl}
+                  pending={pending}
+                />
+              </section>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
+                  className={dialogSecondaryCls}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className={dialogPrimaryCls}
                 >
                   {pending ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
-  );
-}
-
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-white";
-
-/** Labeled field wrapper — keeps the form DRY. */
-function Field({
-  label,
-  htmlFor,
-  required,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
-      >
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }

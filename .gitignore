@@ -63,3 +63,8 @@ next-env.d.ts
 /NEW DASHBOARD DESIGN 1.png
 
 .claude/
+
+# Runtime product photos uploaded through the inventory dialog. These are
+# operator content, not source: they are created at runtime under public/ and
+# must not be committed. The directory itself is created on first upload.
+/public/uploads/

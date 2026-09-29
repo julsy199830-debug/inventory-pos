@@ -1,15 +1,20 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createProduct, type CreateProductResult } from "./actions";
+import { toast } from "sonner";
+import {
+  createProduct,
+  uploadProductImage,
+  type CreateProductResult,
+} from "./actions";
 import { Modal } from "@/app/_components/ui/Modal";
+import ProductImageField from "./ProductImageField";
 import {
   Field,
   FormError,
   dialogPrimaryCls,
   dialogSecondaryCls,
   inputCls,
-  selectCls,
 } from "@/app/_components/ui/Field";
 
 /** One selectable option in the category dropdown. The empty-string id is the
@@ -61,20 +66,51 @@ export default function AddProductDialog({
   // Ref onto the form so we can reset it once the insert succeeds — the next
   // time the dialog opens it's a blank form rather than the just-submitted row.
   const formRef = useRef<HTMLFormElement>(null);
+  // A photo chosen before the product exists has nowhere to live yet (uploads
+  // are keyed to a product id), so we hold the File here and attach it in the
+  // same Save click once the insert hands back the new id. One form, one save.
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  // Mirrors the name input purely so the photo fallback can show real initials
+  // while the clerk is still typing. The form itself stays uncontrolled.
+  const [nameValue, setNameValue] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    // The staged file must NOT ride along in this FormData: `createProduct`
+    // validates `imageUrl` only, and shipping a File under an unrelated name
+    // would just bloat the POST past the framework's body limit.
+    formData.delete("image");
     setPending(true);
     setError(null);
     const result: CreateProductResult = await createProduct(formData);
-    setPending(false);
-    if (result.ok) {
-      setOpen(false);
-      formRef.current?.reset();
+    if (!result.ok) {
+      setPending(false);
+      setError(result.error ?? null);
       return;
     }
-    setError(result.error ?? null);
+    // Attach the staged photo now that the row exists. A failure here is
+    // non-fatal — the product was created, and the clerk can retry the photo
+    // from the row without re-entering the product.
+    if (pendingImage && result.id) {
+      const body = new FormData();
+      body.append("id", result.id);
+      body.append("image", pendingImage);
+      const uploaded = await uploadProductImage(body);
+      if (!uploaded.ok) {
+        setPending(false);
+        setOpen(false);
+        formRef.current?.reset();
+        setPendingImage(null);
+        toast.error(`${result.sku} was saved, but the photo failed: ${uploaded.error}`);
+        return;
+      }
+    }
+    setPending(false);
+    setOpen(false);
+    setPendingImage(null);
+    formRef.current?.reset();
   }
 
   function onClose() {
@@ -114,6 +150,7 @@ export default function AddProductDialog({
           onClose={onClose}
           title="Add New Product"
           description="Add an item to the catalog so it can be sold at the register."
+          className="max-w-2xl"
           busy={pending}
         >
           <form onSubmit={onSubmit} ref={formRef} className="space-y-4">
@@ -127,6 +164,7 @@ export default function AddProductDialog({
                   required
                   disabled={pending}
                   placeholder="e.g. Aurora Wireless Headphones"
+                  onChange={(e) => setNameValue(e.target.value)}
                   className={inputCls}
                 />
               </Field>
@@ -206,36 +244,45 @@ export default function AddProductDialog({
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Image URL" htmlFor="imageUrl">
-                  <input
-                    id="imageUrl"
-                    name="imageUrl"
-                    type="url"
-                    inputMode="url"
-                    disabled={pending}
-                    placeholder="https://… or /images/item.jpg"
-                    className={inputCls}
-                  />
-                </Field>
               </div>
 
+              {/* Photo gets its own full-width section rather than a third of a
+                  three-column grid: choosing an image is a deliberate act, and a
+                  1/3-width drop target on a counter tablet is not a target. */}
+              <section className="space-y-3 border-t border-slate-200 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Photo
+                </h3>
+                <ProductImageField
+                  productName={nameValue}
+                  pending={pending}
+                  onFileSelected={setPendingImage}
+                  onImageUrlChange={() => setPendingImage(null)}
+                />
+                {pendingImage ? (
+                  <p className="text-xs text-slate-500">
+                    This photo is attached when the product is saved.
+                  </p>
+                ) : null}
+              </section>
+
               <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={pending}
-                  className={dialogSecondaryCls}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className={dialogPrimaryCls}
-                >
-                  {pending ? "Saving…" : "Save product"}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={pending}
+                className={dialogSecondaryCls}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={pending}
+                className={dialogPrimaryCls}
+              >
+                {pending ? "Saving…" : "Save product"}
+              </button>
+            </div>
             </form>
         </Modal>
       )}
