@@ -30,7 +30,12 @@ export default function ExportCsvButton({ rows }: { rows: InventoryExportRow[] }
       rows.map((row) => [
         row.sku,
         row.name,
-        row.categoryName ?? "Uncategorized",
+        // Empty, NOT the word "Uncategorized". This file is also the input to
+        // the bulk importer, where a blank category means "leave this product's
+        // category alone" while a literal "Uncategorized" would be read as a
+        // category NAME - turning every uncategorized product into a phantom
+        // "category: Uncategorized -> Uncategorized" change on re-import.
+        row.categoryName ?? "",
         row.price,
         row.cost,
         row.stock,

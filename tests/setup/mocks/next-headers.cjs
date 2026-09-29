@@ -21,4 +21,13 @@ module.exports = {
       delete() {},
     };
   },
+  // `headers()` is request-scoped too. `pos/actions.ts` calls it only to derive
+  // a best-effort client-IP key for the rate limiter, which already documents
+  // that the header is spoofable and falls back when absent — so returning an
+  // empty header store is the honest stub, and it keeps the limiter on its
+  // "direct-client" path.
+  async headers() {
+    return new Map();
+  },
 };
+

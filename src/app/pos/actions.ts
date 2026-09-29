@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
-import { setCashierCookie, clearCashierCookie } from "@/lib/session";
+import { getCashier, setCashierCookie, clearCashierCookie } from "@/lib/session";
 import {
   checkRateLimit,
   recordLoginFailure,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/rate-limit";
 import { PIN_PATTERN, verifyPin } from "@/lib/pin";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
+import { recordAudit } from "@/lib/audit";
 
 /**
  * Cashier sign-in / sign-out for the POS register.
@@ -114,6 +115,18 @@ export async function signInCashierPin(input: {
     // Same shape as every other failure so the UI needs no special case, but a
     // distinct, deliberately vague message: no counters, no remaining
     // attempts, no hint whether the employee exists.
+    // Audited, though: a burst of throttled attempts against one account is
+    // exactly the thing an administrator needs to be able to see later, and it
+    // is invisible everywhere else. The submitted id is recorded as free text
+    // rather than in the `userId` foreign key, because the limiter runs BEFORE
+    // the account is looked up and the id may not resolve to a real user.
+    await recordAudit({
+      action: "LOGIN_RATE_LIMITED",
+      userId: null,
+      entity: "User",
+      summary: `Sign-in attempt throttled by the rate limiter (submitted id ${userId})`,
+      after: { submittedUserId: userId },
+    });
     return { ok: false, error: RATE_LIMITED_MESSAGE };
   }
 
@@ -121,6 +134,10 @@ export async function signInCashierPin(input: {
     where: { id: userId },
     select: {
       id: true,
+      // `name` is selected for the audit entries below, so a failed attempt is
+      // attributed to a readable person rather than a bare uuid. `pinHash` is
+      // needed for verification and is never read into an audit row.
+      name: true,
       pinHash: true,
       active: true,
       role: true,
@@ -136,6 +153,19 @@ export async function signInCashierPin(input: {
   // was, and this action never tells it).
   if (!user || !user.active) {
     recordLoginFailure(userId, ip);
+    await recordAudit({
+      action: "LOGIN_FAILURE",
+      // NOT `userId`: when the id doesn't resolve to a real account, writing it
+      // here would violate the `AuditLog.userId` foreign key and the insert —
+      // and therefore the audit row itself — would be lost. That is precisely
+      // the case worth seeing, so the unresolved id goes in the free-text
+      // snapshot instead and the FK column is left null.
+      userId: null,
+      actor: "Unknown account",
+      entity: "User",
+      summary: `Sign-in failed for an unknown or inactive account (submitted id ${userId})`,
+      after: { submittedUserId: userId, knownAccount: false },
+    });
     return { ok: false, error: "Incorrect employee or PIN." };
   }
 
@@ -146,6 +176,17 @@ export async function signInCashierPin(input: {
   const authenticated = await verifyPin(pin, user.pinHash);
   if (!authenticated) {
     recordLoginFailure(userId, ip);
+    // The account resolves here, so the entry is properly attributed to it.
+    // Still no PIN material is ever recorded, on success or failure.
+    await recordAudit({
+      action: "LOGIN_FAILURE",
+      userId: user.id,
+      actor: user.name,
+      entity: "User",
+      entityId: user.id,
+      summary: "Sign-in failed (incorrect PIN)",
+      after: { knownAccount: true, reason: "bad-pin" },
+    });
     return { ok: false, error: "Incorrect employee or PIN." };
   }
 
@@ -155,6 +196,13 @@ export async function signInCashierPin(input: {
   recordLoginSuccess(user.id, ip);
 
   await setCashierCookie(user.id);
+  await recordAudit({
+    action: "LOGIN_SUCCESS",
+    userId: user.id,
+    entity: "User",
+    entityId: user.id,
+    after: { role: asRole(user.role) },
+  });
   return { ok: true, role: asRole(user.role) };
 }
 
@@ -166,5 +214,18 @@ export async function signInCashierPin(input: {
  * purpose so a double-click or a stale-tab sign-out can't error out.
  */
 export async function signOutCashier(): Promise<void> {
+  // Resolve the actor BEFORE the cookie is cleared — afterwards the id is gone
+  // and the event would be unattributable. A sign-out with no active session is
+  // not an error and writes no audit row (nothing happened).
+  const cashier = await getCashier();
   await clearCashierCookie();
+  if (cashier) {
+    await recordAudit({
+      action: "LOGOUT",
+      userId: cashier.id,
+      actor: cashier.name,
+      entity: "User",
+      entityId: cashier.id,
+    });
+  }
 }

@@ -22,6 +22,7 @@ import {
   saleItemUnitValues,
   totalAfterRedemption,
 } from "@/lib/loyalty";
+import { recordAudit } from "@/lib/audit";
 
 /** Round to 2 decimals - money math always lands on centavo precision. */
 const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
@@ -146,6 +147,11 @@ export async function createSale(
     return { ok: false, error: "Select a customer before redeeming loyalty points." };
   }
 
+  // Redemption values computed inside the transaction, published here so the
+  // post-commit audit write can report them. Initialised to the no-redemption
+  // case, and only overwritten when points were actually spent.
+  const redemptionOutcome = { points: 0, value: 0, total: 0, earned: 0 };
+
   try {
     const sale = await prisma.$transaction(async (tx) => {
       // Server-authoritative money math. The client only contributes the
@@ -206,8 +212,13 @@ export async function createSale(
       // here, so two registers racing on the same customer can't both spend the
       // same points. The peso value is capped at the taxable base, which is what
       // stops points from driving the total below zero.
-      let redeemedPoints = 0;
-      let redemptionAmount = 0;
+      //
+      // `redeemedPoints` / `redemptionAmount` are assigned to the OUTER
+      // `redemptionOutcome` object (declared above the transaction) rather than
+      // to local `let`s, because the audit write that reports the redemption
+      // happens after the transaction commits and needs these values. `total`
+      // and `points` are filled in by the same block.
+      const outcome = redemptionOutcome;
       if (requestedPoints > 0) {
         const account = await tx.customer.findUnique({
           where: { id: customerId! },
@@ -223,15 +234,18 @@ export async function createSale(
           // than the customer gave up.
           throw new Error("REDEMPTION_EXCEEDS_TOTAL");
         }
-        redeemedPoints = requestedPoints;
-        redemptionAmount = redemptionValueFor(redeemedPoints, taxable);
+        outcome.points = requestedPoints;
+        outcome.value = redemptionValueFor(requestedPoints, taxable);
       }
 
-      const totalAmount = totalAfterRedemption(taxable, tax, redemptionAmount);
+      const totalAmount = totalAfterRedemption(taxable, tax, outcome.value);
       // Points are not earned on the part of the cart that points already paid
       // for — otherwise buy-and-redeem in a loop would farm points. With no
       // redemption this is exactly the pre-Phase-1d `floor(taxable / 10)`.
-      const earnedPoints = earnedPointsFor(taxable, redemptionAmount);
+      const earnedPoints = earnedPointsFor(taxable, outcome.value);
+      // Stash the totals the post-commit audit needs.
+      outcome.total = totalAmount;
+      outcome.earned = earnedPoints;
 
       // Payment validation is server-authoritative. The total above is the exact
       // value persisted below; a client-supplied change value is never trusted.
@@ -260,8 +274,8 @@ export async function createSale(
           totalAmount,
           paymentMethod,
           earnedPoints,
-          redeemedPoints,
-          redemptionAmount,
+          redeemedPoints: outcome.points,
+          redemptionAmount: outcome.value,
           tendered,
           change,
           items: {
@@ -323,10 +337,10 @@ export async function createSale(
       // Loyalty point movement — spend first, then earn, as one net update. The
       // balance was re-read above inside this transaction, so the deduction is
       // based on a value that cannot have moved underneath us.
-      if (customerId && (earnedPoints > 0 || redeemedPoints > 0)) {
+      if (customerId && (earnedPoints > 0 || outcome.points > 0)) {
         await tx.customer.update({
           where: { id: customerId },
-          data: { loyaltyPoints: { increment: earnedPoints - redeemedPoints } },
+          data: { loyaltyPoints: { increment: earnedPoints - outcome.points } },
         });
       }
 
@@ -335,6 +349,27 @@ export async function createSale(
 
     revalidatePath("/pos");
     revalidatePath("/");
+
+    // Only sales that actually SPENT points are audited. The `Sale` row already
+    // records `redeemedPoints`/`redemptionAmount` for every sale, so auditing
+    // all of them would add a row per transaction and bury the interesting
+    // ones — a redemption is the event an administrator is looking for.
+    if (redemptionOutcome.points > 0) {
+      await recordAudit({
+        action: "LOYALTY_REDEEM",
+        userId: cashier.id,
+        actor: cashier.name,
+        entity: "Sale",
+        entityId: sale.id,
+        summary: `Redeemed ${redemptionOutcome.points} points (${redemptionOutcome.value}) on sale #${sale.id.slice(0, 8)}`,
+        after: {
+          redeemedPoints: redemptionOutcome.points,
+          redemptionAmount: redemptionOutcome.value,
+          earnedPoints: redemptionOutcome.earned,
+          saleTotal: redemptionOutcome.total,
+        },
+      });
+    }
 
     return { ok: true as const, data: { id: sale.id } };
   } catch (err) {
@@ -424,23 +459,84 @@ export async function voidSale(
       }
       return updated;
     });
+    // Audited after the transaction commits, so a rejected void leaves no row.
+    await recordAudit({
+      action: "SALE_VOID",
+      userId: cashier.id,
+      actor: cashier.name,
+      entity: "Sale",
+      entityId: result.id,
+      summary: `Voided sale #${result.id.slice(0, 8)} — ${rsn}`,
+      before: { status: "Completed" },
+      after: {
+        status: result.status,
+        total: result.totalAmount,
+        redeemedPoints: result.redeemedPoints,
+        earnedPoints: result.earnedPoints,
+        reason: rsn,
+      },
+    });
     return { ok: true, data: { id: result.id, status: result.status } };
   } catch (err) {
-    if (err instanceof Error) switch (err.message) {
-      case "SALE_NOT_FOUND": return { ok: false, error: "Sale not found." };
-      case "SALE_ALREADY_VOIDED": return { ok: false, error: "This sale has already been voided." };
-      case "SALE_NOT_COMPLETED": return { ok: false, error: "Only completed sales can be voided." };
-      case "SALE_HAS_REFUNDS": return { ok: false, error: "This sale has refunds against it and can no longer be voided." };
-      case "PRODUCT_NOT_FOUND": return { ok: false, error: "One of the products in the sale no longer exists." };
-      case "CUSTOMER_BALANCE_CONFLICT": return { ok: false, error: "Cannot void automatically. Customer balance would go negative. Manual review required." };
-      case "LOYALTY_BALANCE_CONFLICT": return { ok: false, error: "Cannot void automatically. Loyalty points would go negative. Manual review required." };
-      case "CUSTOMER_NOT_FOUND": return { ok: false, error: "The customer linked to this sale no longer exists." };
+    // Resolved to a MESSAGE first, never returned from inside the switch: an
+    // early `return` in the old code skipped the blocked-attempt audit below,
+    // which is the only record that somebody tried and was refused.
+    const code = err instanceof Error ? err.message : "";
+    const rejection = VOID_REJECTIONS[code];
+    if (rejection) {
+      // A void that was ATTEMPTED and refused is itself worth auditing: a
+      // cashier repeatedly trying to void a sale that will not void (because of
+      // refunds, or a balance conflict) is exactly the pattern an administrator
+      // needs to notice. Only the refusal reason is recorded, not the sale's
+      // contents, and `recordAudit` cannot itself fail the call.
+      await recordAudit({
+        action: "SALE_VOID_BLOCKED",
+        userId: cashier.id,
+        actor: cashier.name,
+        entity: "Sale",
+        entityId: tid || null,
+        summary: `Void of sale #${tid.slice(0, 8)} rejected: ${rejection}`,
+        after: { outcome: "rejected", reason: code },
+      });
+      return { ok: false, error: rejection };
     }
     return { ok: false, error: "Could not void the sale. Please try again." };
   }
 }
 
 /** ── Partial refunds (Phase 1d) ─────────────────────────────────────────── */
+
+/**
+ * Refusal reasons for a void, keyed by the sentinel the transaction throws.
+ *
+ * Held in a lookup rather than a `switch` of `return`s so the caller can audit
+ * the blocked attempt BEFORE returning. An early `return` per case made the
+ * audit unreachable for every known rejection — the common ones.
+ */
+const VOID_REJECTIONS: Record<string, string> = {
+  SALE_NOT_FOUND: "Sale not found.",
+  SALE_ALREADY_VOIDED: "This sale has already been voided.",
+  SALE_NOT_COMPLETED: "Only completed sales can be voided.",
+  SALE_HAS_REFUNDS: "This sale has refunds against it and can no longer be voided.",
+  PRODUCT_NOT_FOUND: "One of the products in the sale no longer exists.",
+  CUSTOMER_BALANCE_CONFLICT:
+    "Cannot void automatically. Customer balance would go negative. Manual review required.",
+  LOYALTY_BALANCE_CONFLICT:
+    "Cannot void automatically. Loyalty points would go negative. Manual review required.",
+  CUSTOMER_NOT_FOUND: "The customer linked to this sale no longer exists.",
+};
+
+/** As `VOID_REJECTIONS`, for refunds. See the note there. */
+const REFUND_REJECTIONS: Record<string, string> = {
+  SALE_NOT_FOUND: "Sale not found.",
+  SALE_VOIDED: "This sale was voided and cannot be refunded.",
+  SALE_NOT_COMPLETED: "Only completed sales can be refunded.",
+  ITEM_NOT_IN_SALE: "One of the selected items is not part of this sale.",
+  ITEM_ALREADY_REFUNDED: "One of the selected items has already been fully refunded.",
+  REFUND_EXCEEDS_PURCHASED: "You cannot refund more units than were purchased.",
+  REFUND_AMOUNT_ZERO: "This sale has already been fully refunded.",
+  PRODUCT_NOT_FOUND: "One of the products in the sale no longer exists.",
+};
 
 /** One requested refund line: which sale item, and how many units to take. */
 export type RefundLineInput = {
@@ -645,17 +741,42 @@ export async function refundSale(input: RefundSaleInput): Promise<RefundSaleResu
 
     revalidatePath("/pos");
     revalidatePath("/");
+    // One audit row per refund event — the refund ledger already stores the
+    // money detail, so this captures the *actor* and the reason that the
+    // SaleRefund row deliberately does not duplicate.
+    await recordAudit({
+      action: "SALE_REFUND",
+      userId: cashier.id,
+      actor: cashier.name,
+      entity: "Sale",
+      entityId: result.id,
+      summary: `Refunded ${result.amount} on sale #${result.id.slice(0, 8)} — ${reason}`,
+      after: {
+        refundAmount: result.amount,
+        refundedTotal: result.refundedTotal,
+        status: result.status,
+        reason,
+      },
+    });
     return { ok: true, data: result };
   } catch (err) {
-    if (err instanceof Error) switch (err.message) {
-      case "SALE_NOT_FOUND": return { ok: false, error: "Sale not found." };
-      case "SALE_VOIDED": return { ok: false, error: "This sale was voided and cannot be refunded." };
-      case "SALE_NOT_COMPLETED": return { ok: false, error: "Only completed sales can be refunded." };
-      case "ITEM_NOT_IN_SALE": return { ok: false, error: "One of the selected items is not part of this sale." };
-      case "ITEM_ALREADY_REFUNDED": return { ok: false, error: "One of the selected items has already been fully refunded." };
-      case "REFUND_EXCEEDS_PURCHASED": return { ok: false, error: "You cannot refund more units than were purchased." };
-      case "REFUND_AMOUNT_ZERO": return { ok: false, error: "This sale has already been fully refunded." };
-      case "PRODUCT_NOT_FOUND": return { ok: false, error: "One of the products in the sale no longer exists." };
+    // Same shape as `voidSale`: resolve to a message, audit the blocked
+    // attempt, then return. These refusals previously left no trace at all,
+    // so a manager refunding the same item over and over looked identical to
+    // one who simply never tried.
+    const code = err instanceof Error ? err.message : "";
+    const rejection = REFUND_REJECTIONS[code];
+    if (rejection) {
+      await recordAudit({
+        action: "SALE_REFUND_BLOCKED",
+        userId: cashier.id,
+        actor: cashier.name,
+        entity: "Sale",
+        entityId: saleId || null,
+        summary: `Refund of sale #${saleId.slice(0, 8)} rejected: ${rejection}`,
+        after: { outcome: "rejected", reason: code },
+      });
+      return { ok: false, error: rejection };
     }
     return { ok: false, error: "Could not process the refund. Please try again." };
   }

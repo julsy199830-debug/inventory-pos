@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { ActionResult } from "@/lib/types";
-import { roleGuardError } from "@/lib/session";
+import { roleGuardError, getCashier } from "@/lib/session";
+import { recordAudit } from "@/lib/audit";
 
 /** Staff-only guard shared by every mutating action in this module. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -100,6 +101,15 @@ export async function createSupplier(
   }
 
   revalidatePath("/suppliers");
+  const created = await getCashier();
+  await recordAudit({
+    action: "SUPPLIER_CREATE",
+    userId: created?.id ?? null,
+    actor: created?.name ?? null,
+    entity: "Supplier",
+    summary: `Created supplier ${name}`,
+    after: { name, contactName, email, phone },
+  });
   return { ok: true, name };
 }
 
@@ -148,6 +158,12 @@ export async function updateSupplier(
   }
 
   // ── Update ─────────────────────────────────────────────────────────────
+  // Read the current values first: `supplier.update` overwrites them in place,
+  // so this is the only chance to record what the row used to look like.
+  const prior = await prisma.supplier.findUnique({
+    where: { id },
+    select: { name: true, contactName: true, email: true, phone: true, address: true },
+  });
   try {
     await prisma.supplier.update({
       where: { id },
@@ -169,6 +185,17 @@ export async function updateSupplier(
   }
 
   revalidatePath("/suppliers");
+  const editor = await getCashier();
+  await recordAudit({
+    action: "SUPPLIER_UPDATE",
+    userId: editor?.id ?? null,
+    actor: editor?.name ?? null,
+    entity: "Supplier",
+    entityId: id,
+    summary: `Edited supplier ${name}`,
+    before: prior,
+    after: { name, contactName, email, phone, address },
+  });
   return { ok: true };
 }
 
@@ -196,6 +223,13 @@ export async function deleteSupplier(formData: FormData): Promise<void> {
     return;
   }
 
+  // Snapshot before the delete — a removed supplier's details exist nowhere
+  // else, and "which vendor did we drop and who dropped them" is the first
+  // question asked of any such deletion.
+  const doomed = await prisma.supplier.findUnique({
+    where: { id },
+    select: { id: true, name: true, contactName: true, email: true, phone: true },
+  });
   try {
     await prisma.supplier.delete({ where: { id } });
   } catch (err) {
@@ -213,4 +247,21 @@ export async function deleteSupplier(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/suppliers");
+  if (doomed) {
+    const remover = await getCashier();
+    await recordAudit({
+      action: "SUPPLIER_DELETE",
+      userId: remover?.id ?? null,
+      actor: remover?.name ?? null,
+      entity: "Supplier",
+      entityId: doomed.id,
+      summary: `Deleted supplier ${doomed.name}`,
+      before: {
+        name: doomed.name,
+        contactName: doomed.contactName,
+        email: doomed.email,
+        phone: doomed.phone,
+      },
+    });
+  }
 }

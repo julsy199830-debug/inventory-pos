@@ -31,6 +31,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { ActionResult } from "@/lib/types";
 import { roleGuardError, getCashier } from "@/lib/session";
+import { recordAudit } from "@/lib/audit";
 
 /** Staff-only guard shared by every mutating action in this module. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -340,6 +341,16 @@ export async function createPurchaseOrder(
     });
 
     revalidatePath("/purchasing");
+    const actor = await getCashier();
+    await recordAudit({
+      action: "PO_CREATE",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "PurchaseOrder",
+      entityId: result.id,
+      summary: `Created ${result.poNumber}`,
+      after: { poNumber: result.poNumber, status: "DRAFT" },
+    });
     return { ok: true, poNumber: result.poNumber, id: result.id };
   } catch (err: any) {
     if (err?.code === "P2002") {
@@ -490,6 +501,17 @@ export async function updatePurchaseOrder(
 
   revalidatePath("/purchasing");
   revalidatePath(`/purchasing/${id}`);
+  const actor = await getCashier();
+  await recordAudit({
+    action: "PO_UPDATE",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "PurchaseOrder",
+    entityId: id,
+    summary: `Edited ${po.poNumber}`,
+    before: { status: po.status },
+    after: { status: po.status, expectedDate: expectedDate ?? null },
+  });
   return { ok: true, poNumber: po.poNumber };
 }
 
@@ -519,6 +541,17 @@ export async function orderPurchaseOrder(
   });
   revalidatePath("/purchasing");
   revalidatePath(`/purchasing/${id}`);
+  const actor = await getCashier();
+  await recordAudit({
+    action: "PO_ORDER",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "PurchaseOrder",
+    entityId: id,
+    summary: `Marked ${po.poNumber} as ordered`,
+    before: { status: po.status },
+    after: { status: "ORDERED" },
+  });
   return { ok: true, poNumber: po.poNumber, status: "ORDERED" };
 }
 
@@ -542,8 +575,19 @@ export async function cancelPurchaseOrder(
     where: { id },
     data: { status: "CANCELLED" },
   });
-    revalidatePath("/purchasing");
+  revalidatePath("/purchasing");
   revalidatePath(`/purchasing/${id}`);
+  const actor = await getCashier();
+  await recordAudit({
+    action: "PO_CANCEL",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "PurchaseOrder",
+    entityId: id,
+    summary: `Cancelled ${po.poNumber}`,
+    before: { status: po.status },
+    after: { status: "CANCELLED" },
+  });
   return { ok: true, poNumber: po.poNumber, status: "CANCELLED" };
 }
 
@@ -778,6 +822,24 @@ export async function receivePurchaseOrder(
 
     revalidatePath("/purchasing");
     revalidatePath(`/purchasing/${id}`);
+    // Receiving moves real stock, so the actor is the part `StockMovement` and
+    // `PurchaseReceipt` do not capture — either receipt could be posted by a
+    // manager on behalf of a warehouse staff member.
+    const actor = await getCashier();
+    await recordAudit({
+      action: "PO_RECEIVE",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "PurchaseReceipt",
+      summary: `Received stock on ${id.slice(0, 8)} — receipt ${result.referenceNumber}`,
+      before: { status: "ORDERED/PARTIALLY_RECEIVED" },
+      after: {
+        reference: result.referenceNumber,
+        status: result.status,
+        totalReceived: result.totalReceived,
+        totalOrdered: result.totalOrdered,
+      },
+    });
     return { ok: true, ...result };
   } catch (err: any) {
     if (err?.message === "PURCHASE_ORDER_NOT_FOUND") {

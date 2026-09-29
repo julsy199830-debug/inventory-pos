@@ -24,7 +24,8 @@ import {
   type MutationResult,
   type StockMovementType,
 } from "@/lib/types";
-import { roleGuardError } from "@/lib/session";
+import { roleGuardError, getCashier } from "@/lib/session";
+import { recordAudit } from "@/lib/audit";
 
 /** Staff-only guard shared by every mutating action in this module. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -233,6 +234,19 @@ export async function createProduct(
   }
 
   revalidatePath("/inventory");
+  // Audited after commit so a rejected create leaves no trace in the log. The
+  // `StockMovement` row written above already records the opening quantity, so
+  // this entry carries the fields that movement cannot: identity and pricing.
+  const actor = await getCashier();
+  await recordAudit({
+    action: "PRODUCT_CREATE",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "Product",
+    entityId: createdId,
+    summary: `Created product ${sku} — ${name}`,
+    after: { sku, name, price, cost, stock, categoryId },
+  });
   // `id` rides along so the Add dialog can attach a chosen photo to the row it
   // just created, without a second manual step.
   return { ok: true, sku, id: createdId };
@@ -292,15 +306,26 @@ export async function updateProduct(
   if (!Number.isInteger(stock) || stock < 0)
     return { ok: false, error: "Stock level must be a whole number ≥ 0." };
 
+  // Captured inside the transaction for the post-commit audit diff. Only the
+  // fields the edit dialog can change, so the entry stays readable.
+  let prior: Record<string, string | number | null> | null = null;
   try {
     await prisma.$transaction(async (tx) => {
       const before = await tx.product.findUnique({
         where: { id },
-        select: { stock: true },
+        select: { stock: true, name: true, sku: true, price: true, cost: true, categoryId: true },
       });
       // P2025 mirror: the row was deleted after the modal opened — bred as a
       // typed error below rather than a bare null so the catch maps it.
       if (!before) throw new Error("PRODUCT_NOT_FOUND");
+      prior = {
+        name: before.name,
+        sku: before.sku,
+        price: before.price,
+        cost: before.cost,
+        stock: before.stock,
+        categoryId: before.categoryId,
+      };
       await tx.product.update({
         where: { id },
         data: {
@@ -351,6 +376,27 @@ export async function updateProduct(
   }
 
   revalidatePath("/inventory");
+  // A before/after pair so the audit UI can show exactly which fields moved —
+  // a price change and a cosmetic rename are both "PRODUCT_UPDATE", and the
+  // diff is what distinguishes them.
+  const actor = await getCashier();
+  await recordAudit({
+    action: "PRODUCT_UPDATE",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "Product",
+    entityId: id,
+    summary: `Edited product ${sku} — ${name}`,
+    before: prior,
+    after: {
+      name,
+      sku,
+      price: Math.round(price * 100) / 100,
+      cost: Math.round(cost * 100) / 100,
+      stock,
+      categoryId,
+    },
+  });
   return { ok: true, sku };
 }
 
@@ -383,6 +429,13 @@ export async function adjustStock(
     return { ok: false, error: "Stock adjustment must be a whole number." };
   }
 
+  // Sentinel numbers rather than a nullable object: these are assigned inside the
+  // transaction closure, and TypeScript's control-flow analysis narrows a
+  // `let x: T | null` declared in the enclosing scope to `null` at the read
+  // site, producing `never`. A numeric sentinel sidesteps that entirely.
+  // -1 means "no audit payload" (the transaction rejected or never ran).
+  let auditFrom = -1;
+  let auditTo = -1;
   try {
     const stock = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
@@ -392,6 +445,8 @@ export async function adjustStock(
       if (!product) throw new Error("PRODUCT_NOT_FOUND");
       const next = product.stock + safeDelta;
       if (next < 0) throw new Error("UNDERFLOW");
+      auditFrom = product.stock;
+      auditTo = next;
       await tx.product.update({
         where: { id: safeId },
         data: { stock: next },
@@ -410,6 +465,22 @@ export async function adjustStock(
       return next;
     });
     revalidatePath("/inventory");
+    // The StockMovement row records the quantity delta but not WHO made it.
+    // That attribution is the entire reason a write-down exists as an audit
+    // event, so it is recorded here.
+    if (auditTo >= 0) {
+      const actor = await getCashier();
+      await recordAudit({
+        action: "PRODUCT_STOCK_ADJUST",
+        userId: actor?.id ?? null,
+        actor: actor?.name ?? null,
+        entity: "Product",
+        entityId: safeId,
+        summary: `Adjusted stock by ${safeDelta > 0 ? "+" : ""}${safeDelta}`,
+        before: { stock: auditFrom },
+        after: { stock: auditTo, delta: safeDelta },
+      });
+    }
     return { ok: true, stock };
   } catch (err) {
     if (err instanceof Error) {
@@ -443,6 +514,10 @@ export async function setStock(
     return { ok: false, error: "Stock level must be a whole number ≥ 0." };
   }
 
+  // Declared outside the `try` so the post-commit audit write can read them; see
+  // the identical sentinels in `adjustStock` for why these are numbers.
+  let auditFrom = -1;
+  let auditTo = -1;
   try {
     await prisma.$transaction(async (tx) => {
       const before = await tx.product.findUnique({
@@ -450,6 +525,8 @@ export async function setStock(
         select: { stock: true },
       });
       if (!before) throw new Error("PRODUCT_NOT_FOUND");
+      auditFrom = before.stock;
+      auditTo = stock;
       await tx.product.update({
         where: { id: safeId },
         data: { stock },
@@ -482,6 +559,19 @@ export async function setStock(
   }
 
   revalidatePath("/inventory");
+  if (auditTo >= 0) {
+    const actor = await getCashier();
+    await recordAudit({
+      action: "PRODUCT_STOCK_SET",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "Product",
+      entityId: safeId,
+      summary: `Set stock to ${stock}`,
+      before: { stock: auditFrom },
+      after: { stock: auditTo },
+    });
+  }
   return { ok: true, stock };
 }
 
@@ -603,6 +693,24 @@ export async function applyStockCount(
 
     revalidatePath("/inventory");
     revalidatePath("/");
+    // A stock count is the highest-leverage inventory event there is — it can
+    // move every product's quantity at once — so the actor and the headline
+    // numbers are recorded even though the per-line detail is already in
+    // StockMovement.
+    const actor = await getCashier();
+    await recordAudit({
+      action: "PRODUCT_STOCK_COUNT",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "StockCount",
+      summary: `Physical count: ${totals.applied} corrected, ${totals.matched} matched, net ${totals.netChange > 0 ? "+" : ""}${totals.netChange}`,
+      after: {
+        corrected: totals.applied,
+        matched: totals.matched,
+        netChange: totals.netChange,
+        reason,
+      },
+    });
     return { ok: true, data: totals };
   } catch (err) {
     if (prismaCode(err) === "P2025") {
@@ -705,6 +813,13 @@ export async function deleteProduct(formData: FormData): Promise<DeleteProductRe
     return { ok: false, error: "Nothing to delete." };
   }
 
+  // Snapshot the row BEFORE deleting it: a delete destroys the only remaining
+  // record of what the product was, so without this the audit log could say
+  // "a product was deleted" and nothing more.
+  const doomed = await prisma.product.findUnique({
+    where: { id },
+    select: { id: true, sku: true, name: true, price: true, stock: true },
+  });
   try {
     await prisma.product.delete({ where: { id } });
   } catch (err) {
@@ -727,6 +842,20 @@ export async function deleteProduct(formData: FormData): Promise<DeleteProductRe
   }
 
   revalidatePath("/inventory");
+  if (doomed) {
+    const actor = await getCashier();
+    await recordAudit({
+      action: "PRODUCT_DELETE",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "Product",
+      entityId: doomed.id,
+      summary: `Deleted product ${doomed.sku} — ${doomed.name}`,
+      // Everything goes in `before`, because after the delete there is no
+      // "after" to speak of.
+      before: { sku: doomed.sku, name: doomed.name, price: doomed.price, stock: doomed.stock },
+    });
+  }
   return { ok: true };
 }
 

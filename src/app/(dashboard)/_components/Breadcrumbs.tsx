@@ -14,6 +14,7 @@ const labelByPath: Record<string, string> = {
   "/purchasing": "Purchasing",
   "/employees": "Employees",
   "/accounting": "Accounting",
+  "/audit-log": "Audit log",
   "/settings": "Settings",
 };
 

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
 import { PIN_PATTERN, hashPin } from "@/lib/pin";
 import { getCashier, roleGuardError } from "@/lib/session";
+import { recordAudit } from "@/lib/audit";
 
 /** Employee management is restricted to ADMIN and MANAGER at the action layer. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -203,6 +204,15 @@ export async function createEmployee(
   }
 
   revalidatePath("/employees");
+  const creator = await getCashier();
+  await recordAudit({
+    action: "EMPLOYEE_CREATE",
+    userId: creator?.id ?? null,
+    actor: creator?.name ?? null,
+    entity: "User",
+    summary: `Added employee ${name}`,
+    after: { name, email, role },
+  });
   return { ok: true, name };
 }
 
@@ -272,6 +282,13 @@ export async function updateEmployee(
   // the try below so a hashing throw resolves to { ok:false } — same defensive
   // reason as in `createEmployee` — rather than rejecting the action.
   const data: Record<string, unknown> = { name, email, role };
+  // Read the current identity before the update. Deliberately WITHOUT pinHash /
+  // passwordHash: a credential's hash is never copied into the audit log, and
+  // the entry below reports *that* a credential changed, never its value.
+  const prior = await prisma.user.findUnique({
+    where: { id },
+    select: { name: true, email: true, role: true, active: true },
+  });
 
   try {
     // PIN change: the new credential is hashed into `pinHash` (the account's
@@ -301,6 +318,26 @@ export async function updateEmployee(
   }
 
   revalidatePath("/employees");
+  const editor = await getCashier();
+  await recordAudit({
+    action: "EMPLOYEE_UPDATE",
+    userId: editor?.id ?? null,
+    actor: editor?.name ?? null,
+    entity: "User",
+    entityId: id,
+    summary: `Edited employee ${name}`,
+    before: prior
+      ? { name: prior.name, email: prior.email, role: prior.role }
+      : null,
+    after: {
+      name,
+      email,
+      role,
+      // Only the FACT that a credential was set/changed, never the value.
+      pinChanged: pin !== undefined,
+      passwordChanged: password !== undefined,
+    },
+  });
   return { ok: true };
 }
 
@@ -341,6 +378,12 @@ export async function toggleEmployeeStatus(formData: FormData): Promise<ActionRe
     if (lastAdminError) return { ok: false, error: lastAdminError };
   }
 
+  // Captured before the flip so the entry records both directions — re-enabling
+  // an account is as security-relevant as disabling one.
+  const prior = await prisma.user.findUnique({
+    where: { id },
+    select: { name: true, active: true, role: true },
+  });
   try {
     await prisma.user.update({ where: { id }, data: { active } });
   } catch (err) {
@@ -358,6 +401,17 @@ export async function toggleEmployeeStatus(formData: FormData): Promise<ActionRe
   }
 
   revalidatePath("/employees");
+  const changer = await getCashier();
+  await recordAudit({
+    action: "EMPLOYEE_STATUS_CHANGE",
+    userId: changer?.id ?? null,
+    actor: changer?.name ?? null,
+    entity: "User",
+    entityId: id,
+    summary: `${active ? "Reactivated" : "Deactivated"} ${prior?.name ?? "employee"}`,
+    before: { active: prior?.active ?? null, role: prior?.role ?? null },
+    after: { active },
+  });
   return { ok: true };
 }
 
@@ -391,6 +445,13 @@ export async function assignRole(formData: FormData): Promise<ActionResult<void>
   const lastAdminError = await checkLastAdminProtection(id, role);
   if (lastAdminError) return { ok: false, error: lastAdminError };
 
+  // Read the current role BEFORE the update overwrites it — a privilege change
+  // that records only the new role cannot answer "what did this person used to
+  // be able to do?".
+  const prior = await prisma.user.findUnique({
+    where: { id },
+    select: { name: true, role: true, active: true },
+  });
   try {
     await prisma.user.update({ where: { id }, data: { role } });
   } catch (err) {
@@ -408,6 +469,20 @@ export async function assignRole(formData: FormData): Promise<ActionResult<void>
   }
 
   revalidatePath("/employees");
+  // Privilege escalation is the single most important thing to be able to
+  // reconstruct after the fact, so role changes get a dedicated action token
+  // rather than being folded into a generic EMPLOYEE_UPDATE.
+  const changer = await getCashier();
+  await recordAudit({
+    action: "EMPLOYEE_ROLE_CHANGE",
+    userId: changer?.id ?? null,
+    actor: changer?.name ?? null,
+    entity: "User",
+    entityId: id,
+    summary: `Changed role for ${prior?.name ?? "employee"}: ${prior?.role ?? "?"} → ${role}`,
+    before: { role: prior?.role ?? null },
+    after: { role },
+  });
   return { ok: true };
 }
 
@@ -444,6 +519,14 @@ export async function deleteEmployee(formData: FormData): Promise<void> {
   const lastAdminError = await checkLastAdminProtection(id, undefined, true);
   if (lastAdminError) return;
 
+  // Snapshot before deletion. `User` is the most consequential row in the
+  // schema (it owns sales, refunds, shifts, POs) — recording the deleted
+  // identity is what lets the audit log still make sense afterwards, since the
+  // actor column is written with a plain string precisely for this case.
+  const doomed = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, name: true, email: true, role: true, active: true },
+  });
   try {
     await prisma.user.delete({ where: { id } });
   } catch (err) {
@@ -461,6 +544,18 @@ export async function deleteEmployee(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/employees");
+  if (doomed) {
+    const remover = await getCashier();
+    await recordAudit({
+      action: "EMPLOYEE_DELETE",
+      userId: remover?.id ?? null,
+      actor: remover?.name ?? null,
+      entity: "User",
+      entityId: doomed.id,
+      summary: `Deleted employee ${doomed.name} (${doomed.role})`,
+      before: { name: doomed.name, email: doomed.email, role: doomed.role, active: doomed.active },
+    });
+  }
 }
 
 // ── Shift tracking ──────────────────────────────────────────────────────────
@@ -497,6 +592,22 @@ export async function clockIn(formData: FormData): Promise<ShiftResult> {
 
     const shift = await prisma.shift.create({ data: { userId } });
     revalidatePath("/employees");
+    // `Shift` records the attendance itself, but not who *pressed* the button
+    // (an admin can clock in a colleague). The audit entry captures the actor.
+    const stamper = await getCashier();
+    const subject = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    await recordAudit({
+      action: "EMPLOYEE_SHIFT_IN",
+      userId: stamper?.id ?? null,
+      actor: stamper?.name ?? null,
+      entity: "User",
+      entityId: userId,
+      summary: `Clocked in ${subject?.name ?? "employee"}`,
+      after: { shiftId: shift.id, at: shift.start },
+    });
     return { ok: true, shiftId: shift.id };
   } catch (err) {
     // P2025 (user not found) and anything else is surfaced as a generic message
@@ -540,6 +651,32 @@ export async function clockOut(formData: FormData): Promise<ShiftResult> {
 
     const shiftId = await closeShift(open.id, open.start);
     revalidatePath("/employees");
+    const stamper = await getCashier();
+    const subject = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    const closed = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { end: true, totalSales: true, salesCount: true },
+    });
+    await recordAudit({
+      action: "EMPLOYEE_SHIFT_OUT",
+      userId: stamper?.id ?? null,
+      actor: stamper?.name ?? null,
+      entity: "User",
+      entityId: userId,
+      summary: `Clocked out ${subject?.name ?? "employee"}`,
+      before: { startedAt: open.start },
+      // `end`/`totalSales` are snapshotted by closeShift, so reading the row
+      // back is the only way to report the real close time and takings.
+      after: {
+        shiftId,
+        endedAt: closed?.end ?? null,
+        salesTotal: closed?.totalSales ?? null,
+        salesCount: closed?.salesCount ?? null,
+      },
+    });
     return { ok: true, shiftId };
   } catch (err) {
     if (

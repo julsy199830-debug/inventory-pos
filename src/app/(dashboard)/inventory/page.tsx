@@ -16,6 +16,7 @@ import StockControls from "./StockControls";
 import StockCountDialog from "./StockCountDialog";
 import StockHistoryDialog from "./StockHistoryDialog";
 import ExportCsvButton from "./ExportCsvButton";
+import ProductImportDialog from "./ProductImportDialog";
 import ProductThumb from "@/app/_components/ui/ProductThumb";
 
 /** Sorting direction, ascending or descending. */
@@ -264,6 +265,11 @@ export default async function InventoryPage({
             threshold: p.threshold,
           }))}
         />
+
+        {/* Phase 1e: the round-trippable bulk import. Sits beside the export
+            above it deliberately — export the catalog, edit in a spreadsheet,
+            re-import. */}
+        <ProductImportDialog />
 
         {/* Manage categories link — the `/inventory/categories` page governs
             the set of categories (rename, threshold, delete) that this form

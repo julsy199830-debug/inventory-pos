@@ -141,6 +141,158 @@ export async function getDailySummary(
   };
 }
 
+// ── Sales export (Phase 1e) ───────────────────────────────────────────────
+
+/** The filter set the sales export honours. Mirrors the report page's filters. */
+export type SalesExportFilters = {
+  /** Inclusive local day `YYYY-MM-DD`, or empty for unbounded. */
+  from: string;
+  to: string;
+  /** Payment method token, or empty for all. */
+  paymentMethod: string;
+  /** Cashier user id, or empty for all. */
+  cashierId: string;
+  /** Free text over customer name / sale id. */
+  query: string;
+};
+
+/** One exported sale. Item detail is flattened into a single readable cell. */
+export type SalesExportRow = {
+  id: string;
+  createdAt: string;
+  cashierName: string | null;
+  customerName: string | null;
+  /** "2x Widget (P129.99), 1x Cable" — one cell, semicolon-joined for CSV safety. */
+  items: string;
+  itemCount: number;
+  subtotal: number;
+  discountAmount: number;
+  tax: number;
+  /** Points spent at checkout, and the peso value they were worth. */
+  redeemedPoints: number;
+  redemptionAmount: number;
+  /** Running refunded total, and the net the customer actually kept. */
+  refundedAmount: number;
+  totalAmount: number;
+  paymentMethod: string;
+  status: string;
+};
+
+/** Hard cap on one export, so a year-wide pull can't exhaust memory. */
+const EXPORT_ROW_CAP = 5000;
+
+/**
+ * Fetch sales rows for export, newest first, honouring the report filters.
+ *
+ * Deliberately does NOT restrict to `status: "Completed"`: an export is an
+ * accounting artifact, and a Z-Report that silently omitted voided sales would
+ * not reconcile against the drawer. Voided rows are exported with their status
+ * so the reader can see them, and the `Refund`/`Status` columns carry the rest.
+ *
+ * Capped at {@link EXPORT_ROW_CAP}; past that the result is truncated and
+ * `truncated` is set so the UI can say so rather than presenting a partial file
+ * as if it were complete.
+ */
+export async function getSalesExportRows(
+  filters: SalesExportFilters,
+): Promise<
+  MutationResult<{ rows: SalesExportRow[]; truncated: boolean; total: number }>
+> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
+  const where: Record<string, unknown> = {};
+  const from = filters.from ? dayRange(filters.from) : null;
+  const to = filters.to ? dayRange(filters.to) : null;
+  if (from?.gte || to?.lte) {
+    where.createdAt = {
+      ...(from?.gte ? { gte: from.gte } : {}),
+      ...(to?.lte ? { lte: to.lte } : {}),
+    };
+  }
+  if (filters.paymentMethod) where.paymentMethod = filters.paymentMethod;
+  if (filters.cashierId) where.cashierId = filters.cashierId;
+  const query = (filters.query ?? "").trim();
+  if (query) {
+    where.OR = [
+      { id: { contains: query } },
+      { customer: { name: { contains: query } } },
+    ];
+  }
+
+  try {
+    const [sales, total] = await Promise.all([
+      prisma.sale.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: EXPORT_ROW_CAP,
+        include: {
+          // The export is a human-facing document, so it carries NAMES, not ids
+          // — an accountant reading the file should never have to look up a
+          // uuid.
+          cashier: { select: { name: true } },
+          customer: { select: { name: true } },
+          items: {
+            select: {
+              quantity: true,
+              priceAtSale: true,
+              product: { select: { name: true } },
+            },
+          },
+        },
+      }),
+      prisma.sale.count({ where }),
+    ]);
+
+    return {
+      ok: true,
+      data: {
+        rows: sales.map((sale) => ({
+          id: sale.id,
+          createdAt: sale.createdAt.toISOString(),
+          cashierName: sale.cashier?.name ?? null,
+          customerName: sale.customer?.name ?? null,
+          // Semicolon-separated (not comma) so the cell survives CSV without
+          // quoting, and still reads cleanly in a spreadsheet.
+          items: sale.items
+            .map(
+              (i) => `${i.quantity}x ${i.product?.name ?? "Unknown"} (${round2(i.priceAtSale)})`,
+            )
+            .join("; "),
+          itemCount: sale.items.reduce((s, i) => s + i.quantity, 0),
+          subtotal: sale.subtotal,
+          discountAmount: sale.discountAmount,
+          tax: sale.tax,
+          redeemedPoints: sale.redeemedPoints,
+          redemptionAmount: sale.redemptionAmount,
+          refundedAmount: sale.refundedAmount,
+          totalAmount: sale.totalAmount,
+          paymentMethod: sale.paymentMethod,
+          status: sale.status,
+        })),
+        truncated: total > sales.length,
+        total,
+      },
+    };
+  } catch {
+    return { ok: false, error: "Could not build the sales export. Please try again." };
+  }
+}
+
+/** The distinct cashiers with sales, for the export's cashier filter. */
+export async function getSalesExportCashiers(): Promise<
+  MutationResult<{ id: string; name: string }[]>
+> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+  const rows = await prisma.user.findMany({
+    where: { sales: { some: {} } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  return { ok: true, data: rows };
+}
+
 /** One row of the top-selling products ranking. */
 export type TopProduct = {
   productId: string;

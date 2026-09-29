@@ -32,6 +32,7 @@ model User {
   customerPayments       CustomerPayment[]
   sales                  Sale[]
   saleRefunds            SaleRefund[]
+  auditLogs              AuditLog[]
   shifts                 Shift[]
   purchaseOrders         PurchaseOrder[]
   receivedPurchaseOrders PurchaseReceipt[]
@@ -241,9 +242,73 @@ model Sale {
 /// The line-level detail of each refund is recoverable from
 /// `SaleItem.refundedQuantity`, which is also what makes over-refunding
 /// impossible: a second refund of the same units has nothing left to take.
+/// An append-only administrative audit trail (Phase 1e).
+///
+/// Scope: the events that are NOT already recoverable from a domain table.
+/// Stock movements cover inventory deltas, `Sale`/`SaleRefund` cover money, and
+/// `Shift` covers clock-ins — this model records *who decided what*, for the
+/// changes whose whole point is that the previous value is lost otherwise
+/// (a price edit, a role change, a product delete) plus the authentication events
+/// that have no table at all.
+///
+/// Design choices:
+///   - APPEND-ONLY. No update/delete path exists in the app, and none should be
+///     added without a deliberate decision; an audit trail you can edit is not
+///     one.
+///   - `userId` is nullable with `onDelete: SetNull`, matching the
+///     `Sale.cashierId` convention: deleting an employee must not delete the
+///     evidence of what they did. A null `userId` therefore means either "the
+///     system did this" or "the actor was deleted after the fact" — the `actor`
+///     snapshot below disambiguates, because a name captured at write time
+///     survives the user row.
+///   - `before`/`after` are JSON *strings*, not a structured diff type. SQLite
+///     has no JSON column and the app stores snapshots as text everywhere else;
+///     `changedFields()` in `src/lib/audit.ts` turns a pair into a flat
+///     `field: old -> new` summary for display.
+///   - Indexed on each column the audit UI filters by. `@@index([createdAt])` is
+///     the important one: the page is always date-bounded.
+model AuditLog {
+  id     String @id @default(uuid())
+  /// When the action happened (not when the row was written — they can differ by
+  /// milliseconds under batching, and "when" is the question an auditor asks).
+  createdAt DateTime @default(now())
+
+  /// The acting user, or null for system-initiated events. SetNull, not Cascade:
+  /// offboarding an employee must not erase their trail.
+  userId String?
+  /// Denormalized actor name captured at write time. Survives user deletion and
+  /// keeps the log readable without a join on every row.
+  actor  String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Stable machine token for what happened, e.g. "PRODUCT_UPDATE". Drawn from
+  /// `AUDIT_ACTIONS` in `src/lib/audit.ts` so the UI filter list and the write
+  /// sites can never drift apart.
+  action String
+  /// Coarse grouping for the UI filter, e.g. "INVENTORY". From `AUDIT_MODULES`.
+  module String
+  /// The kind of record affected, e.g. "Product". A human label, not a table
+  /// name, because the log outlives schema renames.
+  entity   String?
+  /// Primary key of the affected record, when it still exists. Nullable for
+  /// create events where the id is only known after the insert.
+  entityId String?
+  /// One-line human summary shown in the log's main column.
+  summary String
+  /// JSON snapshots of the changed fields (before/after). Null for events that
+  /// have no field-level detail, e.g. a sign-in.
+  before String?
+  after  String?
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([module])
+  @@index([action])
+}
+
 model SaleRefund {
-  id        String   @id @default(uuid())
-  saleId    String
+  id     String @id @default(uuid())
+  saleId String
   /// Peso amount returned to the customer. Summed into `Sale.refundedAmount`.
   amount    Float
   /// Why the cashier refunded. Required — an unexplained money-out is the thing

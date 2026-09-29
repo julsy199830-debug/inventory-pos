@@ -15,6 +15,7 @@ import {
   PieChart,
   Settings,
   Tags,
+  ScrollText,
   Lock,
   type LucideIcon,
 } from "lucide-react";
@@ -66,6 +67,13 @@ const navItems: NavItem[] = [
     section: "reports",
   },
   // SYSTEM
+  {
+    label: "Audit log",
+    href: "/audit-log",
+    icon: ScrollText,
+    adminOnly: true,
+    section: "system",
+  },
   {
     label: "Settings",
     href: "/settings",

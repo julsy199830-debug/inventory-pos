@@ -1,5 +1,11 @@
 import { getStoreSettings } from "@/app/actions/settings";
-import { getDailySummary, getTopSellingProducts, type TopProduct } from "./actions";
+import {
+  getDailySummary,
+  getSalesExportCashiers,
+  getTopSellingProducts,
+  type TopProduct,
+} from "./actions";
+import SalesExportButton from "./SalesExportButton";
 import PrintReportButton from "./PrintReportButton";
 import ExportCsvButton from "./ExportCsvButton";
 
@@ -73,14 +79,18 @@ export default async function ReportsPage({
   const isoDate = resolveDate(date);
   const dateLabel = formatDateLabel(isoDate);
 
-  const [summaryResult, topResult, settings] = await Promise.all([
+  const [summaryResult, topResult, settings, cashierResult] = await Promise.all([
     getDailySummary(isoDate),
     getTopSellingProducts(10, { date: isoDate }),
     getStoreSettings(),
+    getSalesExportCashiers(),
   ]);
   const symbol = settings?.currencySymbol ?? "₱";
   const summary = summaryResult.ok ? summaryResult.data : null;
   const topProducts = topResult.ok ? topResult.data : [];
+  // An RBAC failure here must not break the report page — the export dialog
+  // simply offers no cashier filter in that case.
+  const exportCashiers = cashierResult.ok ? cashierResult.data : [];
 
   // Both actions validate the same `?date=` input, so they fail together —
   // surface whichever message is meaningful rather than silently dropping one.
@@ -136,6 +146,15 @@ export default async function ReportsPage({
               dateLabel={dateLabel}
               summary={summary}
               topProducts={topProducts}
+            />
+            {/* Phase 1e: the row-level sales ledger export, seeded with the same
+                day the Z-Report is showing. */}
+            <SalesExportButton
+              initialFrom={isoDate}
+              initialTo={isoDate}
+              initialPaymentMethod=""
+              initialCashierId=""
+              cashiers={exportCashiers}
             />
           </div>
         </header>

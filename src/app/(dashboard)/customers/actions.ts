@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
   NoCashierError,
+  getCashier,
   requireCashierSession,
   roleGuardError,
 } from "@/lib/session";
+import { recordAudit } from "@/lib/audit";
 import type { MutationResult } from "@/lib/types";
 
 export type CustomerRow = {
@@ -63,12 +65,14 @@ export type CustomerStatement = {
 
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
 
-type Actor = { ok: false; error: string } | { ok: true; actor: { id: string } };
+type Actor = { ok: false; error: string } | { ok: true; actor: { id: string; name: string } };
 
 async function requireActor(): Promise<Actor> {
   try {
     const actor = await requireCashierSession();
-    return { ok: true, actor: { id: actor.id } };
+    // `name` rides along so an audit entry written by a caller of this helper
+    // can snapshot the actor's display name, not just their id.
+    return { ok: true, actor: { id: actor.id, name: actor.name } };
   } catch (err) {
     if (err instanceof NoCashierError) {
       return { ok: false, error: "Sign in to continue." };
@@ -147,6 +151,16 @@ export async function createCustomer(
   });
 
   revalidatePath("/customers");
+  const actor = await getCashier();
+  await recordAudit({
+    action: "CUSTOMER_CREATE",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "Customer",
+    entityId: created.id,
+    summary: `Created customer ${name}`,
+    after: { name, phone: data.phone?.trim() || null, creditLimit },
+  });
   return { ok: true as const, data: { id: created.id } };
 }
 
@@ -167,7 +181,10 @@ export async function updateCustomer(
 
   const existing = await prisma.customer.findUnique({
     where: { id },
-    select: { id: true },
+    // Widen the select from `id` only so the audit diff can show what actually
+    // changed — a credit-limit or name edit is otherwise invisible after the
+    // update overwrites the row.
+    select: { id: true, name: true, phone: true, email: true, creditLimit: true, notes: true },
   });
   if (!existing) return { ok: false, error: "Customer not found." };
 
@@ -184,6 +201,23 @@ export async function updateCustomer(
   });
 
   revalidatePath("/customers");
+  const actor = await getCashier();
+  await recordAudit({
+    action: "CUSTOMER_UPDATE",
+    userId: actor?.id ?? null,
+    actor: actor?.name ?? null,
+    entity: "Customer",
+    entityId: id,
+    summary: `Edited customer ${name}`,
+    before: {
+      name: existing.name,
+      phone: existing.phone,
+      email: existing.email,
+      creditLimit: existing.creditLimit,
+      notes: existing.notes,
+    },
+    after: { name, phone: data.phone?.trim() || null, email: data.email?.trim() || null, creditLimit, notes: data.notes?.trim() || null },
+  });
   return { ok: true as const, data: null };
 }
 
@@ -202,6 +236,10 @@ export async function recordCustomerPayment(
     return { ok: false, error: "Payment method is required." };
   }
 
+  // Hoisted out of the transaction so the post-commit audit entry can report the
+  // amount actually applied (which is clamped to the outstanding balance, and so
+  // can legitimately differ from what was requested).
+  let applied = 0;
   try {
     const payment = await prisma.$transaction(async (tx) => {
       const customer = await tx.customer.findUnique({
@@ -211,7 +249,7 @@ export async function recordCustomerPayment(
       if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
       if (customer.currentBalance <= 0) throw new Error("NO_BALANCE");
 
-      const applied = Math.min(amount, customer.currentBalance);
+      applied = Math.min(amount, customer.currentBalance);
 
       await tx.customer.update({
         where: { id: customer.id },
@@ -231,6 +269,23 @@ export async function recordCustomerPayment(
     });
 
     revalidatePath("/customers");
+    // Money in against a customer account. `CustomerPayment` already records the
+    // amount/method/cashier, so this entry's job is the why (the note) plus the
+    // resulting balance — the question an administrator actually asks.
+    await recordAudit({
+      action: "CUSTOMER_PAYMENT",
+      userId: actor.actor.id,
+      actor: actor.actor.name,
+      entity: "Customer",
+      entityId: input.customerId,
+      summary: `Recorded a customer payment`,
+      after: {
+        amount: input.amount,
+        applied,
+        method: paymentMethod,
+        notes: input.notes?.trim() || null,
+      },
+    });
     return { ok: true as const, data: { id: payment.id } };
   } catch (err) {
     if (err instanceof Error) {
