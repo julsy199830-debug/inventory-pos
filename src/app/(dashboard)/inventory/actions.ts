@@ -467,6 +467,136 @@ export async function setStock(
   return { ok: true, stock };
 }
 
+// ── Stock count (physical inventory) ────────────────────────────────────────
+
+/** One counted line in a physical stock take. */
+export type StockCountLine = {
+  productId: string;
+  /** What the staff member physically counted on the shelf. */
+  counted: number;
+};
+
+export type StockCountResult = MutationResult<{
+  /** Lines whose counted quantity differed from the system quantity. */
+  applied: number;
+  /** Lines that already matched — recorded as reconciled, not adjusted. */
+  matched: number;
+  /** Net unit change written to stock (shrinks negative, finds positive). */
+  netChange: number;
+}>;
+
+/**
+ * Apply a physical stock count.
+ *
+ * Retail's real problem isn't "can I set a number" — {@link setStock} already
+ * does that — it's *reconciling what the shelf says against what the system
+ * believes, and explaining the gap*. So this takes the whole count sheet at
+ * once, works out the variance per line, and writes one `ADJUSTMENT` movement
+ * per discrepant line so every peso and every missing unit lands in the existing
+ * stock ledger with a reason a manager can read weeks later.
+ *
+ * No new schema: this reuses the `StockMovement` table, the `ADJUSTMENT` type
+ * already used for manual corrections, and its free-text `reason` column.
+ *
+ * Lines that match the system are deliberately NOT written — a matching line
+ * needs no audit row, and logging thousands of zeroes would bury the real
+ * variances. They are still counted in the result so the UI can say "47 of 62
+ * matched".
+ *
+ * All writes land in one transaction: a failure on line 12 rolls back lines
+ * 1-11, so a count can never half-apply.
+ */
+export async function applyStockCount(
+  formData: FormData,
+): Promise<StockCountResult> {
+  const denied = await staffGuardError();
+  if (denied) return { ok: false, error: denied };
+
+  const reason = load(formData, "countReason") ?? "Physical count";
+
+  // Repeating-field convention, same shape the PO create form uses:
+  //   lineCount, productId_1, counted_1, productId_2, counted_2, …
+  const lineCount = Number(load(formData, "lineCount") ?? 0);
+  if (!Number.isInteger(lineCount) || lineCount <= 0) {
+    return { ok: false, error: "Nothing to apply — the count sheet is empty." };
+  }
+  if (lineCount > 1000) {
+    return { ok: false, error: "Count sheet is too large; apply it in batches." };
+  }
+
+  const lines: StockCountLine[] = [];
+  for (let i = 1; i <= lineCount; i++) {
+    const productId = load(formData, `productId_${i}`);
+    if (!productId) continue;
+    const counted = Number(load(formData, `counted_${i}`));
+    if (!Number.isFinite(counted) || !Number.isInteger(counted) || counted < 0) {
+      return {
+        ok: false,
+        error: "Counted quantities must be whole numbers of 0 or more.",
+      };
+    }
+    lines.push({ productId, counted });
+  }
+  if (lines.length === 0) {
+    return { ok: false, error: "Nothing to apply — the count sheet is empty." };
+  }
+
+  try {
+    const totals = await prisma.$transaction(async (tx) => {
+      const rows = await tx.product.findMany({
+        where: { id: { in: lines.map((l) => l.productId) } },
+        select: { id: true, stock: true },
+      });
+      const systemById = new Map(rows.map((r) => [r.id, r.stock]));
+
+      let applied = 0;
+      let matched = 0;
+      let netChange = 0;
+
+      for (const line of lines) {
+        const system = systemById.get(line.productId);
+        // A product deleted between the sheet being rendered and the count
+        // being submitted: skip it rather than failing the whole count. This is
+        // a reconciliation, not a transaction the user can retry per-line.
+        if (system === undefined) continue;
+
+        const delta = line.counted - system;
+        if (delta === 0) {
+          matched += 1;
+          continue;
+        }
+        await tx.product.update({
+          where: { id: line.productId },
+          data: { stock: line.counted },
+        });
+        await tx.stockMovement.create({
+          data: {
+            productId: line.productId,
+            quantityChange: delta,
+            type: "ADJUSTMENT",
+            reason: `Stock count: ${reason}`,
+          },
+        });
+        applied += 1;
+        netChange += delta;
+      }
+      return { applied, matched, netChange };
+    });
+
+    revalidatePath("/inventory");
+    revalidatePath("/");
+    return { ok: true, data: totals };
+  } catch (err) {
+    if (prismaCode(err) === "P2025") {
+      return {
+        ok: false,
+        error: "A product in this count no longer exists. Refresh and recount.",
+      };
+    }
+    return { ok: false, error: "Could not apply the stock count. Please try again." };
+  }
+}
+
 // ── Stock history read ───────────────────────────────────────────────────────
 
 /**

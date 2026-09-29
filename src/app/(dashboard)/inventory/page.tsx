@@ -13,6 +13,7 @@ import DeleteProductButton from "./DeleteProductButton";
 import EditProductDialog from "./EditProductDialog";
 import LowStockBanner from "./LowStockBanner";
 import StockControls from "./StockControls";
+import StockCountDialog from "./StockCountDialog";
 import StockHistoryDialog from "./StockHistoryDialog";
 import ExportCsvButton from "./ExportCsvButton";
 import ProductThumb from "@/app/_components/ui/ProductThumb";
@@ -234,6 +235,20 @@ export default async function InventoryPage({
             via Prisma and revalidates this page so the new row streams in.
             `categories` populates the managed-category <select> inside. */}
         <AddProductDialog categories={categoryOptions} />
+
+        {/* Physical stock count. Prefers the *unfiltered* catalog so a full
+            count sheet is never silently short because a search box or category
+            chip happened to be active — a count is a whole-store task, and a
+            partial sheet that looks complete is worse than no sheet. */}
+        <StockCountDialog
+          products={rows.map((p) => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            imageUrl: p.imageUrl,
+            stock: p.stock,
+          }))}
+        />
 
         {/* Export CSV — serializes the rows currently rendered (respecting
             the active search/category filters) for spreadsheets. Client
