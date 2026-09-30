@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateSupplier, type UpdateSupplierResult } from "./actions";
+import { Modal } from "@/app/_components/ui/Modal";
 
 /**
  * Modal dialog for editing an existing supplier.
@@ -102,44 +103,8 @@ export default function EditSupplierDialog({
         </svg>
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px] p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
-        >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-300 px-5 py-4">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900">
-                Edit Supplier
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={pending}
-                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={onSubmit} className="space-y-4 px-5 py-5">
+      <Modal open={open} onClose={onClose} title="Edit Supplier" busy={pending} className="max-w-lg">
+        <form onSubmit={onSubmit} className="space-y-4">
               {/* Hidden ID — travels in the same payload as the fields so the
                   server action knows which row to update. */}
               <input type="hidden" name="id" value={supplier.id} />
@@ -233,10 +198,8 @@ export default function EditSupplierDialog({
                   {pending ? "Saving…" : "Save changes"}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updateEmployee } from './actions'
+import { Modal } from '@/app/_components/ui/Modal'
 
 type Employee = {
   id: string
@@ -61,11 +62,15 @@ export default function EditEmployeeDialog({
         Edit
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px]">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">Edit Employee</h2>
-            <form onSubmit={onSubmit} className="space-y-4">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Edit Employee"
+        description="Blank PIN or password keeps the current value."
+        busy={pending}
+        className="max-w-md"
+      >
+        <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   Name
@@ -133,7 +138,14 @@ export default function EditEmployeeDialog({
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"
+                >
+                  {error}
+                </p>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -153,9 +165,7 @@ export default function EditEmployeeDialog({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </>
   )
 }

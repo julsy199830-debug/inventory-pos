@@ -151,7 +151,7 @@ export default function RegisterStatusBar({
 
   return (
     <div
-      className="border-b border-slate-200 bg-slate-50 px-5 py-2.5"
+      className="border-b border-slate-200 bg-slate-50 px-4 py-2"
       // `data-register-loaded` flips only once the status request has resolved,
       // so a caller can wait for the strip to be genuinely ready rather than for
       // the shell that paints before hydration and before the fetch lands.

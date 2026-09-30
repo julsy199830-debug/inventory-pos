@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getStockMovements, type StockMovementView } from "./actions";
 import type { StockMovementType } from "@/lib/types";
+import { Modal } from "@/app/_components/ui/Modal";
 
 /**
  * Modal for viewing one product's stock-movement audit trail.
@@ -89,49 +90,14 @@ export default function StockHistoryDialog({
         </svg>
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px] p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
-        >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-xl">
-            <div className="flex items-start justify-between border-b border-slate-300 px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight text-slate-900">
-                  Stock History
-                </h2>
-                <p className="mt-0.5 max-w-sm truncate text-sm text-slate-500">
-                  {productName}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="max-h-[65vh] overflow-y-auto px-5 py-5">
+      <Modal
+        open={open}
+        onClose={onClose}
+        title="Stock History"
+        description={productName}
+        busy={loading}
+        className="max-w-lg"
+      >
               {loading ? (
                 <LoadingSkeleton />
               ) : error ? (
@@ -152,10 +118,7 @@ export default function StockHistoryDialog({
                   ))}
                 </ul>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </>
   );
 }

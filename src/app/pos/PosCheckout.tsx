@@ -728,11 +728,9 @@ export default function PosCheckout({
           the code here (the global hook ignores focused fields); pressing
           Enter resolves it and clears the box for the next scan. The box
           keeps focus by default so repeated scans just work. */}
-      <div className="border-b border-slate-200 px-5 py-3">
-        <label
-          htmlFor="scan-input"
-          className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
+      <div className="border-b border-slate-200 px-4 py-2" data-testid="pos-scan">
+        {/* The caption is `sr-only`, not deleted — the placeholder on the box            below repeats it word for word. */}
+        <label htmlFor="scan-input" className="sr-only">
           Scan barcode / SKU
         </label>
         <div className="relative">
@@ -756,7 +754,7 @@ export default function PosCheckout({
             autoComplete="off"
             autoFocus
             placeholder="Scan or type a SKU, then Enter"
-            className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className="h-9 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
       </div>
@@ -785,19 +783,20 @@ export default function PosCheckout({
           attached, so the whole block is hidden for a walk-in rather than shown
           disabled — an inert control on a busy counter is just noise. */}
       {selectedCustomerForPoints && maxRedeemable > 0 && (
-        <div className="border-b border-slate-200 bg-indigo-50/40 px-5 py-3">
-          <div className="flex items-baseline justify-between">
-            <label
-              htmlFor="redeem-points"
-              className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Redeem Points
-            </label>
-            <span className="text-xs font-medium text-slate-600">
-              {availablePoints.toLocaleString()} pts available
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-center gap-2">
+        <div
+          className="border-b border-slate-200 bg-indigo-50/40 px-4 py-2"
+          data-testid="pos-redemption"
+        >
+          {/* Label, controls and balance share ONE row instead of being
+              stacked in three. Nothing is dropped — the balance moves to the
+              right of the row, and the caption below still carries the rate,
+              the ceiling and what a redemption earns. The pixels saved go back
+              to the cart and to keeping the payment controls above the fold on
+              a short till screen. */}
+          <label htmlFor="redeem-points" className="sr-only">
+            Points to redeem
+          </label>
+          <div className="flex items-center gap-1.5">
             <input
               id="redeem-points"
               type="number"
@@ -819,13 +818,13 @@ export default function PosCheckout({
                 // into the total; the clamp below keeps it inside the balance.
                 if (Number.isFinite(n) && n >= 0) setRedeemPoints(Math.floor(n))
               }}
-              className="h-10 w-24 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-100"
+              className="h-9 w-16 rounded-xl border border-slate-300 bg-white px-2 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
             <button
               type="button"
               onClick={() => setRedeemPoints(maxRedeemable)}
               disabled={pending || maxRedeemable === 0}
-              className="h-10 rounded-xl border border-indigo-200 bg-white px-3 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-9 shrink-0 rounded-xl border border-indigo-200 bg-white px-2.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Redeem max
             </button>
@@ -834,13 +833,16 @@ export default function PosCheckout({
                 type="button"
                 onClick={() => setRedeemPoints(0)}
                 disabled={pending}
-                className="text-xs font-medium text-slate-500 underline underline-offset-2 transition hover:text-slate-700 disabled:opacity-50"
+                className="shrink-0 text-xs font-medium text-slate-500 underline underline-offset-2 transition hover:text-slate-700 disabled:opacity-50"
               >
                 Clear
               </button>
             )}
+            <span className="ml-auto shrink-0 text-xs font-medium tabular-nums text-slate-600">
+              {availablePoints.toLocaleString()} pts available
+            </span>
           </div>
-          <p className="mt-1.5 text-xs text-slate-500" data-testid="redemption-summary">
+          <p className="mt-1 text-xs text-slate-500" data-testid="redemption-summary">
             {redeemPointsApplied > 0
               ? `Using ${redeemPointsApplied.toLocaleString()} pts = ${money(redemptionValue)} off · will earn ${willEarnPoints} pts`
               : `1 pt = ${store.currencySymbol}0.01 · up to ${maxRedeemable.toLocaleString()} pts on this cart`}
@@ -848,12 +850,12 @@ export default function PosCheckout({
         </div>
       )}
 
-      {/* Payment method — segmented control, touch-friendly. */}
-      <div className="border-b border-slate-200 px-5 py-3">
+      {/* Payment method — segmented control, touch-friendly. Stays in the            scrolling body: it configures the order rather than taking money, and            the pinned footer's own height is what squeezes this stack. */}
+      <div className="border-b border-slate-200 px-4 py-2" data-testid="pos-payment">
         <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Payment Method
         </span>
-        <div className="mt-1.5 grid grid-cols-3 gap-2">
+        <div className="mt-1 grid grid-cols-3 gap-2">
           {(
             [
               { value: 'CASH', label: 'Cash', icon: Banknote },
@@ -869,7 +871,7 @@ export default function PosCheckout({
                 onClick={() => setPaymentMethod(value)}
                 aria-pressed={active}
                 className={[
-                  'inline-flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-semibold transition active:scale-[0.98]',
+                  'inline-flex items-center justify-center gap-1.5 rounded-xl border px-2 py-1.5 text-xs font-semibold transition active:scale-[0.98]',
                   active
                     ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
                     : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:bg-slate-50 hover:text-indigo-700',
@@ -897,17 +899,10 @@ export default function PosCheckout({
       </div>
 
 
-      {/* Cart lines. A floor rather than `min-h-0`: when the control stack
-          above is taller than the panel (a short window), the controls cannot
-          shrink, so this box would be squeezed to zero height and the cart —
-          the one thing a cashier must always see — would vanish into the
-          scroller. 140px keeps ~2 rows usable and the wrapper above scrolls to
-          reach the controls.
+      {/* Cart lines. A floor rather than `min-h-0`: when the control stack above is taller than the panel (a short window) the controls cannot shrink, so this box would be squeezed to zero height and the cart — the one thing a cashier must always see — would vanish into the scroller. 120px is one full line plus a peek at the next.
 
-          140 rather than any larger figure: at 1920x1080 the wrapper gets 617px
-          for 444px of controls, so `flex-1` already hands the cart 173px. A
-          floor above 173 would start a scrollbar there for no reason. */}
-      <div className="min-h-[140px] flex-1 overflow-y-auto px-4 py-3">
+          Why not more: the floor only ever binds on a short screen. On a tall one `flex-1` already hands the cart everything the controls leave over. At 1280x720 with a loyalty customer attached — the tightest case the register actually ships — those 20px are what decide whether the whole order still fits above the fold. */}
+      <div className="min-h-[120px] flex-1 overflow-y-auto px-4 py-3" data-testid="cart-lines">
         {cart.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
@@ -1067,7 +1062,7 @@ export default function PosCheckout({
 
   // Totals + payment footer — shared by the desktop sidebar and mobile drawer.
   const cartFooter = (
-    <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+    <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5" data-testid="pos-footer">
       {/* Phase 3: stock problems are surfaced here, at the point of payment,
           rather than as a server rejection after the whole order is keyed.
           Named lines, not a count, because "something is wrong" is not
@@ -1090,7 +1085,7 @@ export default function PosCheckout({
       )}
       {/* Order-wide discount: toggle + inline %/₱ editor, applied after the
           per-line discounts and re-validated server-side at checkout. */}
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() =>
@@ -1145,7 +1140,7 @@ export default function PosCheckout({
           </span>
         )}
       </div>
-      <dl className="space-y-1.5 text-sm">
+      <dl className="space-y-1 text-[13px]">
         <div className="flex justify-between text-slate-600">
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{money(subtotal)}</dd>
@@ -1167,33 +1162,25 @@ export default function PosCheckout({
           </div>
         )}
       </dl>
-      <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5">
+      <div className="mt-2 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2">
         <span className="text-sm font-semibold text-indigo-700">Grand Total</span>
-        <span className="text-2xl font-bold tabular-nums text-indigo-800">
+        <span className="text-xl font-bold tabular-nums text-indigo-800">
           {money(total)}
         </span>
       </div>
       <button
         type="button"
+        data-testid="checkout-button"
         disabled={cart.length === 0 || pending || creditBlocked}
         onClick={onCheckout}
-        className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-4 text-base font-bold text-white shadow-sm shadow-indigo-600/25 transition-all duration-150 hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+        className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 text-[15px] font-bold text-white shadow-sm shadow-indigo-600/25 transition-all duration-150 hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
       >
         {pending ? 'Processing…' : 'Process Payment'}
       </button>
-      {cart.length > 0 && !pending && (
-        <button
-          type="button"
-          onClick={clearOrder}
-          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
-        >
-          Clear order
-        </button>
-      )}
       {/* Phase 3: shortcuts are invisible until you know them. One quiet line
           under the register makes the function keys discoverable without
           putting a help dialog in the middle of a sale. */}
-      <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-2 text-center text-[11px] leading-relaxed text-slate-400">
         <Key>F1</Key> cash · <Key>F2</Key> card · <Key>F3</Key> credit ·{' '}
         <Key>F4</Key> customer · <Key>F9</Key> pay
       </p>
@@ -1203,28 +1190,29 @@ export default function PosCheckout({
   // Desktop: sticky right-hand cart sidebar (hidden below `md`).
   const cartPanel = (
     <aside className="hidden w-[360px] shrink-0 flex-col border-l border-slate-200 bg-white md:flex lg:w-[400px]">
-      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2">
         <h2 className="text-base font-bold text-slate-900">Current Order</h2>
-        {cart.length > 0 && (
-          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
-            {cart.reduce((n, l) => n + l.qty, 0)} items
-          </span>
-        )}
+        {/* Clearing the order lives in the header rather than under the            checkout button: it is an occasional, non-destructive-to-money action,            and the 48px it used to take was vertical space the payment controls            needed on a short screen. */}
+        <div className="flex shrink-0 items-center gap-2">
+          {cart.length > 0 && (
+            <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
+              {cart.reduce((n, l) => n + l.qty, 0)} items
+            </span>
+          )}
+          {cart.length > 0 && !pending && (
+            <button
+              type="button"
+              onClick={clearOrder}
+              className="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            >
+              Clear order
+            </button>
+          )}
+        </div>
       </div>
-      {/* Phase 4 fix: the control stack above the cart (status bar, scan, the
-          searchable picker, redemption and payment) is ~444px tall on its own,
-          while the totals footer below is ~337px. On a 720px-tall window that
-          left the wrapper 257px for 444px of controls, so everything below the
-          customer picker spilled out of the wrapper and sat *underneath* the
-          opaque footer — the redemption and payment controls were literally
-          unclickable (Playwright's hit test and a real mouse both resolved to
-          the footer).
+      {/* `overflow-y-auto` keeps the footer pinned as the panel's only scroller for the body, so nothing can ever end up behind it — this is the fix for the Phase 4 bug where the redemption and payment controls sat underneath the opaque footer and were unclickable.
 
-          `overflow-y-auto` here keeps the footer pinned as the panel's only
-          scroller for the body, so nothing can ever end up behind it. The cart
-          lines keep their own inner scroller, and on a tall window (where the
-          controls fit) this wrapper never scrolls at all, so behaviour is
-          unchanged from before. */}
+          The stack above the cart (status, scan, picker, redemption, payment) is now ~222px for a walk-in and ~295px with a loyalty customer attached, against a ~228px totals footer. At 1280x720 that leaves the wrapper ~396px, so a walk-in order fits with no scrolling at all and the loyalty case has a ~20px nudge; every control is inside the wrapper either way, and the cart lines keep their own inner scroller below. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{cartBody}</div>
       {cartFooter}
     </aside>
@@ -1234,7 +1222,8 @@ export default function PosCheckout({
   return (
     <div className="flex h-screen w-full flex-col bg-slate-100">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-4">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm sm:px-6 sm:py-2.5">
+        <h1 className="sr-only">Point of Sale</h1>
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Image
             src="/Logo final.png"
@@ -1242,7 +1231,7 @@ export default function PosCheckout({
             width={120}
             height={120}
             priority
-            className="h-10 w-auto object-contain"
+            className="h-8 w-auto object-contain"
           />
           {cashier.role === 'ADMIN' || cashier.role === 'MANAGER' ? (
             <>
@@ -1274,7 +1263,7 @@ export default function PosCheckout({
             // register title + operator badge instead of a dead link.
             <div className="flex min-w-0 items-center gap-3">
               <span className="truncate text-base font-semibold tracking-tight text-slate-900">
-                &apos;InvPos Register&apos;
+                InvPos Register
               </span>
               <span className="hidden items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 ring-1 ring-indigo-200 md:inline-flex">
                 <span className="h-2 w-2 rounded-full bg-indigo-500" />
@@ -1528,16 +1517,27 @@ export default function PosCheckout({
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
             >
-              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5">
                 <h2 className="text-base font-bold text-slate-900">Current Order</h2>
-                <button
-                  type="button"
-                  onClick={() => setCartOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                  aria-label="Close cart"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {cart.length > 0 && !pending && (
+                    <button
+                      type="button"
+                      onClick={clearOrder}
+                      className="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      Clear order
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setCartOpen(false)}
+                    className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close cart"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               {/* Same scroll containment as the desktop sidebar: the drawer's
                   footer must stay pinned, never cover the controls. */}
@@ -1722,7 +1722,10 @@ export default function PosCheckout({
                     <span>Tendered amount is less than the total due.</span>
                   </p>
                 ) : (
-                  <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
+                  <div
+                    data-testid="change-due"
+                    className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200"
+                  >
                     <span className="text-sm font-semibold text-emerald-800">
                       Change due
                     </span>

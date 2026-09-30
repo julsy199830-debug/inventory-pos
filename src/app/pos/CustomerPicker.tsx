@@ -184,20 +184,11 @@ export default function CustomerPicker({
   }
 
   return (
-    <div className="border-b border-slate-200 px-5 py-3" ref={rootRef}>
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <label
-          htmlFor="customer-trigger"
-          className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
-          Customer
-        </label>
-        <span className="flex items-center gap-1 text-[11px] text-slate-400">
-          <kbd className="rounded border border-slate-300 bg-slate-50 px-1 py-0.5 font-sans font-semibold">
-            F4
-          </kbd>
-        </span>
-      </div>
+    <div className="border-b border-slate-200 px-4 py-2" ref={rootRef} data-testid="pos-customer">
+      {/* Caption is `sr-only`: the trigger below says "Walk-in Customer" or            shows the name, so a visible label would repeat it, and the F4 hint            still lives on the shortcut line under the register. */}
+      <label htmlFor="customer-trigger" className="sr-only">
+        Customer
+      </label>
 
       {/* Trigger: the selected customer's summary, or the walk-in prompt. */}
       <button
@@ -206,7 +197,7 @@ export default function CustomerPicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={toggle}
-        className="flex h-11 w-full items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-left shadow-sm transition hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+        className="flex h-10 w-full items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-left shadow-sm transition hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
       >
         <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
         {selected ? (
