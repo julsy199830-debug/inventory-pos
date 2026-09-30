@@ -199,17 +199,25 @@ test.describe('Phase 3 - register workflow', () => {
     // Pick any status that actually has sales in the window. The exact counts
     // are not asserted: the list is capped at HISTORY_LIMIT, so a filtered
     // result may legitimately be shorter than the unfiltered one.
-    const options = await panel
-      .getByLabel('Filter by status')
-      .locator('option')
-      .evaluateAll((els) =>
-        els.map((e) => ({
-          value: (e as HTMLOptionElement).value,
-          count: Number((e.textContent ?? '').match(/\((\d+)\)/)?.[1] ?? -1),
-        })),
-      );
-    const target = options.find((o) => o.value && o.count > 0);
-    expect(target, 'at least one status should have sales in the window').toBeTruthy();
+    //
+    // These counts come from a separate `getHistoryFacets` fetch, so they are
+    // read inside `toPass` rather than read once. Reading them on the first
+    // frame races that request and finds every count still at its placeholder
+    // zero, which is what made this fail intermittently under full-suite load.
+    let target: { value: string; count: number } | undefined;
+    await expect(async () => {
+      const options = await panel
+        .getByLabel('Filter by status')
+        .locator('option')
+        .evaluateAll((els) =>
+          els.map((e) => ({
+            value: (e as HTMLOptionElement).value,
+            count: Number((e.textContent ?? '').match(/\((\d+)\)/)?.[1] ?? -1),
+          })),
+        );
+      target = options.find((o) => o.value && o.count > 0);
+      expect(target, 'at least one status should have sales in the window').toBeTruthy();
+    }).toPass({ timeout: 20000 });
 
     await panel.getByLabel('Filter by status').selectOption(target!.value);
 

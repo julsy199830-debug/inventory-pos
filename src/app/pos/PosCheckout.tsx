@@ -30,6 +30,7 @@ import {
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
 import CustomerPicker from './CustomerPicker'
+import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
@@ -711,6 +712,12 @@ export default function PosCheckout({
   // mobile slide-over drawer — so the register can never drift between them.
   const cartBody = (
     <>
+      {/* Register status (Phase 4, section 3). First in the panel so the shift
+          state is visible without scrolling; one line collapsed. */}
+      <RegisterStatusBar
+        cashierName={cashier.name}
+        currencySymbol={store.currencySymbol}
+      />
       {/* Dedicated barcode search box — scanning while this is focused types
           the code here (the global hook ignores focused fields); pressing
           Enter resolves it and clears the box for the next scan. The box
