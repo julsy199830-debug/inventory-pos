@@ -6,6 +6,13 @@ import type { PosCustomer } from './PosCheckout'
 import { rankCustomerMatches, relativeSince, shouldOfferCreate } from './customer-search'
 
 /**
+ * Window event the register fires to focus the customer picker (F4).
+ *
+ * Exported so the shortcut and the picker cannot drift apart: if the name
+ * changed in one file only, F4 would silently stop working.
+ */
+export const FOCUS_CUSTOMER_EVENT = 'invpos:focus-customer'
+/**
  * Customer selector for the register (Phase 4).
  *
  * Replaces a plain `<select>` that listed every customer and showed only a
@@ -84,6 +91,23 @@ export default function CustomerPicker({
     document.addEventListener('mousedown', onPointerDown)
     return () => document.removeEventListener('mousedown', onPointerDown)
   }, [open])
+
+  // F4 opens this picker from the register's global shortcut handler.
+  //
+  // A window event rather than the register reaching in via
+  // `getElementById('customer-trigger').click()`: the cart surface is rendered
+  // twice (sticky sidebar and mobile drawer), so a DOM id is not a reliable
+  // handle, and a programmatic click on the wrong one would silently toggle the
+  // hidden copy instead.
+  useEffect(() => {
+    const openPicker = () => {
+      setActive(0)
+      setCreatingNew(false)
+      setOpen(true)
+    }
+    window.addEventListener(FOCUS_CUSTOMER_EVENT, openPicker)
+    return () => window.removeEventListener(FOCUS_CUSTOMER_EVENT, openPicker)
+  }, [])
 
   // Opening focuses the search box so the cashier can type straight away.
   //
@@ -208,6 +232,7 @@ export default function CustomerPicker({
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               ref={inputRef}
+              id="customer-search-input"
               type="text"
               role="combobox"
               aria-expanded
@@ -265,6 +290,7 @@ export default function CustomerPicker({
                 <button
                   type="button"
                   role="option"
+                  data-testid="customer-option"
                   aria-selected={c.id === value}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => pick(c.id)}

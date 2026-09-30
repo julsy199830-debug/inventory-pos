@@ -43,9 +43,19 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default function RegisterStatusBar({
   cashierName,
   currencySymbol,
+  refreshKey,
 }: {
   cashierName: string
   currencySymbol: string
+  /**
+   * Bumped by the register whenever a sale, refund or void completes.
+   *
+   * The live takings are a SERVER read, so they cannot update from local state.
+   * Without this the figure a cashier reconciles the drawer against would sit
+   * frozen at whatever it was when the till loaded - which is worse than
+   * showing nothing at all, because it looks authoritative.
+   */
+  refreshKey: number
 }) {
   const [status, setStatus] = useState<RegisterStatus | null>(null)
   const [expanded, setExpanded] = useState(false)
@@ -83,6 +93,18 @@ export default function RegisterStatusBar({
     return () => clearTimeout(t)
   }, [refresh])
 
+  // Re-read the takings whenever the register reports activity.
+  //
+  // Skipped on the first run (refreshKey 0) because the mount effect above
+  // already covers that fetch; without the guard the status would be read twice
+  // on every page load. Scheduled for the same reason: the state update is the
+  // result of a completed request, not a consequence of the effect running.
+  useEffect(() => {
+    if (refreshKey === 0) return
+    const t = setTimeout(() => void refresh(), 0)
+    return () => clearTimeout(t)
+  }, [refreshKey, refresh])
+
   useEffect(() => {
     if (!status?.onClock) return
     const t = setInterval(() => setNow(Date.now()), 30_000)
@@ -108,7 +130,14 @@ export default function RegisterStatusBar({
         })
         setExpanded(true)
       } else {
-        await clockSelfIn()
+        const res = await clockSelfIn()
+        // The result is checked, not assumed. Ignoring it means a rejected
+        // clock-in looks identical to a successful one: the pill simply stays
+        // "Off shift" and the cashier has no idea why the button did nothing.
+        if (!res.ok) {
+          setError(res.error ?? 'Could not start the shift. Please try again.')
+          return
+        }
       }
       await refresh()
     } catch {
@@ -121,10 +150,20 @@ export default function RegisterStatusBar({
   const live = status?.live ?? null
 
   return (
-    <div className="border-b border-slate-200 bg-slate-50 px-5 py-2.5">
+    <div
+      className="border-b border-slate-200 bg-slate-50 px-5 py-2.5"
+      // `data-register-loaded` flips only once the status request has resolved,
+      // so a caller can wait for the strip to be genuinely ready rather than for
+      // the shell that paints before hydration and before the fetch lands.
+      data-register-loaded={status ? 'true' : 'false'}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         {/* On/off the clock, and who this till belongs to. */}
         <span
+          // `data-on-clock` is the state a test needs without reading the
+          // label text, so the assertion survives a wording change.
+          data-testid="shift-state"
+          data-on-clock={status?.onClock ? 'true' : 'false'}
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
             status?.onClock
               ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
@@ -161,7 +200,12 @@ export default function RegisterStatusBar({
           <button
             type="button"
             disabled={busy || !status}
-            onClick={() => void handleClock(!status?.onClock)}
+            // Closing is decided by the CURRENT state, not its negation: the
+            // button reads "End shift" precisely when a shift is open, so
+            // `status.onClock` IS the closing flag. Negating it made "Start
+            // shift" call clockSelfOut, which then rejected with "You are not
+            // currently on the clock" and left the till silently off the clock.
+            onClick={() => void handleClock(status?.onClock === true)}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
               status?.onClock
                 ? 'bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-100'

@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Ban, Receipt as ReceiptIcon, Search, Undo2 } from 'lucide-react'
+import { AlertTriangle, Ban, Printer, Receipt as ReceiptIcon, Search, Undo2 } from 'lucide-react'
+import Receipt, { type ReceiptStore } from './Receipt'
 import { toast } from 'sonner'
 import { Modal } from '@/app/_components/ui/Modal'
 import { refundSale, voidSale } from '@/app/actions/sales'
@@ -166,9 +167,21 @@ const METHOD_LABEL: Record<string, string> = {
 type Props = {
   /** Whether the signed-in cashier may void (UI hint only; server enforces). */
   canVoid: boolean
+  /**
+   * Store identity, so a reprinted receipt carries the same header as the one
+   * handed over at the time of sale.
+   *
+   * Passed down rather than re-queried: `page.tsx` already loaded exactly this
+   * `StoreSetting` row for the register, and a reprint is a rendering concern,
+   * not a fresh sale. Reusing it keeps the reprint on the same store identity
+   * the till is currently configured with.
+   */
+  store: ReceiptStore
+  /** Store tax percentage, printed as "VAT (n%)" when tax is on. */
+  taxRate: number
 }
 
-export default function TransactionHistory({ canVoid }: Props) {
+export default function TransactionHistory({ canVoid, store, taxRate }: Props) {
   const [open, setOpen] = useState(false)
   const [scope, setScope] = useState<HistoryScope>('recent')
   const [query, setQuery] = useState('')
@@ -181,6 +194,8 @@ export default function TransactionHistory({ canVoid }: Props) {
   const [details, setDetails] = useState<SaleDetailsEntry | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
+  // Phase 4: reprint preview for an already-completed sale.
+  const [reprintOpen, setReprintOpen] = useState(false)
 
   // Void flow
   const [voidOpen, setVoidOpen] = useState(false)
@@ -830,11 +845,112 @@ export default function TransactionHistory({ canVoid }: Props) {
                 This sale has refunds against it, so it can no longer be voided.
               </p>
             )}
+            {/* ── Reprint (Phase 4, section 4) ─────────────────────────────
+                Reprinting is a rendering concern, not a new sale: the detail
+                row already carries every field `Receipt` needs, so no extra
+                query and no reconstructed figures. The same `.print-receipt`
+                CSS the live receipt uses hides the rest of the page on print,
+                so `window.print()` here prints the slip and nothing else. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+              <button
+                type="button"
+                onClick={() => setReprintOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Reprint receipt
+              </button>
+              {/* A voided sale is a record, not a sale: reprinting it would
+                  produce a slip that looks collectable. Say so rather than
+                  handing over paper that must not be presented. */}
+              {detailsVoided && (
+                <span className="text-xs text-slate-500">
+                  This sale was voided — the copy is for your records only.
+                </span>
+              )}
+            </div>
           </div>
         ) : null}
       </Modal>
 
-      {/* ── Void confirmation modal ─────────────────────────────────────── */}
+      {/* ── Reprint preview ────────────────────────────────────────────── */}
+      <Modal
+        open={reprintOpen && details !== null}
+        onClose={() => setReprintOpen(false)}
+        title="Reprint receipt"
+        description={
+          details?.status === 'Voided'
+            ? `Voided sale #${details.id.slice(0, 8)} — printed as a void record`
+            : `Sale #${details?.id.slice(0, 8) ?? ''} — reprinted from the stored record`
+        }
+        className="max-w-2xl"
+      >
+        {details && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-slate-100 p-3 text-xs text-slate-600">
+              {details.status === 'Voided'
+                ? 'VOID — this transaction was reversed. No goods were sold and no payment was taken.'
+                : details.refundedAmount > 0
+                  ? `PARTLY REFUNDED — ${store.currencySymbol}${details.refundedAmount.toFixed(2)} of ${store.currencySymbol}${details.totalAmount.toFixed(2)} returned. The slip below shows the original sale and the returned items.`
+                  : `ORIGINAL SALE — the figures below are the stored record of this transaction, not a recalculation.`}
+            </div>
+
+            {/* 80mm preview, matching the printed output exactly. */}
+            <div className="flex justify-center overflow-x-auto rounded-lg bg-slate-50 p-3">
+              <Receipt
+                store={store}
+                saleId={details.id}
+                timestamp={details.createdAt}
+                lines={details.items.map((it) => ({
+                  name: it.productName,
+                  qty: it.quantity,
+                  unitPrice: it.priceAtSale,
+                }))}
+                subtotal={details.subtotal}
+                tax={details.tax}
+                total={details.totalAmount}
+                discount={details.discountAmount}
+                redeemedPoints={details.redeemedPoints}
+                redemptionAmount={details.redemptionAmount}
+                earnedPoints={details.earnedPoints}
+                paymentMethod={details.paymentMethod}
+                tendered={details.tendered}
+                change={details.change}
+                cashierName={details.cashierName}
+                customerName={details.customerName}
+                taxRate={taxRate}
+                refundLines={details.refunds.map((r) => ({
+                  name: r.reason,
+                  qty: 1,
+                  unitPrice: r.amount,
+                }))}
+                refundTotal={details.refundedAmount}
+                originalTotal={details.refunds.length > 0 ? details.totalAmount : null}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
+              <button
+                type="button"
+                data-testid="reprint-close"
+                onClick={() => setReprintOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                data-testid="reprint-print"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
       <Modal
         open={voidOpen && details !== null}
         onClose={() => {

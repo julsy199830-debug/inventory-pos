@@ -29,7 +29,7 @@ import {
 } from '@/lib/loyalty'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
-import CustomerPicker from './CustomerPicker'
+import CustomerPicker, { FOCUS_CUSTOMER_EVENT } from './CustomerPicker'
 import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
@@ -193,6 +193,10 @@ export default function PosCheckout({
   const [activeCategory, setActiveCategory] = useState<string>('all')
   // Mobile: the cart lives in a slide-over drawer; this toggles it.
   const [cartOpen, setCartOpen] = useState(false)
+  // Phase 4: bumped whenever a sale/refund/void completes, so the register
+  // strip re-reads its live takings. A completed sale is the only signal the
+  // cashier gets that the drawer moved.
+  const [registerActivity, setRegisterActivity] = useState(0)
   // Completed sale awaiting receipt print / dismissal.
   const [completed, setCompleted] = useState<CompletedSale | null>(null)
   // Cart-wide discount request (percent or fixed) — re-applied server-side.
@@ -505,6 +509,7 @@ export default function PosCheckout({
         tenderedAmount != null && tenderedAmount >= total
           ? round2(tenderedAmount - total)
           : null
+      setRegisterActivity((n) => n + 1)
       setCompleted({
         id: res.data.id,
         timestamp: new Date().toISOString(),
@@ -605,7 +610,7 @@ export default function PosCheckout({
           break
         case 'F4':
           event.preventDefault()
-          document.getElementById('customer-trigger')?.click()
+          window.dispatchEvent(new CustomEvent(FOCUS_CUSTOMER_EVENT))
           break
         case 'F8':
           event.preventDefault()
@@ -717,6 +722,7 @@ export default function PosCheckout({
       <RegisterStatusBar
         cashierName={cashier.name}
         currencySymbol={store.currencySymbol}
+        refreshKey={registerActivity}
       />
       {/* Dedicated barcode search box — scanning while this is focused types
           the code here (the global hook ignores focused fields); pressing
@@ -1263,7 +1269,11 @@ export default function PosCheckout({
           <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 md:inline-flex">
             {cashier.name}
           </span>
-          <TransactionHistory canVoid={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'} />
+          <TransactionHistory
+          canVoid={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'}
+          store={store}
+          taxRate={store.taxRate ?? 0}
+        />
           <button
             type="button"
             onClick={() => lockRegister()}
