@@ -29,14 +29,29 @@ async function login(page: Page) {
   await expect(page).not.toHaveURL(/.*\/login/, { timeout: 15000 });
 }
 
+/**
+ * Open the customers section and wait until it can actually be driven.
+ *
+ * The table is server-rendered, so seeing it is not proof that React is
+ * listening. `data-customers-hydrated` flips once the client has taken over —
+ * a `fill` or `selectOption` issued before that writes the DOM and is then
+ * discarded, leaving the control showing a value the page never acted on.
+ */
+async function gotoCustomers(page: Page) {
+  await page.goto('/customers');
+  await expect(page.locator('[data-customers-hydrated="true"]')).toBeVisible({
+    timeout: 25000,
+  });
+  await expect(page.getByRole('table')).toBeVisible({ timeout: 20000 });
+}
+
 test.describe('Phase 4 - customers section', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
 
   test('the customer list shows loyalty, lifetime spend and last purchase', async ({ page }) => {
-    await page.goto('/customers');
-    await expect(page.getByRole('table')).toBeVisible({ timeout: 20000 });
+    await gotoCustomers(page);
 
     // The three new context columns a manager actually needs.
     await expect(page.getByRole('columnheader', { name: 'Points' })).toBeVisible();
@@ -45,8 +60,7 @@ test.describe('Phase 4 - customers section', () => {
   });
 
   test('searching by name narrows the list', async ({ page }) => {
-    await page.goto('/customers');
-    await expect(page.getByRole('table')).toBeVisible({ timeout: 20000 });
+    await gotoCustomers(page);
 
     // Scoped to the BODY: `getByRole('row')` also returns the header row, whose
     // text is the column labels and would never contain a customer's name.
@@ -71,8 +85,7 @@ test.describe('Phase 4 - customers section', () => {
   });
 
   test('an unmatched search shows an empty state, not the whole book', async ({ page }) => {
-    await page.goto('/customers');
-    await expect(page.getByRole('table')).toBeVisible({ timeout: 20000 });
+    await gotoCustomers(page);
     await page.getByLabel('Search customers').fill('Zzzqqx');
     // Falling back to the full book is the failure mode that gets the wrong
     // account acted on, so the empty state is asserted, not just "no crash".
@@ -80,8 +93,7 @@ test.describe('Phase 4 - customers section', () => {
   });
 
   test('the list can be sorted, and the order really changes', async ({ page }) => {
-    await page.goto('/customers');
-    await expect(page.getByRole('table')).toBeVisible({ timeout: 20000 });
+    await gotoCustomers(page);
 
     const nameHeader = page.getByRole('columnheader', { name: 'Name' });
     const initial = await nameHeader.innerText();

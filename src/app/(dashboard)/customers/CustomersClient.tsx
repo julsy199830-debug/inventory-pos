@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import {
   createCustomer,
   getCustomers,
@@ -15,6 +15,17 @@ import { Modal } from "@/app/_components/ui/Modal";
 
 /** Rows per page. Small enough to scan, large enough to avoid constant paging. */
 const PAGE_SIZE = 12;
+
+/**
+ * Hydration snapshots, identical to the ones in `Modal` — see the `hydrated`
+ * flag below for what the value is used for. `subscribe` is a no-op because
+ * hydration happens once per page load, so there is nothing to listen to.
+ */
+const noopSubscribe = () => () => {};
+/** True from the first client render onward. */
+const clientSnapshot = () => true;
+/** False during SSR and the hydration render, so server and client markup match. */
+const serverSnapshot = () => false;
 
 /** How the customer list can be ordered. */
 type SortKey = "name" | "debt" | "points" | "spent" | "lastSeen";
@@ -72,6 +83,24 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [statements, setStatements] = useState<Record<string, CustomerStatement>>({});
+
+  /**
+   * Hydration flag, exposed as `data-customers-hydrated` on the root element.
+   *
+   * The whole list is server-rendered, so the table — and the search box — are
+   * in the DOM well before React has attached `onChange`. Until then typing
+   * writes the DOM value but never reaches `setQuery`, so the filter silently
+   * does nothing: the input shows the query and the table still shows the whole
+   * book. A test that fills and immediately asserts on the filtered result can
+   * hit that window under a parallel run, so this is the marker it waits on
+   * instead of guessing — the same trick as the register's
+   * `data-register-loaded`.
+   *
+   * Same `useSyncExternalStore` shape as `Modal`'s `mounted` flag: `subscribe`
+   * is a no-op because hydration happens exactly once, and the server snapshot
+   * is `false` so the server and hydration markup stay identical.
+   */
+  const hydrated = useSyncExternalStore(noopSubscribe, clientSnapshot, serverSnapshot);
 
   /**
    * Phase 4: search, then sort, then page.
@@ -191,7 +220,10 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
   const statement = viewing ? statements[viewing.id] : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-0">
+    <div
+      className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-0"
+      data-customers-hydrated={hydrated ? "true" : "false"}
+    >
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Customers</h1>
