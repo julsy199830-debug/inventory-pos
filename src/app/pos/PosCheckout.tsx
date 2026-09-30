@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -32,6 +32,7 @@ import Receipt, { type ReceiptLine } from './Receipt'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import TransactionHistory from './TransactionHistory'
+import { stockStatusAt } from '@/lib/types'
 import type { Role } from '@/lib/types'
 
 /**
@@ -49,6 +50,13 @@ export type PosProduct = {
   category: string
   /** Optional product photo; null renders the initials tile. */
   imageUrl: string | null
+  /**
+   * Phase 3: the category's own low-stock cutoff, or null for "no override".
+   * Fed to the shared `stockStatusAt` so the register's low-stock badge agrees
+   * with the inventory page and the restock list instead of carrying its own
+   * private rule.
+   */
+  lowStockThreshold: number | null
 }
 
 export type PosCustomer = {
@@ -115,6 +123,21 @@ type CompletedSale = {
   /** Cash only: amount handed over, for the receipt's Tendered/Change rows. */
   tendered?: number | null
   change?: number | null
+}
+
+/**
+ * A function key, rendered as a small keycap.
+ *
+ * Used only by the register's shortcut hint. `text-[10px]` is intentional: a
+ * keycap needs to read as a key, and at body size it would compete with the
+ * total it sits under.
+ */
+function Key({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="rounded border border-slate-300 bg-slate-50 px-1 py-0.5 font-sans text-[10px] font-semibold text-slate-500">
+      {children}
+    </kbd>
+  )
 }
 
 export default function PosCheckout({
@@ -188,7 +211,23 @@ export default function PosCheckout({
       .filter(([, items]) => items.length > 0)
   }, [categories, search, activeCategory])
 
-  const addToCart = (product: PosProduct) =>
+  const addToCart = (product: PosProduct) => {
+    // Phase 3: never let the cart exceed what is on the shelf.
+    //
+    // Previously the register happily accumulated units past available stock and
+    // the sale was rejected at checkout, after the cashier had already keyed the
+    // whole order. Warning at the moment of the tap is what actually prevents the
+    // failure; the server still re-checks, because the shelf can change under a
+    // long-lived cart.
+    const inCart = cart.find((line) => line.product.id === product.id)?.qty ?? 0
+    if (inCart >= product.stock) {
+      toast.error(
+        product.stock <= 0
+          ? `${product.name} is out of stock.`
+          : `Only ${product.stock} of ${product.name} left in stock.`,
+      )
+      return
+    }
     setCart((prev) => {
       const existing = prev.find((line) => line.product.id === product.id)
       if (existing) {
@@ -198,16 +237,72 @@ export default function PosCheckout({
       }
       return [...prev, { product, qty: 1 }]
     })
+  }
 
   const changeQty = (id: string, delta: number) =>
     setCart((prev) =>
       prev
-        .map((line) =>
-          line.product.id === id ? { ...line, qty: line.qty + delta } : line,
-        )
+        .map((line) => {
+          if (line.product.id !== id) return line
+          // Phase 3: clamp to the shelf. Without this the + button could walk a
+          // line past available stock, and the sale would then be rejected
+          // server-side after the whole order had been keyed.
+          const next = line.qty + delta
+          return { ...line, qty: Math.min(next, line.product.stock) }
+        })
         // Drop a line entirely once it falls to zero or below.
         .filter((line) => line.qty > 0),
     )
+
+  /**
+   * Phase 3: set a line's quantity directly, from an editable number field.
+   *
+   * Clamped to the same shelf ceiling as the +/- buttons, and to whole units,
+   * so a typed quantity can never put an order into a state the buttons could
+   * not reach. An empty or partial entry is ignored rather than written as 0,
+   * which would silently delete the line mid-keystroke.
+   */
+  const setQty = (id: string, raw: string) => {
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed) || parsed < 0) return
+    setCart((prev) =>
+      prev
+        .map((line) =>
+          line.product.id === id
+            ? { ...line, qty: Math.min(Math.floor(parsed), line.product.stock) }
+            : line,
+        )
+        .filter((line) => line.qty > 0),
+    )
+  }
+
+  /**
+   * Phase 3: lines whose quantity exceeds what is on the shelf.
+   *
+   * Computed from the cart rather than persisted, because stock on a long-lived
+   * cart can change underneath the register. Blocking checkout on this is what
+   * turns a late server rejection into an immediate, actionable warning.
+   */
+  const overStockLines = useMemo(
+    () => cart.filter((line) => line.qty > line.product.stock),
+    [cart],
+  )
+
+  /**
+   * Phase 3: clear the whole order in one keystroke.
+   *
+   * Guarded on a non-empty cart so it can never be the destructive thing that
+   * happens by accident on an empty register.
+   */
+  const clearOrder = useCallback(() => {
+    if (cart.length === 0) return
+    setCart([])
+    setCartDiscount(null)
+    setRedeemPoints(0)
+    toast('Order cleared', { description: 'The basket and its discounts were reset.' })
+  }, [cart.length])
+
 
   // ── Per-line discount editing ─────────────────────────────────────────────
   // `setLineDiscount` used to live here as the primitive the other three
@@ -321,8 +416,21 @@ export default function PosCheckout({
   // and the printed slip can never disagree (defaults to ₱ via StoreSetting).
   const money = (value: number) => `${store.currencySymbol}${value.toFixed(2)}`
 
-  function onCheckout() {
+  const onCheckout = () => {
     if (cart.length === 0 || pending || creditBlocked) return
+    // Phase 3: refuse locally rather than letting the server reject the whole
+    // order after the cashier has keyed it. The message names the offending line
+    // so the fix is obvious rather than a shrug.
+    if (overStockLines.length > 0) {
+      const first = overStockLines[0]
+      toast.error(
+        first.qty > first.product.stock
+          ? `Only ${first.product.stock} of ${first.product.name} in stock.`
+          : `${first.product.name} is out of stock.`,
+        { description: 'Reduce the quantity before taking payment.' },
+      )
+      return
+    }
     // Cash gets a tender step (amount handed over → change due); card and
     // store credit settle for the exact total, so they check out directly.
     if (paymentMethod === 'CASH') {
@@ -399,6 +507,89 @@ export default function PosCheckout({
       toast.error(res.error)
     }
   }
+
+  /**
+   * Phase 3: a stable handle on the current `onCheckout`.
+   *
+   * `onCheckout` closes over the cart, the payment method and the stock
+   * warnings, so a new one is needed on every render. The keyboard listener
+   * below must NOT re-subscribe on every render just to reach the latest
+   * version, so it reads through this ref instead. The ref is refreshed in an
+   * effect with no dependency array - i.e. after every render - which is the
+   * standard "latest value" pattern and keeps the listener's identity stable.
+   */
+  const onCheckoutRef = useRef(onCheckout)
+  useEffect(() => {
+    onCheckoutRef.current = onCheckout
+  })
+
+  /**
+   * Phase 3: keyboard-first checkout.
+   *
+   * A cashier's hands never leave the keyboard during a normal sale, so the
+   * actions they repeat most get a function key. The set is deliberately small
+   * and mapped to keys a till keyboard actually has:
+   *
+   *   F1 / F2 / F3  payment method       F4  customer
+   *   F9            take payment          F8  clear the order
+   *
+   * Two rules keep this from fighting the user:
+   *
+   *   - Suppressed while a dialog is open or a text field has focus, so typing
+   *     a quantity or a discount value can never trigger a payment.
+   *   - Suppressed while any modifier is held, so browser and OS shortcuts
+   *     (F5 reload, Ctrl+F find, Cmd+Tab) keep working.
+   */
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false
+      const tag = target.tagName
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target.isContentEditable
+      )
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (completed || cashStepOpen) return
+      if (isTypingTarget(event.target)) return
+
+      switch (event.key) {
+        case 'F1':
+          event.preventDefault()
+          setPaymentMethod('CASH')
+          break
+        case 'F2':
+          event.preventDefault()
+          setPaymentMethod('CARD')
+          break
+        case 'F3':
+          event.preventDefault()
+          setPaymentMethod('STORE_CREDIT')
+          break
+        case 'F4':
+          event.preventDefault()
+          document.getElementById('customer-select')?.focus()
+          break
+        case 'F8':
+          event.preventDefault()
+          clearOrder()
+          break
+        case 'F9':
+          event.preventDefault()
+          onCheckoutRef.current()
+          break
+        default:
+          break
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [cashStepOpen, clearOrder, completed])
 
   // ── Barcode scanning ─────────────────────────────────────────────────────
   // Products have no `barcode` column in the schema — the scanner matches
@@ -709,9 +900,22 @@ export default function PosCheckout({
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="min-w-8 text-center text-sm font-bold tabular-nums text-slate-900">
-                    {line.qty}
-                  </span>
+                  {/* Phase 3: the quantity is a real number input, not a read-only
+                      span. Tapping +/- three times to reach four units is the
+                      slowest thing on the register; typing "4" is one gesture.
+                      Clamped by `setQty` to the same shelf ceiling the buttons
+                      use, so the two controls can never disagree. */}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={Math.max(line.product.stock, 1)}
+                    step={1}
+                    value={line.qty}
+                    onChange={(e) => setQty(line.product.id, e.target.value)}
+                    aria-label={`Quantity for ${line.product.name}`}
+                    className="h-8 w-12 rounded-md border border-slate-300 bg-white text-center text-sm font-bold tabular-nums text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                  />
                   <button
                     type="button"
                     onClick={() => changeQty(line.product.id, 1)}
@@ -762,6 +966,26 @@ export default function PosCheckout({
   // Totals + payment footer — shared by the desktop sidebar and mobile drawer.
   const cartFooter = (
     <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+      {/* Phase 3: stock problems are surfaced here, at the point of payment,
+          rather than as a server rejection after the whole order is keyed.
+          Named lines, not a count, because "something is wrong" is not
+          actionable and "Blue Hoodie - 3 in cart, 1 available" is. */}
+      {overStockLines.length > 0 && (
+        <div
+          role="alert"
+          className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200"
+        >
+          <p>Not enough stock to complete this sale:</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4">
+            {overStockLines.map((line) => (
+              <li key={line.product.id}>
+                {line.product.name} — {line.qty} in cart, {line.product.stock}{' '}
+                available
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {/* Order-wide discount: toggle + inline %/₱ editor, applied after the
           per-line discounts and re-validated server-side at checkout. */}
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -858,16 +1082,19 @@ export default function PosCheckout({
       {cart.length > 0 && !pending && (
         <button
           type="button"
-          onClick={() => {
-            setCart([])
-            setCustomerId('')
-            setScanInput('')
-          }}
+          onClick={clearOrder}
           className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
         >
           Clear order
         </button>
       )}
+      {/* Phase 3: shortcuts are invisible until you know them. One quiet line
+          under the register makes the function keys discoverable without
+          putting a help dialog in the middle of a sale. */}
+      <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
+        <Key>F1</Key> cash · <Key>F2</Key> card · <Key>F3</Key> credit ·{' '}
+        <Key>F4</Key> customer · <Key>F9</Key> pay
+      </p>
     </div>
   )
 
@@ -1036,8 +1263,17 @@ export default function PosCheckout({
                   </h2>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
                     {items.map((p) => {
-                      const out = p.stock <= 0
-                      const low = !out && p.stock <= 5
+                      // Phase 3: the shared category-aware rule, not a private
+                      // `stock <= 5`. This is the same function the inventory
+                      // badge and the dashboard restock list use, so a product
+                      // configured to restock at 20 reads "Low stock" in both
+                      // places instead of contradicting itself at the register.
+                      const status = stockStatusAt(p.stock, p.lowStockThreshold)
+                      const out = status === 'out'
+                      const low = status === 'low'
+                      const inCart =
+                        cart.find((line) => line.product.id === p.id)?.qty ?? 0
+                      const atShelfLimit = inCart >= p.stock && p.stock > 0
                       return (
                         <button
                           key={p.id}
@@ -1045,16 +1281,28 @@ export default function PosCheckout({
                           disabled={out}
                           onClick={() => addToCart(p)}
                           aria-label={`Add ${p.name} to order`}
+                          aria-disabled={out}
                           className={[
                             'group relative flex min-h-[112px] flex-col rounded-xl border bg-white p-3 text-left shadow-sm transition-all duration-150',
                             out
-                              ? 'cursor-not-allowed border-slate-200 opacity-60'
+                              ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-70'
                               : 'border-slate-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md active:translate-y-0 active:scale-[0.98]',
                           ].join(' ')}
                         >
                           {out && (
                             <span className="absolute right-2.5 top-2.5 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-600 ring-1 ring-rose-200">
                               Out
+                            </span>
+                          )}
+                          {/* Phase 3: a running count on the tile, so a cashier
+                              adding the same item repeatedly can see the cart
+                              total without looking away to the panel. */}
+                          {inCart > 0 && (
+                            <span
+                              className="absolute left-2.5 top-2.5 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold tabular-nums text-white shadow-sm"
+                              aria-hidden
+                            >
+                              {inCart}
                             </span>
                           )}
                           {/* Visual product recognition: a cashier reads the shelf,
@@ -1094,6 +1342,15 @@ export default function PosCheckout({
                                 ? `Low stock · ${p.stock} left`
                                 : `${p.stock} in stock`}
                           </p>
+                          {/* Phase 3: say so when this item is already fully in
+                              the cart. A silent no-op tap here reads as a broken
+                              button; naming the reason is the difference between
+                              a cashier retrying and a cashier giving up. */}
+                          {!out && atShelfLimit && (
+                            <p className="mt-0.5 text-xs font-medium text-indigo-600">
+                              All {p.stock} in cart
+                            </p>
+                          )}
                         </button>
                       )
                     })}

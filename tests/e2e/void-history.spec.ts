@@ -92,9 +92,18 @@ test.describe('POS Transaction History & Void', () => {
      
     await expect(page.locator('text=Completed').first()).toBeVisible({ timeout: 10000 });
 
-    // Search: a nonsense query yields the empty state (server-side filtering)
+    // Search: a nonsense query yields the empty state (server-side filtering).
+    // Phase 3 distinguishes the two kinds of empty: with a search active and no
+    // matches it says "No transactions match these filters", where the
+    // unfiltered empty state says "No sales in this window yet".
     await historySearch(page).fill('zzz-no-such-transaction');
-    await expect(historyPanel(page).locator('text=No transactions found for this filter.').first()).toBeVisible({ timeout: 10000 });
+    await expect(
+      historyPanel(page).locator('text=No transactions match these filters.').first(),
+    ).toBeVisible({ timeout: 10000 });
+    // And the empty state offers a way back out rather than a dead end.
+    await expect(
+      historyPanel(page).locator('button:has-text("Clear filters and search")').first(),
+    ).toBeVisible();
     await historySearch(page).fill('');
 
     // Open sale details on the first (newest) completed row

@@ -6,8 +6,14 @@ import { toast } from 'sonner'
 import { Modal } from '@/app/_components/ui/Modal'
 import { refundSale, voidSale } from '@/app/actions/sales'
 import { refundValueFor, round2, saleItemUnitValues } from '@/lib/loyalty'
-import { getRecentSales, getSaleDetails } from './history-actions'
-import type { HistoryScope, SaleDetailsEntry, SaleHistoryEntry } from './history-types'
+import { getHistoryFacets, getRecentSales, getSaleDetails } from './history-actions'
+import type {
+  HistoryFacet,
+  HistoryFacets,
+  HistoryScope,
+  SaleDetailsEntry,
+  SaleHistoryEntry,
+} from './history-types'
 
 /**
  * POS transaction history + sale details + full-void UI.
@@ -21,6 +27,47 @@ import type { HistoryScope, SaleDetailsEntry, SaleHistoryEntry } from './history
  * "Refunded" status. Cash-drawer and card-terminal reversal are intentionally
  * out of scope — the UI warns instead of pretending.
  */
+
+/**
+ * One of the history filter dropdowns.
+ *
+ * Each option carries its count, so a manager can see where the volume is
+ * before selecting. An option whose count is zero is disabled rather than
+ * hidden: it documents that the value exists in the window while making clear
+ * that choosing it returns nothing.
+ */
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+  allLabel,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  options: HistoryFacet[];
+  allLabel: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={`Filter by ${label.toLowerCase()}`}
+        className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+      >
+        <option value="">{allLabel}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value} disabled={option.count === 0}>
+            {option.label} ({option.count})
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
 
 const PRESET_REASONS = [
   'Customer cancellation',
@@ -92,22 +139,78 @@ export default function TransactionHistory({ canVoid }: Props) {
   const [refundPending, setRefundPending] = useState(false)
   const [refundError, setRefundError] = useState<string | null>(null)
 
+  // ── Phase 3: filter state ─────────────────────────────────────────────────
+  // Each is a single string ('' = "no filter") rather than a nullable one, so
+  // the `<select>` can bind straight to it without a null branch. `showFilters`
+  // gates the advanced row so the common case - a glance at the last few sales -
+  // stays uncluttered on a small screen.
+  const [showFilters, setShowFilters] = useState(false)
+  const [status, setStatus] = useState('')
+  const [payment, setPayment] = useState('')
+  const [cashierId, setCashierId] = useState('')
+  const [customerId, setCustomerId] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [facets, setFacets] = useState<HistoryFacets | null>(null)
+
+  /** How many of the advanced filters are actually narrowing the list. */
+  const activeFilterCount =
+    (status ? 1 : 0) +
+    (payment ? 1 : 0) +
+    (cashierId ? 1 : 0) +
+    (customerId ? 1 : 0) +
+    (fromDate ? 1 : 0) +
+    (toDate ? 1 : 0)
+
+  const clearAdvancedFilters = useCallback(() => {
+    setStatus('')
+    setPayment('')
+    setCashierId('')
+    setCustomerId('')
+    setFromDate('')
+    setToDate('')
+  }, [])
+
   const refreshList = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const res = await getRecentSales({ query, scope })
+    const res = await getRecentSales({
+      query,
+      scope,
+      status: status || undefined,
+      paymentMethod: payment || undefined,
+      cashierId: cashierId || undefined,
+      customerId: customerId || undefined,
+      from: fromDate || undefined,
+      to: toDate || undefined,
+    })
     if (res.ok) setSales(res.data.sales)
     else setError(res.error)
     setLoading(false)
-  }, [query, scope])
+  }, [query, scope, status, payment, cashierId, customerId, fromDate, toDate])
+
+  // The dropdown options follow the same time window as the list, so a cashier
+  // is never offered "Ana" for a day she did not work.
+  const refreshFacets = useCallback(async () => {
+    const res = await getHistoryFacets({ scope })
+    if (res.ok) setFacets(res.data)
+  }, [scope])
 
   // (Re)load the list whenever the panel opens or filters change. Debounced so
   // typing in the search box doesn't fire a server action per keystroke.
+  //
+  // The facets load rides in the same scheduled callback rather than a second
+  // effect: they depend on the same `scope`, and scheduling both behind one
+  // timeout keeps them off the synchronous effect path (which React flags, and
+  // which would otherwise mean two round trips racing on open).
   useEffect(() => {
     if (!open) return
-    const t = setTimeout(refreshList, query ? 250 : 0)
+    const t = setTimeout(() => {
+      void refreshList()
+      void refreshFacets()
+    }, query ? 250 : 0)
     return () => clearTimeout(t)
-  }, [open, refreshList, query])
+  }, [open, refreshList, refreshFacets, query])
 
   const openDetails = async (saleId: string) => {
     setSelectedId(saleId)
@@ -290,17 +393,130 @@ export default function TransactionHistory({ canVoid }: Props) {
                   {label}
                 </button>
               ))}
+              {/* Phase 3: the advanced filters are behind one toggle so the
+                  common case stays a single row. The badge tells a manager their
+                  filters are still applied after the panel is closed and
+                  reopened - otherwise a narrowed list looks like all the sales. */}
+              <button
+                type="button"
+                onClick={() => setShowFilters((v) => !v)}
+                aria-expanded={showFilters}
+                aria-controls="history-advanced-filters"
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  showFilters || activeFilterCount > 0
+                    ? 'bg-slate-700 text-white'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Filters
+                {activeFilterCount > 0 && (
+                  <span
+                    className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums"
+                    aria-label={`${activeFilterCount} filters active`}
+                  >
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
+
+          {showFilters && (
+            <div
+              id="history-advanced-filters"
+              className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              <FilterSelect
+                label="Status"
+                value={status}
+                onChange={setStatus}
+                options={facets?.statuses ?? []}
+                allLabel="Any status"
+              />
+              <FilterSelect
+                label="Payment"
+                value={payment}
+                onChange={setPayment}
+                options={facets?.paymentMethods ?? []}
+                allLabel="Any payment"
+              />
+              <FilterSelect
+                label="Cashier"
+                value={cashierId}
+                onChange={setCashierId}
+                options={facets?.cashiers ?? []}
+                allLabel="Anyone"
+              />
+              <FilterSelect
+                label="Customer"
+                value={customerId}
+                onChange={setCustomerId}
+                options={facets?.customers ?? []}
+                allLabel="Anyone"
+              />
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-slate-500">
+                  From date
+                </span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  max={toDate || undefined}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-slate-500">
+                  To date
+                </span>
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || undefined}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                />
+              </label>
+              {activeFilterCount > 0 && (
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <button
+                    type="button"
+                    onClick={clearAdvancedFilters}
+                    className="text-xs font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-700"
+                  >
+                    Clear {activeFilterCount} filter
+                    {activeFilterCount === 1 ? '' : 's'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {loading ? (
             <p className="py-10 text-center text-sm text-slate-500">Loading transactions…</p>
           ) : error ? (
             <p className="py-10 text-center text-sm text-red-600">{error}</p>
           ) : sales.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-500">
-              No transactions found for this filter.
-            </p>
+            <div className="py-10 text-center">
+              <p className="text-sm text-slate-700">
+                {activeFilterCount > 0 || query
+                  ? 'No transactions match these filters.'
+                  : 'No sales in this window yet.'}
+              </p>
+              {(activeFilterCount > 0 || query) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAdvancedFilters()
+                    setQuery('')
+                  }}
+                  className="mt-2 text-xs font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-700"
+                >
+                  Clear filters and search
+                </button>
+              )}
+            </div>
           ) : (
             <ul className="max-h-[50vh] divide-y divide-slate-200 overflow-y-auto rounded-xl border border-slate-200">
               {sales.map((s) => {
