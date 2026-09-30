@@ -23,9 +23,23 @@ export default async function POSPage() {
       select: {
         id: true,
         name: true,
+        // Phase 4: the POS picker searches by phone as well as name, and shows
+        // a compact "last seen" so a cashier can tell a regular from a
+        // one-off. Both are display fields read straight off the row - no
+        // loyalty or credit figure is recalculated here.
+        phone: true,
         loyaltyPoints: true,
         creditLimit: true,
         currentBalance: true,
+        _count: { select: { sales: true } },
+        sales: {
+          // Newest first; only the head of each customer's list is used, so
+          // ordering + take:1 keeps this one indexed query rather than a
+          // per-customer lookup.
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { createdAt: true },
+        },
       },
     }),
     prisma.storeSetting.findFirst(),
@@ -50,6 +64,20 @@ export default async function POSPage() {
 
 
 
+  // Flatten the nested `sales` head into plain display fields, so the client
+  // component stays a dumb renderer and cannot accidentally reach for a nested
+  // shape that invites recalculating a balance somewhere downstream.
+  const posCustomers = customers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    loyaltyPoints: c.loyaltyPoints,
+    creditLimit: c.creditLimit,
+    currentBalance: c.currentBalance,
+    salesCount: c._count.sales,
+    lastSaleAt: c.sales[0]?.createdAt.toISOString() ?? null,
+  }))
+
   const store: PosStore = {
     storeName: settings?.storeName ?? 'InvPos Store',
     address: settings?.address ?? null,
@@ -64,7 +92,7 @@ export default async function POSPage() {
     <PosCheckout
       cashier={{ id: user.id, name: user.name, role: user.role }}
       products={products}
-      customers={customers}
+      customers={posCustomers}
       store={store}
     />
   )

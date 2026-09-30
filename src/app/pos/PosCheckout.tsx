@@ -29,6 +29,8 @@ import {
 } from '@/lib/loyalty'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
+import CustomerPicker from './CustomerPicker'
+import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import TransactionHistory from './TransactionHistory'
@@ -59,12 +61,29 @@ export type PosProduct = {
   lowStockThreshold: number | null
 }
 
+/**
+ * A customer as the register needs to show them.
+ *
+ * Phase 4 added `phone` (so the picker can search the number a customer
+ * actually says out loud), `salesCount` and `lastSaleAt` (so a cashier can tell
+ * a regular from a one-off without opening anything).
+ *
+ * Every money and points field is read straight off the `Customer` row. This
+ * type deliberately exposes no computed getters: the credit-limit check and the
+ * loyalty redemption ceiling stay in the one place each already lives
+ * (`PosCheckout` for the limit, `lib/loyalty.ts` for the points), so a picker
+ * can never disagree with what checkout actually allows.
+ */
 export type PosCustomer = {
   id: string
   name: string
+  phone: string | null
   loyaltyPoints: number
   creditLimit: number
   currentBalance: number
+  salesCount: number
+  /** ISO timestamp of the most recent sale, or null if never purchased. */
+  lastSaleAt: string | null
 }
 
 /** Store identity for the receipt header — subset of `StoreSetting`. */
@@ -156,6 +175,14 @@ export default function PosCheckout({
 }) {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customerId, setCustomerId] = useState<string>('')
+  // Phase 4: inline 'create this customer' from the register. Runs the SAME
+  // server action the Customers page uses, so there is one create path and one
+  // set of rules. Gated to staff in the UI to match that action's own gate.
+  const [creatingCustomer, setCreatingCustomer] = useState(false)
+  const [quickCustomerError, setQuickCustomerError] = useState<string | null>(null)
+  // Phase 4: customers created in-session. Merged into the prop list so the
+  // picker sees them immediately instead of waiting for a router refresh.
+  const [extraCustomers, setExtraCustomers] = useState<PosCustomer[]>([])
   const [paymentMethod, setPaymentMethod] = useState('CASH')
   const [pending, setPending] = useState(false)
   // Dedicated barcode search box value.
@@ -577,7 +604,7 @@ export default function PosCheckout({
           break
         case 'F4':
           event.preventDefault()
-          document.getElementById('customer-select')?.focus()
+          document.getElementById('customer-trigger')?.click()
           break
         case 'F8':
           event.preventDefault()
@@ -595,6 +622,62 @@ export default function PosCheckout({
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [cashStepOpen, clearOrder, completed])
+
+  /**
+   * Creates a customer from the register and attaches them to the open cart.
+   *
+   * Calls the existing `createCustomer` server action rather than a POS-only
+   * insert, so the audit trail, the field validation and the STAFF role gate
+   * are literally the same code the Customers page runs. On success the new
+   * row is merged into local state and selected immediately - a cashier who
+   * typed the name expects the sale to carry on, not to re-find the customer.
+   *
+   * Points start at 0 and the credit balance at 0, which is what `createCustomer`
+   * already writes; nothing here invents an opening balance.
+   */
+  const createQuickCustomer = async (input: { name: string; phone?: string | null }) => {
+    setCreatingCustomer(true)
+    setQuickCustomerError(null)
+    try {
+      const res = await createPosCustomer({ name: input.name, phone: input.phone ?? null })
+      if (!res.ok) {
+        setQuickCustomerError(res.error)
+        return
+      }
+      const id = res.data?.id
+      if (id) {
+        setExtraCustomers((prev) => [
+          ...prev,
+          {
+            id,
+            name: input.name.trim(),
+            phone: input.phone ?? null,
+            loyaltyPoints: 0,
+            creditLimit: 0,
+            currentBalance: 0,
+            salesCount: 0,
+            lastSaleAt: null,
+          },
+        ])
+        setCustomerId(id)
+        setRedeemPoints(0)
+      }
+    } catch {
+      setQuickCustomerError('Could not create the customer. Please try again.')
+    } finally {
+      setCreatingCustomer(false)
+    }
+  }
+
+  /**
+   * Customers the picker may show: the server-loaded book plus anyone created
+   * during this session. Memoised so the picker's `useMemo` over the list does
+   * not rebuild on every unrelated render of the cart.
+   */
+  const pickerCustomers = useMemo(
+    () => (extraCustomers.length ? [...customers, ...extraCustomers] : customers),
+    [customers, extraCustomers],
+  )
 
   // ── Barcode scanning ─────────────────────────────────────────────────────
   // Products have no `barcode` column in the schema — the scanner matches
@@ -665,33 +748,25 @@ export default function PosCheckout({
         </div>
       </div>
 
-      {/* Optional customer link for loyalty accrual. Empty option = guest. */}
-      <div className="border-b border-slate-200 px-5 py-3">
-        <label
-          htmlFor="customer-select"
-          className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
-          Customer
-        </label>
-        <select
-          id="customer-select"
-          value={customerId}
-          onChange={(e) => {
-            setCustomerId(e.target.value)
-            // Points belong to an account: clear any redemption staged against
-            // the previous customer rather than carrying it over.
-            setRedeemPoints(0)
-          }}
-          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-        >
-          <option value="">Walk-in Customer</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} — {c.loyaltyPoints} pts
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Customer selection (Phase 4). Replaces the old unsearchable <select>:
+          searchable by name or phone, with the points / balance / recency a
+          cashier decides on. `customerId` and the redemption reset below are
+          unchanged, so every downstream rule still sees the same state. */}
+      <CustomerPicker
+        customers={pickerCustomers}
+        value={customerId}
+        onChange={(id) => {
+          setCustomerId(id)
+          // Points belong to an account: clear any redemption staged against
+          // the previous customer rather than carrying it over.
+          setRedeemPoints(0)
+        }}
+        currencySymbol={store.currencySymbol}
+        canCreate={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'}
+        onCreate={createQuickCustomer}
+        creating={creatingCustomer}
+        createError={quickCustomerError}
+      />
 
       {/* Loyalty redemption (Phase 1d). Only meaningful once a customer is
           attached, so the whole block is hidden for a walk-in rather than shown
