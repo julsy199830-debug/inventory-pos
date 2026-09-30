@@ -22,6 +22,7 @@ import {
   type StockAlert,
   type TrendPoint,
   type BreakdownRow,
+  SALE_STATUS,
 } from "@/lib/analytics";
 import { requirePageAuth } from "@/lib/session";
 
@@ -247,4 +248,139 @@ export async function getAlertCounts(): Promise<{ out: number; low: number }> {
   const products = await prisma.product.findMany({ select: PRODUCT_SELECT });
   const v = inventoryValuation(products);
   return { out: v.outOfStock, low: v.lowStock };
+}
+
+// ── Operational alerts (Phase 4, section 6) ──────────────────────────────────
+
+/**
+ * One thing that needs a human today, and where to go about it.
+ *
+ * Every entry is a COUNT OF EXISTING ROWS plus a link to the screen that already
+ * handles it. Nothing here computes a health score, a trend, or a ranking: a
+ * panel that invents a composite number nobody can trace back to a query is
+ * worse than no panel, because a manager will act on it.
+ */
+export type OperationalAlert = {
+  id: string;
+  label: string;
+  count: number;
+  /** Short sentence explaining what the number counts. */
+  detail: string;
+  /** Where the manager goes to act on it. */
+  href: string;
+  tone: "danger" | "warning" | "info";
+};
+
+/** Purchase-order states that still need someone to place, chase or receive. */
+const OPEN_PO_STATUSES = ["DRAFT", "ORDERED", "PARTIALLY_RECEIVED"] as const;
+
+/**
+ * Counts of the handful of things a manager wants to know first thing.
+ *
+ * Reads in parallel, and each is a plain count over an indexed column. The stock
+ * figures deliberately reuse `inventoryValuation`, so "out of stock" on the
+ * dashboard means exactly what it means on the inventory page and the sidebar -
+ * one category-aware rule, not a third private copy.
+ */
+export async function getOperationalAlerts(): Promise<OperationalAlert[]> {
+  await requirePageAuth();
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+
+  const [products, openPos, recentRefunds, recentVoids, recentAdjustments, recentAudit] =
+    await Promise.all([
+      prisma.product.findMany({ select: PRODUCT_SELECT }),
+      prisma.purchaseOrder.groupBy({
+        by: ["status"],
+        _count: true,
+        where: { status: { in: [...OPEN_PO_STATUSES] } },
+      }),
+      prisma.saleRefund.aggregate({
+        _count: true,
+        _sum: { amount: true },
+        where: { createdAt: { gte: weekAgo } },
+      }),
+      prisma.sale.groupBy({
+        by: ["status"],
+        _count: true,
+        where: { status: SALE_STATUS.VOIDED, createdAt: { gte: weekAgo } },
+      }),
+      // Stock counts land as ADJUSTMENT movements. The schema does not track
+      // whether a variance was later explained, so this reports them as recent
+      // adjustments and does NOT claim any are "unresolved".
+      prisma.stockMovement.groupBy({
+        by: ["type"],
+        _count: true,
+        where: { type: "ADJUSTMENT", createdAt: { gte: weekAgo } },
+      }),
+      prisma.auditLog.count({ where: { createdAt: { gte: weekAgo } } }),
+    ]);
+
+  const valuation = inventoryValuation(products);
+  const openPoCount = openPos.reduce((n, g) => n + g._count, 0);
+  const adjustmentCount = recentAdjustments.reduce((n, g) => n + g._count, 0);
+  const voidCount = recentVoids.reduce((n, g) => n + g._count, 0);
+  const refundAmount = recentRefunds._sum.amount ?? 0;
+
+  const alerts: OperationalAlert[] = [
+    {
+      id: "out-of-stock",
+      label: "Out of stock",
+      count: valuation.outOfStock,
+      detail: "Products with nothing left on the shelf",
+      href: "/inventory?stock=out",
+      tone: "danger",
+    },
+    {
+      id: "low-stock",
+      label: "Low stock",
+      count: valuation.lowStock,
+      detail: "Below the restock point for their category",
+      href: "/inventory?stock=low",
+      tone: "warning",
+    },
+    {
+      id: "open-po",
+      label: "Open purchase orders",
+      count: openPoCount,
+      detail: "Draft, ordered, or partly received",
+      href: "/purchasing",
+      tone: "info",
+    },
+    {
+      id: "recent-refunds",
+      label: "Refunds this week",
+      count: recentRefunds._count,
+      detail: `Money returned to customers in the last 7 days`,
+      href: "/pos",
+      tone: refundAmount > 0 ? "warning" : "info",
+    },
+    {
+      id: "recent-voids",
+      label: "Voids this week",
+      count: voidCount,
+      detail: "Sales reversed outright in the last 7 days",
+      href: "/pos",
+      tone: voidCount > 0 ? "warning" : "info",
+    },
+    {
+      id: "stock-adjustments",
+      label: "Stock adjustments",
+      count: adjustmentCount,
+      detail: "Count variances applied in the last 7 days",
+      href: "/inventory",
+      tone: "info",
+    },
+    {
+      id: "audit-week",
+      label: "Audit entries",
+      count: recentAudit,
+      detail: "Recorded in the last 7 days",
+      href: "/audit-log",
+      tone: "info",
+    },
+  ];
+
+  // Only surface what is actually actionable. A wall of zeroes is noise, and it
+  // trains a manager to stop reading the panel.
+  return alerts.filter((a) => a.count > 0);
 }

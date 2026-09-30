@@ -15,7 +15,8 @@ import { ShareBars } from "@/app/_components/ui/ShareBars";
 import { StatCard } from "@/app/_components/ui/StatCard";
 import ActivityByHour from "./_components/ActivityByHour";
 import RevenueTrendChart from "./_components/RevenueTrendChart";
-import { getDashboardData } from "./dashboard-data";
+import { getDashboardData, getOperationalAlerts } from "./dashboard-data";
+import OperationalAlerts from "./_components/OperationalAlerts";
 
 /**
  * Dashboard home (Phase 2) - the daily business picture a storekeeper opens
@@ -45,9 +46,14 @@ export default async function DashboardPage({
 }) {
   const { range } = await searchParams;
   const rangeKey = resolveRange(range);
-  const [data, settings] = await Promise.all([
+  // Phase 4: the alerts feed is a THIRD read, not part of `getDashboardData`,
+  // because it is a fixed "right now" view while the rest of the dashboard
+  // honours the selected range. Folding it into the range query would make a
+  // 7-day alert window silently drift with whichever tab is open.
+  const [data, settings, alerts] = await Promise.all([
     getDashboardData(rangeKey),
     getStoreSettings(),
+    getOperationalAlerts(),
   ]);
   const symbol = settings?.currencySymbol ?? "P";
   const { totals, today, valuation, adjustments } = data;
@@ -135,6 +141,9 @@ export default async function DashboardPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      {/* Phase 4: what needs a human today, above the analytical panels. */}
+      <OperationalAlerts alerts={alerts} />
+
         <Panel
           title="Sales trend"
           subtitle={

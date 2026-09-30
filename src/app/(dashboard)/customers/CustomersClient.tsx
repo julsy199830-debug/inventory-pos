@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   createCustomer,
   getCustomers,
@@ -12,6 +12,32 @@ import {
 } from "./actions";
 import { downloadCsv } from "@/lib/csv";
 import { Modal } from "@/app/_components/ui/Modal";
+
+/** Rows per page. Small enough to scan, large enough to avoid constant paging. */
+const PAGE_SIZE = 12;
+
+/** How the customer list can be ordered. */
+type SortKey = "name" | "debt" | "points" | "spent" | "lastSeen";
+
+/** The sort options offered, in the order they appear in the control. */
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "name", label: "Name" },
+  { value: "debt", label: "Debt" },
+  { value: "points", label: "Points" },
+  { value: "spent", label: "Total spent" },
+  { value: "lastSeen", label: "Last purchase" },
+];
+
+/** "3 days ago" / "never" - recency reads faster than a date in a dense table. */
+function sinceLabel(iso: string | null): string {
+  if (!iso) return "never";
+  const days = Math.floor(Math.max(0, Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`;
+}
 
 const f = (n: number) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
@@ -41,9 +67,21 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
   const [paying, setPaying] = useState<CustomerRow | null>(null);
   const [payment, setPayment] = useState({ amount: "", method: "CASH", notes: "" });
   const [viewing, setViewing] = useState<CustomerRow | null>(null);
+  // Phase 4: sort key + direction, and the current page.
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
   const [statements, setStatements] = useState<Record<string, CustomerStatement>>({});
 
-  const filtered = useMemo(() => {
+  /**
+   * Phase 4: search, then sort, then page.
+   *
+   * Sorting is applied before pagination so "top debtors" or "most points" is a
+   * real answer across the whole book rather than across one page of it. Every
+   * comparator falls back to the name, so two customers with the same debt or
+   * the same points never swap places between renders.
+   */
+  const searched = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(
@@ -54,9 +92,54 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
     );
   }, [rows, query]);
 
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...searched].sort((a, b) => {
+      switch (sortBy) {
+        case "debt":
+          return (a.currentBalance - b.currentBalance) * dir || a.name.localeCompare(b.name);
+        case "points":
+          return (a.loyaltyPoints - b.loyaltyPoints) * dir || a.name.localeCompare(b.name);
+        case "spent":
+          return (a.totalSpent - b.totalSpent) * dir || a.name.localeCompare(b.name);
+        case "lastSeen":
+          return (
+            (new Date(a.lastSaleAt ?? 0).getTime() -
+              new Date(b.lastSaleAt ?? 0).getTime()) *
+              dir || a.name.localeCompare(b.name)
+          );
+        case "name":
+        default:
+          return a.name.localeCompare(b.name) * dir;
+      }
+    });
+  }, [searched, sortBy, sortDir]);
+
+  // Pagination is client-side because `getCustomers` already returns the whole
+  // book. Splitting it server-side would mean a re-query per keystroke of the
+  // search box, which is the opposite of what a manager typing a phone number
+  // wants.
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const filtered = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Any change to the result set can strand the viewer past the last page, so
+  // the page resets rather than leaving an empty table with no explanation.
+  //
+  // The reset is done in the handlers that change those inputs (search on
+  // change, sort on change) plus after a reload, rather than in an effect keyed
+  // on the same values: a `setPage` inside an effect re-renders the table a
+  // second time on every keystroke, and the React Compiler rules reject it.
+  // `safePage` already clamps defensively, so a missed reset can never show an
+  // out-of-range page.
+  const resetPage = useCallback(() => setPage(1), []);
+
   async function reload() {
     const res = await getCustomers(query);
-    if (res.ok) setRows(res.data);
+    if (res.ok) {
+      setRows(res.data);
+      setPage(1);
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -157,12 +240,51 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
 
       {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>}
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by name, phone, or email…"
-        className={`${input} mt-4 sm:max-w-sm`}
-      />
+      {/* Search and sort sit on one row so a manager can narrow and reorder
+          without the controls wrapping onto separate lines on a laptop. */}
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            resetPage();
+          }}
+          placeholder="Search by name, phone, or email…"
+          aria-label="Search customers"
+          className={`${input} sm:max-w-sm`}
+        />
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <label htmlFor="customer-sort" className="text-xs font-medium text-slate-500">
+            Sort by
+          </label>
+          <select
+            id="customer-sort"
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value as SortKey);
+              resetPage();
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+              resetPage();
+            }}
+            aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            {sortDir === "asc" ? "↑" : "↓"}
+          </button>
+        </div>
+      </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -174,6 +296,9 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
               <th className="px-4 py-3">Credit Limit</th>
               <th className="px-4 py-3">Current Debt</th>
               <th className="px-4 py-3">History</th>
+              <th className="px-4 py-3">Points</th>
+              <th className="px-4 py-3">Total spent</th>
+              <th className="px-4 py-3">Last purchase</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -192,6 +317,11 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                   {r.salesCount} sale{r.salesCount === 1 ? "" : "s"} · {r.paymentsCount} payment
                   {r.paymentsCount === 1 ? "" : "s"}
                 </td>
+                <td className="px-4 py-3 tabular-nums text-slate-700">
+                  {r.loyaltyPoints}
+                </td>
+                <td className="px-4 py-3 tabular-nums text-slate-700">{f(r.totalSpent)}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">{sinceLabel(r.lastSaleAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <button type="button" className={ghost} onClick={() => openStatement(r)}>
@@ -238,6 +368,44 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
             )}
           </tbody>
           </table>
+        </div>
+
+        {/* Count + pager. The count is stated even on a single page, so a
+            manager can tell "showing everything" from "showing page 1 of 4". */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-xs text-slate-600">
+            {sorted.length === 0
+              ? "No customers"
+              : pageCount === 1
+                ? `${sorted.length} customer${sorted.length === 1 ? "" : "s"}`
+                : `Showing ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(
+                    safePage * PAGE_SIZE,
+                    sorted.length,
+                  )} of ${sorted.length}`}
+          </p>
+          {pageCount > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="text-xs tabular-nums text-slate-600">
+                Page {safePage} of {pageCount}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                disabled={safePage === pageCount}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

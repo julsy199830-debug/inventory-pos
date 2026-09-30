@@ -10,6 +10,7 @@ import {
 } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
 import type { MutationResult } from "@/lib/types";
+import { isRevenueSale, round2 } from "@/lib/analytics";
 
 export type CustomerRow = {
   id: string;
@@ -20,6 +21,12 @@ export type CustomerRow = {
   currentBalance: number;
   salesCount: number;
   paymentsCount: number;
+  /** Phase 4: free points on the account, read straight off the row. */
+  loyaltyPoints: number;
+  /** Phase 4: lifetime net spend across this customer's sales. */
+  totalSpent: number;
+  /** Phase 4: ISO timestamp of the most recent sale, or null. */
+  lastSaleAt: string | null;
 };
 
 export type CustomerInput = {
@@ -104,9 +111,16 @@ export async function getCustomers(query?: string) {
       name: true,
       phone: true,
       email: true,
+      loyaltyPoints: true,
       creditLimit: true,
       currentBalance: true,
       _count: { select: { sales: true, payments: true } },
+      // Phase 4: lifetime spend and last-seen for the list. Aggregate here in one
+      // query rather than per-row, and read only stored columns - no total is
+      // recomputed in the client, so this cannot disagree with the ledger.
+      sales: {
+        select: { totalAmount: true, createdAt: true, status: true },
+      },
     },
   });
 
@@ -119,6 +133,18 @@ export async function getCustomers(query?: string) {
     currentBalance: c.currentBalance,
     salesCount: c._count.sales,
     paymentsCount: c._count.payments,
+    loyaltyPoints: c.loyaltyPoints,
+    // Only money actually kept counts: a Voided or fully Refunded sale is not
+    // spend. isRevenueSale is imported rather than reimplemented so this list
+    // uses the SAME rule as the dashboard and reports.
+    totalSpent: round2(
+      c.sales.reduce((n, s) => (isRevenueSale(s.status) ? n + s.totalAmount : n), 0),
+    ),
+    lastSaleAt:
+      c.sales.reduce<Date | null>((latest, s) => {
+        if (!isRevenueSale(s.status)) return latest;
+        return !latest || s.createdAt > latest ? s.createdAt : latest;
+      }, null)?.toISOString() ?? null,
   }));
 
   return { ok: true as const, data: rows };
