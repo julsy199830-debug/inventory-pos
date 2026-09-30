@@ -134,8 +134,14 @@ test.describe('POS Transaction History & Void', () => {
     await expect(voidBtn).toBeVisible();
     await voidBtn.click();
 
-    // Confirmation dialog
-    await expect(page.locator('text=Void this sale?').first()).toBeVisible({ timeout: 10000 });
+    // Confirmation dialog. Phase 3 retitled it to say what a void DOES (reverse
+    // the whole sale) and spell out the consequences before a reason is picked.
+    await expect(page.locator('text=Void this entire sale').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Voiding this sale will').first()).toBeVisible();
+    // The affected lines and their quantities are named, not just a total.
+    await expect(page.locator('text=Aurora Wireless Headphones').first()).toBeVisible();
+    // And the stock impact is stated in units.
+    await expect(page.getByText(/unit(s)? to stock/).first()).toBeVisible();
 
     // Empty reason keeps "Confirm void" disabled
     await expect(page.locator('button:has-text("Confirm void")')).toBeDisabled();

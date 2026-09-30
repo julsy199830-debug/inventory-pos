@@ -122,6 +122,9 @@ type CompletedSale = {
   paymentMethod: string
   /** Cash only: amount handed over, for the receipt's Tendered/Change rows. */
   tendered?: number | null
+  /** Phase 3: who rang it up and who it was for, for the receipt header. */
+  cashierName?: string
+  customerName?: string | null
   change?: number | null
 }
 
@@ -492,6 +495,8 @@ export default function PosCheckout({
         paymentMethod,
         tendered: tenderedAmount,
         change,
+        cashierName: cashier.name,
+        customerName: selectedCustomer?.name ?? null,
       })
       toast.success('Sale complete', {
         description: `Order ${res.data.id.slice(0, 8).toUpperCase()} · ${money(total)} paid via ${paymentMethod.replaceAll('_', ' ')}`,
@@ -1490,6 +1495,9 @@ export default function PosCheckout({
                 paymentMethod={completed.paymentMethod}
                 tendered={completed.tendered}
                 change={completed.change}
+                cashierName={completed.cashierName}
+                customerName={completed.customerName}
+                taxRate={store.taxRate ?? 0}
               />
             </div>
 

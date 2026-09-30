@@ -32,6 +32,32 @@ export type ReceiptStore = {
   currencySymbol: string
 }
 
+/** One line of a REFUND receipt, reusing the sale line shape. */
+export type RefundReceiptLine = ReceiptLine
+
+/** Payment methods, spelled the way a customer reads them. */
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Cash',
+  CARD: 'Card',
+  STORE_CREDIT: 'Store Credit',
+}
+
+/**
+ * A label/value row, label left and value right-aligned, both tabular so columns
+ * line up down the slip.
+ *
+ * Hoisted to module scope deliberately: defined inside Receipt it would be a new
+ * component type on every render, which the React Compiler rules reject and
+ * which would remount the row subtree on each keystroke of the parent.
+ */
+
+const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
+<div className={`flex justify-between gap-2 ${strong ? 'font-bold' : ''}`}>
+<span className="shrink-0">{label}</span>
+<span className="truncate text-right tabular-nums">{value}</span>
+</div>
+)
+
 export default function Receipt({
   store,
   saleId,
@@ -47,7 +73,13 @@ export default function Receipt({
   paymentMethod,
   tendered = null,
   change = null,
-  thanks = 'Thank you for shopping with InvPos!',
+  cashierName = null,
+  customerName = null,
+  taxRate = 0,
+  refundLines = [],
+  refundTotal = 0,
+  originalTotal = null,
+  thanks = 'Thank you for shopping with us!',
 }: {
   store: ReceiptStore
   /** Complete (not truncated) sale id — the POS shows short ids elsewhere. */
@@ -71,6 +103,18 @@ export default function Receipt({
   tendered?: number | null
   /** Cash only: change due (renders a Change row when non-negative). */
   change?: number | null
+  /** Phase 3: who rang the sale up. A receipt without this is unauditable. */
+  cashierName?: string | null
+  /** Phase 3: the customer, or null for a walk-in. */
+  customerName?: string | null
+  /** Phase 3: store tax percentage, so the VAT line is self-explanatory. */
+  taxRate?: number
+  /** Phase 3: when set, this is a REFUND slip, not a sale. */
+  refundLines?: RefundReceiptLine[]
+  /** Phase 3: total refunded on this slip. */
+  refundTotal?: number
+  /** Phase 3: the original sale total a refund is drawn against. */
+  originalTotal?: number | null
   thanks?: string
 }) {
   const money = (value: number) =>
@@ -85,104 +129,134 @@ export default function Receipt({
     hour12: true,
   })
 
+  const isRefund = refundLines.length > 0
+  const unitCount = lines.reduce((n, l) => n + l.qty, 0)
+  const refundUnitCount = refundLines.reduce((n, l) => n + l.qty, 0)
+  const paymentLabel = PAYMENT_LABELS[paymentMethod] ?? paymentMethod
+
   return (
-    <div className="print-receipt mx-auto w-[80mm] bg-white px-1 font-mono text-[11px] leading-snug text-black">
+    <div className="print-receipt mx-auto w-[80mm] bg-white px-2 py-3 font-mono text-[11px] leading-snug text-black">
       {/* ── Store header ─────────────────────────────────────────────── */}
       <div className="text-center">
-        <p className="text-sm font-bold uppercase tracking-wide">
-          {store.storeName}
-        </p>
-        {store.address && <p className="mt-0.5 whitespace-pre-line">{store.address}</p>}
-        {store.phone && <p className="mt-0.5">{store.phone}</p>}
+        <p className="text-sm font-bold uppercase tracking-wider">{store.storeName}</p>
+        {store.address && <p className="mt-1 whitespace-pre-line text-[10px]">{store.address}</p>}
+        {store.phone && <p className="text-[10px]">{store.phone}</p>}
       </div>
 
-      <div className="my-2 border-t border-dashed border-black" />
+      <div className="my-2 border-t border-dashed border-black/50" />
 
-      {/* ── Order meta ───────────────────────────────────────────────── */}
+      {/* ── A refund slip is titled as one. A customer holding a slip that
+          reads "TOTAL" with no other signal has no way to tell it is money
+          coming back. ───────────────────────────────────────────────── */}
+      {isRefund && (
+        <div className="mb-2 border border-black px-2 py-1 text-center font-bold uppercase tracking-widest">
+          Refund receipt
+        </div>
+      )}
+
+      {/* ── Transaction meta ─────────────────────────────────────────── */}
       <div className="space-y-0.5">
-        <div className="flex justify-between">
-          <span>Order</span>
-          <span className="max-w-[55mm] truncate">{saleId.toUpperCase()}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Date</span>
-          <span>{formattedTimestamp}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Payment</span>
-          <span>{paymentMethod}</span>
-        </div>
+        <Row label="Receipt #" value={saleId.toUpperCase()} />
+        <Row label="Date" value={formattedTimestamp} />
+        {cashierName && <Row label="Cashier" value={cashierName} />}
+        <Row label="Customer" value={customerName ?? 'Walk-in'} />
+        {!isRefund && <Row label="Payment" value={paymentLabel} />}
       </div>
 
-      <div className="my-2 border-t border-dashed border-black" />
+      <div className="my-2 border-t border-dashed border-black/50" />
 
-      {/* ── Itemized list ───────────────────────────────────────────── */}
-      <div className="space-y-1">
+      {/* ── Items ────────────────────────────────────────────────────── */}
+      <div className="space-y-1.5">
         {lines.map((line, i) => (
-          <div key={i}>
-            <p className="truncate">{line.name}</p>
-            <div className="flex justify-between">
+          <div key={i} className="break-words">
+            <p className="font-semibold">{line.name}</p>
+            <div className="flex justify-between gap-2">
               <span>
                 {line.qty} × {money(line.unitPrice)}
               </span>
-              <span>{money(line.qty * line.unitPrice)}</span>
+              <span className="tabular-nums">{money(line.qty * line.unitPrice)}</span>
             </div>
           </div>
         ))}
+        <p className="text-[10px]">
+          {unitCount} item{unitCount === 1 ? '' : 's'}
+        </p>
       </div>
 
-      <div className="my-2 border-t border-dashed border-black" />
+      <div className="my-2 border-t border-dashed border-black/50" />
 
       {/* ── Totals ───────────────────────────────────────────────────── */}
       <div className="space-y-0.5">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>{money(subtotal)}</span>
-        </div>
-        {discount > 0 && (
-          <div className="flex justify-between">
-            <span>Discount</span>
-            <span>−{money(discount)}</span>
-          </div>
+        <Row label="Subtotal" value={money(subtotal)} />
+        {discount > 0 && <Row label="Discount" value={`−${money(discount)}`} />}
+        {/* The VAT row is omitted entirely when tax is off, rather than printed
+            as a zero line that reads like a charge. */}
+        {tax > 0 && (
+          <Row label={taxRate > 0 ? `VAT (${taxRate}%)` : 'VAT'} value={money(tax)} />
         )}
-        <div className="flex justify-between">
-          <span>Tax</span>
-          <span>{money(tax)}</span>
-        </div>
         {redemptionAmount > 0 && (
-          <div className="flex justify-between">
-            <span>Loyalty ({redeemedPoints} pts)</span>
-            <span>−{money(redemptionAmount)}</span>
-          </div>
+          <Row
+            label={`Loyalty (${redeemedPoints} pts)`}
+            value={`−${money(redemptionAmount)}`}
+          />
+        )}
+        <div className="mt-1 flex justify-between gap-2 border-t border-black/50 pt-1 text-sm font-bold">
+          <span>{isRefund ? 'Sale total' : 'Total'}</span>
+          <span className="tabular-nums">{money(total)}</span>
+        </div>
+        {tendered != null && <Row label="Tendered" value={money(tendered)} />}
+        {change != null && change >= 0 && (
+          <Row label="Change" value={money(change)} />
         )}
         {earnedPoints > 0 && (
-          <div className="flex justify-between">
-            <span>Points earned</span>
-            <span>{earnedPoints}</span>
-          </div>
-        )}
-        <div className="flex justify-between pt-0.5 text-sm font-bold">
-          <span>Total</span>
-          <span>{money(total)}</span>
-        </div>
-        {tendered != null && (
-          <div className="flex justify-between">
-            <span>Tendered</span>
-            <span>{money(tendered)}</span>
-          </div>
-        )}
-        {change != null && change >= 0 && (
-          <div className="flex justify-between">
-            <span>Change</span>
-            <span>{money(change)}</span>
-          </div>
+          <Row label="Points earned" value={String(earnedPoints)} />
         )}
       </div>
 
-      <div className="my-2 border-t border-dashed border-black" />
+      {/* ── Refund detail ────────────────────────────────────────────── */}
+      {isRefund && (
+        <>
+          <div className="my-2 border-t border-dashed border-black/50" />
+          <p className="mb-1 font-bold uppercase tracking-wide">Returned items</p>
+          <div className="space-y-1.5">
+            {refundLines.map((line, i) => (
+              <div key={i} className="break-words">
+                <p className="font-semibold">{line.name}</p>
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {line.qty} × {money(line.unitPrice)}
+                  </span>
+                  <span className="tabular-nums">{money(line.qty * line.unitPrice)}</span>
+                </div>
+              </div>
+            ))}
+            <p className="text-[10px]">
+              {refundUnitCount} unit{refundUnitCount === 1 ? '' : 's'} returned
+            </p>
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {originalTotal != null && (
+              <Row label="Original total" value={money(originalTotal)} />
+            )}
+            <div className="mt-1 flex justify-between gap-2 border-t border-black/50 pt-1 text-sm font-bold">
+              <span>Refunded</span>
+              <span className="tabular-nums">−{money(refundTotal)}</span>
+            </div>
+            {originalTotal != null && (
+              <Row
+                label="Balance kept"
+                value={money(Math.max(0, originalTotal - refundTotal))}
+              />
+            )}
+          </div>
+        </>
+      )}
 
-      {/* ── Thank-you ────────────────────────────────────────────────── */}
+      <div className="my-2 border-t border-dashed border-black/50" />
+
+      {/* ── Footer ───────────────────────────────────────────────────── */}
       <p className="pb-1 text-center">{thanks}</p>
+      <p className="text-center text-[9px]">Keep this receipt for returns or exchanges.</p>
     </div>
   )
 }

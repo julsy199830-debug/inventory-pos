@@ -29,6 +29,66 @@ import type {
  */
 
 /**
+ * The "what will happen" panel shared by the void and refund confirmations.
+ *
+ * Both dialogs describe their consequences in the same shape for a reason: a
+ * cashier moving between them should not have to learn a new layout each time,
+ * and the destructive action should always be the one with the most explicit
+ * consequences on screen.
+ *
+ * `tone` is the only thing that differs between them — red for void (whole sale
+ * reversed), amber for refund (partial return) — which is itself the fastest
+ * way to tell the two apart.
+ */
+function ImpactPanel({
+  tone,
+  heading,
+  effects,
+  items,
+}: {
+  tone: 'void' | 'refund';
+  heading: string;
+  /** Ordered consequence lines, most important first. */
+  effects: string[];
+  /** The lines being affected, with their quantities. */
+  items: { name: string; qty: number; note?: string }[];
+}) {
+  const skin =
+    tone === 'void'
+      ? { wrap: 'bg-red-50 ring-red-200', text: 'text-red-800', strong: 'text-red-900' }
+      : { wrap: 'bg-amber-50 ring-amber-200', text: 'text-amber-800', strong: 'text-amber-900' }
+
+  return (
+    <div className={`rounded-xl px-3 py-3 ring-1 ${skin.wrap}`}>
+      <p className={`text-xs font-semibold uppercase tracking-wide ${skin.text}`}>
+        {heading}
+      </p>
+      <ul className={`mt-1.5 space-y-1 text-xs ${skin.text}`}>
+        {effects.map((effect) => (
+          <li key={effect} className="flex gap-1.5">
+            <span aria-hidden>•</span>
+            <span>{effect}</span>
+          </li>
+        ))}
+      </ul>
+      {items.length > 0 && (
+        <ul className={`mt-2.5 space-y-1 border-t pt-2 text-xs ${skin.text} border-current/20`}>
+          {items.map((item) => (
+            <li key={item.name} className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 truncate">{item.name}</span>
+              <span className={`shrink-0 tabular-nums ${skin.strong}`}>
+                {item.qty > 0 ? `× ${item.qty}` : ''}
+                {item.note ? ` ${item.note}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/**
  * One of the history filter dropdowns.
  *
  * Each option carries its count, so a manager can see where the volume is
@@ -262,6 +322,15 @@ export default function TransactionHistory({ canVoid }: Props) {
     (it) => it.quantity - it.refundedQuantity > 0,
   )
 
+  /**
+   * Phase 3: total units a VOID would put back on the shelf.
+   *
+   * Summed from the item lines rather than shown as a bare number, so the figure
+   * in the consequences panel is traceable to the items listed under it. A void
+   * returns every unit of the sale; a refund returns only what is still out.
+   */
+  const voidUnits = (details?.items ?? []).reduce((n, it) => n + it.quantity, 0)
+
   const openRefund = () => {
     setRefundError(null)
     setRefundReason('')
@@ -336,6 +405,20 @@ export default function TransactionHistory({ canVoid }: Props) {
     // `stagedFor` is intentionally inlined above rather than called here: it is
     // a closure over `refundQty` that is itself a dependency, and listing both
     // would defeat the memo. `details` is re-created per fetch.
+  }, [details, refundQty])
+
+  /**
+   * Phase 3: how many units the staged refund will put back on the shelf.
+   *
+   * Derived from the same per-line clamp the preview value uses, so the
+   * consequence panel can never quote a different number from the amount.
+   */
+  const refundStagedUnits = useMemo(() => {
+    if (!details) return 0
+    return details.items.reduce((n, it) => {
+      const max = it.quantity - it.refundedQuantity
+      return n + Math.min(Math.max(0, refundQty[it.id] ?? 0), max)
+    }, 0)
   }, [details, refundQty])
 
   return (
@@ -757,41 +840,70 @@ export default function TransactionHistory({ canVoid }: Props) {
         onClose={() => {
           if (!voidPending) setVoidOpen(false)
         }}
-        title="Void this sale?"
-        description="The sale's records will be reversed. This cannot be undone."
+        title="Void this entire sale"
+        description="Reverses the WHOLE sale and puts every unit back on the shelf. Use a refund to return only part of it."
         className="max-w-lg"
       >
         {details && (
           <div className="flex flex-col gap-4">
             {/* Sale summary */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
-              <div className="flex items-center justify-between">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
                 <span className="font-mono text-slate-600">#{details.id.slice(0, 8)}</span>
-                <span className="font-semibold tabular-nums text-slate-900">{money(details.totalAmount)}</span>
+                <span className="font-semibold tabular-nums text-slate-900">
+                  {money(details.totalAmount)}
+                </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 {METHOD_LABEL[details.paymentMethod] ?? details.paymentMethod}
                 {details.customerName ? ` · ${details.customerName}` : ''}
+                {details.cashierName ? ` · ${details.cashierName}` : ''}
               </p>
             </div>
 
-            {/* Method-specific reversal notices */}
+            {/* Phase 3: the consequences, in full, BEFORE a reason is chosen.
+                The previous version named only the money and left the cashier
+                to work out what happened to the stock and the loyalty points. */}
+            <ImpactPanel
+              tone="void"
+              heading="Voiding this sale will"
+              effects={[
+                `Return ${voidUnits} unit${voidUnits === 1 ? '' : 's'} to stock.`,
+                details.earnedPoints > 0
+                  ? `Reverse ${details.earnedPoints} loyalty point${details.earnedPoints === 1 ? '' : 's'} earned.`
+                  : 'No loyalty points to reverse.',
+                details.redeemedPoints > 0
+                  ? `Re-debit ${details.redeemedPoints} redeemed point${details.redeemedPoints === 1 ? '' : 's'}.`
+                  : 'No redeemed points to re-debit.',
+                'Mark the sale Voided. It stays on record for audit.',
+              ]}
+              items={details.items.map((it) => ({
+                name: it.productName,
+                qty: it.quantity,
+              }))}
+            />
+
+            {/* Method-specific reversal notices. Light-theme tokens throughout:
+                the old `bg-amber-500/10 text-amber-300` was a dark-theme class
+                left behind, and amber-300 on a near-white panel is unreadable. */}
             {details.paymentMethod === 'CASH' && (
-              <p className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Inventory and loyalty records will be reversed. Cash handling is manual — reconcile the returned cash yourself.
+              <p className="flex gap-2 rounded-lg bg-slate-100 p-2.5 text-xs text-slate-700 ring-1 ring-slate-200">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                Cash handling is manual — reconcile the returned cash yourself.
               </p>
             )}
             {details.paymentMethod === 'CARD' && (
-              <p className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                The system will reverse the sale records. Any card-terminal reversal must be completed separately.
+              <p className="flex gap-2 rounded-lg bg-slate-100 p-2.5 text-xs text-slate-700 ring-1 ring-slate-200">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                Any card-terminal reversal must be completed separately; the till
+                cannot do it for you.
               </p>
             )}
             {details.paymentMethod === 'STORE_CREDIT' && (
-              <p className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                The customer&apos;s outstanding balance and loyalty points will be reversed. If the balance can no longer absorb the reversal, the void will be rejected.
+              <p className="flex gap-2 rounded-lg bg-slate-100 p-2.5 text-xs text-slate-700 ring-1 ring-slate-200">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                The customer&apos;s outstanding balance will be credited back. If the
+                balance cannot absorb the reversal, the void is rejected.
               </p>
             )}
 
@@ -870,19 +982,62 @@ export default function TransactionHistory({ canVoid }: Props) {
         onClose={() => {
           if (!refundPending) setRefundOpen(false)
         }}
-        title="Refund items"
-        description={`Sale #${details?.id.slice(0, 8) ?? ''} · return stock and issue a partial refund`}
+        title="Refund part of this sale"
+        description={`Sale #${details?.id.slice(0, 8) ?? ''} · return only the units you pick and refund just those`}
         className="max-w-lg"
       >
         {details && (
           <div className="flex flex-col gap-4">
-            {/* Already-refunded context, so a repeat refund is never a surprise. */}
+            {/* Already-refunded context, so a repeat refund is never a surprise.
+                Light-theme tokens: the old `bg-amber-500/10 text-amber-300` was
+                a dark-theme class left behind and is unreadable on white. */}
             {details.refundedAmount > 0 && (
-              <p className="rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
-                {money(details.refundedAmount)} of {money(details.totalAmount)} has already been
-                refunded. {money(details.totalAmount - details.refundedAmount)} remains returnable.
-              </p>
+              <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 ring-1 ring-amber-200">
+                <p className="font-semibold">Partly refunded already</p>
+                <p className="mt-0.5">
+                  {money(details.refundedAmount)} of {money(details.totalAmount)} returned.{' '}
+                  <span className="font-semibold">
+                    {money(details.totalAmount - details.refundedAmount)}
+                  </span>{' '}
+                  remains returnable.
+                </p>
+                {details.refunds.length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5 border-t border-amber-200 pt-1.5">
+                    {details.refunds.map((r) => (
+                      <li key={r.id} className="flex justify-between gap-2">
+                        <span className="min-w-0 truncate">
+                          {r.reason}
+                          {r.cashierName ? ` · ${r.cashierName}` : ''}
+                        </span>
+                        <span className="shrink-0 tabular-nums">
+                          −{money(r.amount)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
+
+            {/* Phase 3: the consequence, stated before any quantity is staged,
+                so the cashier knows what a refund does to the shelf and the
+                points balance before they pick the lines. */}
+            <ImpactPanel
+              tone="refund"
+              heading="This refund will"
+              effects={[
+                refundStagedUnits > 0
+                  ? `Return ${refundStagedUnits} unit${refundStagedUnits === 1 ? '' : 's'} to stock.`
+                  : 'Return units to stock once you choose a quantity.',
+                `Refund ${money(refundPreview)} to the customer.`,
+                'Keep the rest of the sale and its loyalty points intact.',
+              ]}
+              items={refundableItems.map((it) => ({
+                name: it.productName,
+                qty: stagedFor(it.id, it.quantity - it.refundedQuantity),
+                note: `of ${it.quantity - it.refundedQuantity}`,
+              }))}
+            />
 
             {/* Per-line quantity picker. `max` is derived from the server's own
                 `refundedQuantity`, so a line can never be over-selected here. */}
@@ -948,9 +1103,9 @@ export default function TransactionHistory({ canVoid }: Props) {
             </div>
 
             {details.paymentMethod === 'CASH' && (
-              <p className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-300 ring-1 ring-amber-500/30">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Stock and loyalty points are reversed automatically. Handing the cash back is
+              <p className="flex gap-2 rounded-lg bg-slate-100 p-2.5 text-xs text-slate-700 ring-1 ring-slate-200">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                Stock and loyalty points reverse automatically. Handing the cash back is
                 manual — reconcile the drawer yourself.
               </p>
             )}
