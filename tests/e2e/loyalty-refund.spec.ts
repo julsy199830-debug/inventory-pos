@@ -40,6 +40,29 @@ async function login(page: Page, who: typeof CASHIER_LOGIN, landOnPos: boolean) 
 }
 
 /**
+ * Attach the first real customer to the open cart.
+ *
+ * Phase 4 replaced the register's plain `<select id="customer-select">` with
+ * the searchable `CustomerPicker`, so selecting a customer is now an open +
+ * click on a result rather than a `selectOption`. These tests care about what
+ * loyalty does once a customer is attached, not about how the cashier picks
+ * them, so the helper opens the picker and takes the first real row.
+ *
+ * Retried for the same hydration reason as `addToCart`: the trigger is
+ * server-rendered and its onClick is a moment behind the HTML.
+ */
+async function attachFirstCustomer(page: Page) {
+  await expect(async () => {
+    await page.locator('#customer-trigger').click();
+    await expect(page.locator('#customer-search-input')).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
+  const option = page.locator('[data-testid="customer-option"]').first();
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(page.locator('#customer-trigger')).not.toContainText('Walk-in Customer');
+}
+
+/**
  * Add `times` units of a product to the cart, retrying until the cart updates.
  *
  * Visibility alone is not a real signal: the register hydrates progressively, so
@@ -118,7 +141,7 @@ test.describe('Phase 1d — loyalty redemption', () => {
     // No customer -> no redemption affordance at all.
     await expect(page.locator('#redeem-points')).toHaveCount(0);
 
-    await page.locator('#customer-select').selectOption({ index: 1 });
+    await attachFirstCustomer(page);
     await expect(page.locator('#redeem-points')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('redemption-summary')).toContainText('pts');
   });
@@ -126,7 +149,7 @@ test.describe('Phase 1d — loyalty redemption', () => {
   test('redeeming points lowers the total and appears on the receipt', async ({ page }) => {
     await login(page, CASHIER_LOGIN, true);
     await addToCart(page, 'Aurora Wireless Headphones');
-    await page.locator('#customer-select').selectOption({ index: 1 });
+    await attachFirstCustomer(page);
 
     // Read the pre-redemption total rather than hardcoding it: the seeded store
     // has tax enabled, and pinning a peso figure would make this test fail
@@ -153,7 +176,7 @@ test.describe('Phase 1d — loyalty redemption', () => {
   test('Redeem max can never drive the total below zero', async ({ page }) => {
     await login(page, CASHIER_LOGIN, true);
     await addToCart(page, 'Aurora Wireless Headphones');
-    await page.locator('#customer-select').selectOption({ index: 1 });
+    await attachFirstCustomer(page);
     const before = await totalValue(grandTotal(page));
 
     await page.locator('button:has-text("Redeem max")').first().click();

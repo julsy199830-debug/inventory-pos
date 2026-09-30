@@ -897,8 +897,17 @@ export default function PosCheckout({
       </div>
 
 
-      {/* Cart lines */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      {/* Cart lines. A floor rather than `min-h-0`: when the control stack
+          above is taller than the panel (a short window), the controls cannot
+          shrink, so this box would be squeezed to zero height and the cart —
+          the one thing a cashier must always see — would vanish into the
+          scroller. 140px keeps ~2 rows usable and the wrapper above scrolls to
+          reach the controls.
+
+          140 rather than any larger figure: at 1920x1080 the wrapper gets 617px
+          for 444px of controls, so `flex-1` already hands the cart 173px. A
+          floor above 173 would start a scrollbar there for no reason. */}
+      <div className="min-h-[140px] flex-1 overflow-y-auto px-4 py-3">
         {cart.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
@@ -1202,7 +1211,21 @@ export default function PosCheckout({
           </span>
         )}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">{cartBody}</div>
+      {/* Phase 4 fix: the control stack above the cart (status bar, scan, the
+          searchable picker, redemption and payment) is ~444px tall on its own,
+          while the totals footer below is ~337px. On a 720px-tall window that
+          left the wrapper 257px for 444px of controls, so everything below the
+          customer picker spilled out of the wrapper and sat *underneath* the
+          opaque footer — the redemption and payment controls were literally
+          unclickable (Playwright's hit test and a real mouse both resolved to
+          the footer).
+
+          `overflow-y-auto` here keeps the footer pinned as the panel's only
+          scroller for the body, so nothing can ever end up behind it. The cart
+          lines keep their own inner scroller, and on a tall window (where the
+          controls fit) this wrapper never scrolls at all, so behaviour is
+          unchanged from before. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{cartBody}</div>
       {cartFooter}
     </aside>
   )
@@ -1516,7 +1539,9 @@ export default function PosCheckout({
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col">{cartBody}</div>
+              {/* Same scroll containment as the desktop sidebar: the drawer's
+                  footer must stay pinned, never cover the controls. */}
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{cartBody}</div>
               {cartFooter}
             </motion.div>
           </motion.div>
