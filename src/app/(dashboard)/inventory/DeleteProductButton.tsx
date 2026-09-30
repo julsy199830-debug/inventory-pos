@@ -56,7 +56,7 @@ export default function DeleteProductButton({
         disabled={pending}
         aria-label={`Delete ${name}`}
         title={error ?? `Delete ${name}`}
-        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-500/100/10 hover:text-red-600 disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
       >
         <svg
           className="h-4 w-4"

@@ -69,13 +69,13 @@ export default function LowStockBanner({
 
           {out.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-red-300">
+              <p className="text-xs font-medium uppercase tracking-wide text-red-700">
                 Out of stock
               </p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {out.map((item) => (
                   <li key={item.id}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs text-red-700">
                       <span className="font-medium">{item.name}</span>
                       <span className="font-mono text-red-500">({item.sku})</span>
                     </span>
@@ -87,13 +87,13 @@ export default function LowStockBanner({
 
           {low.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
                 Low on stock — below {low[0].threshold === 1 ? "1 unit" : `${low[0].threshold} units`}
               </p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {low.map((item) => (
                   <li key={item.id}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-white px-2.5 py-0.5 text-xs text-amber-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs text-amber-700">
                       <span className="font-medium">{item.name}</span>
                       <span className="font-mono text-amber-600">({item.sku})</span>
                       <span className="text-amber-600">

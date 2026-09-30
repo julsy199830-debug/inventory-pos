@@ -772,7 +772,7 @@ export default function TransactionHistory({ canVoid }: Props) {
             {/* Void information — only for voided sales */}
             {detailsVoided && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm">
-                <p className="flex items-center gap-2 font-medium text-red-300">
+                <p className="flex items-center gap-2 font-medium text-red-700">
                   <Ban className="h-4 w-4" /> Voided transaction
                 </p>
                 <p className="mt-1 text-red-200/90">Reason: {details.voidReason ?? '—'}</p>
@@ -786,7 +786,7 @@ export default function TransactionHistory({ canVoid }: Props) {
             {/* Refund audit trail (Phase 1d) — who took money back, when, why. */}
             {details.refunds.length > 0 && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-                <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
+                <p className="flex items-center gap-2 text-sm font-medium text-amber-700">
                   <Undo2 className="h-4 w-4" /> Refund history
                 </p>
                 <ul className="mt-1.5 space-y-1">

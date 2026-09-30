@@ -33,7 +33,7 @@ export default async function SalesAnalyticsPage() {
     return (
       <div className="space-y-6">
         <PageHeader />
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {result.error}
         </div>
       </div>

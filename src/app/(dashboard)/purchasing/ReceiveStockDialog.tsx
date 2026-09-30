@@ -81,7 +81,7 @@ export default function ReceiveStockDialog({
         Receive stock
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="receive-stock-title">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/45 backdrop-blur-[3px]" role="dialog" aria-modal="true" aria-labelledby="receive-stock-title">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -94,7 +94,7 @@ export default function ReceiveStockDialog({
               <input type="hidden" name="id" value={purchaseOrderId} />
               <input type="hidden" name="lineCount" value={items.length} />
               <input type="hidden" name="requestKey" value={requestKey} />
-              {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+              {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full min-w-[680px] text-sm">
                   <thead className="bg-white/60 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Product</th><th className="px-3 py-2 text-right">Ordered</th><th className="px-3 py-2 text-right">Already received</th><th className="px-3 py-2 text-right">Remaining</th><th className="px-3 py-2 text-right">Receive now</th></tr></thead>
@@ -105,7 +105,7 @@ export default function ReceiveStockDialog({
                         <td className="px-3 py-2"><input type="hidden" name={`itemId_${item.lineNumber}`} value={item.itemId} />{item.productName}<span className="block font-mono text-xs text-slate-500">{item.productSku}</span></td>
                         <td className="px-3 py-2 text-right tabular-nums">{item.orderedQty}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{item.receivedQty}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-amber-300">{remaining}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-amber-700">{remaining}</td>
                         <td className="px-3 py-2 text-right"><input name={`receiveQty_${item.lineNumber}`} type="number" min="0" max={remaining} step="1" defaultValue="0" disabled={pending || remaining === 0} onChange={(event) => { const value = Number(event.currentTarget.value); if (Number.isFinite(value) && value > remaining) setError(`Cannot receive ${value}; only ${remaining} remaining.`); }} className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm text-slate-900 disabled:opacity-50" aria-label={`Receive quantity for ${item.productName}`} /></td>
                       </tr>;
                     })}

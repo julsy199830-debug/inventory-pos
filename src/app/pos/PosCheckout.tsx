@@ -1438,7 +1438,7 @@ export default function PosCheckout({
       <AnimatePresence>
         {completed && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px] p-4 backdrop-blur-sm"
             onClick={(e) => {
               if (e.target === e.currentTarget) setCompleted(null)
             }}
@@ -1531,7 +1531,7 @@ export default function PosCheckout({
       <AnimatePresence>
         {cashStepOpen && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px] p-4 backdrop-blur-sm"
             onClick={(e) => {
               if (e.target === e.currentTarget && !pending) setCashStepOpen(false)
             }}

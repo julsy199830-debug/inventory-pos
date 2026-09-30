@@ -104,7 +104,7 @@ export default function EditSupplierDialog({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white/45 backdrop-blur-[3px] p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
@@ -147,7 +147,7 @@ export default function EditSupplierDialog({
               {error && (
                 <p
                   role="alert"
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
                 >
                   {error}
                 </p>

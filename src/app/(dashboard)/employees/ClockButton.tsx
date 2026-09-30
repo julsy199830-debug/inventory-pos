@@ -55,7 +55,7 @@ export default function ClockButton({
         className={[
           'inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
           clockedIn
-            ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/100/15'
+            ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
             : 'bg-indigo-600 text-white hover:bg-indigo-500',
         ].join(' ')}
       >
