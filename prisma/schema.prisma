@@ -34,6 +34,7 @@ model User {
   saleRefunds            SaleRefund[]
   auditLogs              AuditLog[]
   shifts                 Shift[]
+  dtrCorrections         DtrCorrection[]
   purchaseOrders         PurchaseOrder[]
   receivedPurchaseOrders PurchaseReceipt[]
 }
@@ -446,9 +447,78 @@ model Shift {
   salesCount Int       @default(0)
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  breaks     ShiftBreak[]
+  corrections DtrCorrection[]
 
   @@index([userId])
   @@index([start])
+}
+
+/// Attendance breaks inside a `Shift` (Phase 5 — DTR).
+///
+/// A `Shift` is the *working window* (clock in → clock out); a `ShiftBreak` is
+/// an unpaid pause inside that window (break start → break end). Kept as a
+/// child row rather than columns on `Shift` so a shift can hold several breaks
+/// (lunch + two smoke breaks) and an open break (`end IS NULL`) is queryable on
+/// its own — the clock-out guard rejects a punch while any break is open, so
+/// time-worked can never silently swallow break minutes.
+///
+/// Delete behavior: `ShiftBreak → Shift` CASCADE (breaks die with their shift);
+/// the employee is reached only through the parent shift, so there is no second
+/// FK to keep in sync. This mirrors the `SaleItem` child-row convention.
+model ShiftBreak {
+  id        String    @id @default(uuid())
+  shiftId   String
+  /// Break start. `@default(now())` so `startBreak` only sends `shiftId`.
+  start     DateTime  @default(now())
+  /// Break end. NULL = the employee is currently on break.
+  end       DateTime?
+  /// Optional staff-entered label (e.g. "lunch"). Manager corrections record
+  /// their justification on the `AuditLog` row, never here.
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  shift     Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId])
+  @@index([start])
+}
+
+/// Manager corrections to a `Shift`'s clock times (Phase 5 — DTR).
+///
+/// The `Shift` row itself is updated in place (it stays the single source of
+/// truth for time-worked and the sale snapshots); this table keeps the
+/// before/after evidence per corrected field so the DTR page can show both the
+/// original and the corrected value. Every correction is ALSO written to
+/// `AuditLog` (`action: "DTR_CORRECTION"`, module EMPLOYEES) so it surfaces in
+/// the existing audit UI — this is the structured query path, the audit row is
+/// the human narrative. A correction without a `reason` is rejected at the
+/// action layer (the column is non-null as backstop).
+///
+/// Delete behavior: CASCADE off `Shift`; the correcting manager is snapshotted
+/// as `correctedByName` (not an FK) so the row survives admin cleanup, mirroring
+/// the `AuditLog.actor` snapshot convention.
+model DtrCorrection {
+  id              String    @id @default(uuid())
+  shiftId         String
+  userId          String
+  /// Which `Shift` column was changed: "start" | "end".
+  field           String
+  /// Value before the correction. NULL when the field was unset (e.g. open shift).
+  before          DateTime?
+  /// Value after the correction. NULL allowed so an end can be cleared.
+  after           DateTime?
+  /// Required justification entered by the correcting manager.
+  reason          String
+  correctedById   String?
+  correctedByName String?
+  createdAt       DateTime  @default(now())
+  shift           Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 // Purchase Orders (Phase 1). A PO ties a Supplier to one or more Products with a

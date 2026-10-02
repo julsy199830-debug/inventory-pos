@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getCashier } from "@/lib/session";
-import { clockIn, clockOut } from "@/app/(dashboard)/employees/actions";
+import { clockIn, clockOut, startBreak, endBreak } from "@/app/(dashboard)/employees/actions";
 import { createCustomer, type CustomerInput } from "@/app/(dashboard)/customers/actions";
 
 /**
@@ -53,6 +53,15 @@ export type RegisterStatus = {
   onClock: boolean;
   /** ISO start of the open shift, when `onClock`. */
   shiftStartedAt: string | null;
+  /**
+   * True while the signed-in cashier is ON AN UNPAID BREAK (Phase 5 — DTR).
+   * Always false when `onClock` is false: a break only exists inside an open
+   * shift. The till uses it to swap the break button and to explain why
+   * clock-out is locked (an open break blocks `clockOut` server-side).
+   */
+  onBreak: boolean;
+  /** ISO start of the open break, when `onBreak`. */
+  breakStartedAt: string | null;
   cashierName: string;
   /**
    * Sales figures for the OPEN shift only. Null while off the clock: an
@@ -104,11 +113,20 @@ export async function getRegisterStatus(): Promise<
       data: {
         onClock: false,
         shiftStartedAt: null,
+        onBreak: false,
+        breakStartedAt: null,
         cashierName: me.name,
         live: null,
       },
     };
   }
+
+  // The open break (if any) is read alongside the shift so the strip renders
+  // a coherent snapshot: a break belonging to this shift only.
+  const openBreak = await prisma.shiftBreak.findFirst({
+    where: { shiftId: open.id, end: null },
+    select: { start: true },
+  });
 
   const window = { gte: open.start, lt: new Date() };
 
@@ -143,6 +161,8 @@ export async function getRegisterStatus(): Promise<
     data: {
       onClock: true,
       shiftStartedAt: open.start.toISOString(),
+      onBreak: openBreak !== null,
+      breakStartedAt: openBreak ? openBreak.start.toISOString() : null,
       cashierName: me.name,
       live: {
         salesCount: agg._count,
@@ -237,4 +257,40 @@ export async function clockSelfOut(): Promise<
       salesCount: closed?.salesCount ?? 0,
     },
   };
+}
+
+/**
+ * Start an unpaid break for the SIGNED-IN cashier (Phase 5 — DTR).
+ *
+ * Same shape as `clockSelfIn`/`clockSelfOut`: the user comes from the session,
+ * never from the payload, and the write goes through the employees-module
+ * `startBreak` so the double-open-break rejection, the audit entry and the
+ * revalidations stay in exactly one place.
+ */
+export async function startBreakSelf() {
+  const me = await getCashier();
+  if (!me) return { ok: false as const, error: "Sign in to continue." };
+
+  const form = new FormData();
+  form.append("userId", me.id);
+  const res = await startBreak(form);
+  if (res.ok) revalidatePath("/pos");
+  return res;
+}
+
+/**
+ * End the SIGNED-IN cashier's open break (Phase 5 — DTR).
+ *
+ * Idempotent downstream (the employees-module `endBreak` no-ops when nothing
+ * is open), so a double tap or a stale button can't produce an error.
+ */
+export async function endBreakSelf() {
+  const me = await getCashier();
+  if (!me) return { ok: false as const, error: "Sign in to continue." };
+
+  const form = new FormData();
+  form.append("userId", me.id);
+  const res = await endBreak(form);
+  if (res.ok) revalidatePath("/pos");
+  return res;
 }

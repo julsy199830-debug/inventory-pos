@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import Link from "next/link";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
 import EmployeePerformancePanel from "./EmployeePerformancePanel";
@@ -53,7 +54,45 @@ type EmployeeRow = {
   liveSalesTotal: number;
   /** Count of completed sales in the current open-shift ledger. */
   liveSalesCount: number;
+  /** Phase 5: the employee is on an unpaid break (open shift + open break). */
+  onBreak: boolean;
+  /** Phase 5: newest `LOGIN_SUCCESS` audit row, as an ISO string. Null when the
+   *  employee has never signed in since logging was instrumented. */
+  lastSignInAt: string | null;
+  /** Phase 5: newest `Sale` they cashiered, as an ISO string. Null when they
+   *  have never rung anything up. */
+  lastSaleAt: string | null;
 };
+
+/**
+ * Current epoch ms.
+ *
+ * Wrapped in a plain module-level function rather than calling `Date.now()`
+ * inline: the `react-hooks/purity` lint rule reads a bare `Date.now()` in a
+ * component body as an impure render. This page is a Server Component, where
+ * "now" is a legitimate per-request input — the same reason the DTR and
+ * `dashboard-data.ts` pages wrap it (see `serverNow` there).
+ */
+function serverNow(): number {
+  return Date.now();
+}
+
+/**
+ * "2h ago" / "3d ago" from a past instant.
+ *
+ * Coarse on purpose. This is a glanceable triage signal for a manager, not a
+ * record — and a wrong-looking precise figure ("in 4 seconds") would invite a
+ * manager to act on a number the schema does not actually support.
+ */
+function relativeTime(iso: string | null, now: number): string {
+  if (!iso) return "never";
+  const mins = Math.floor((now - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 /** The currency used by the POS — kept as a constant here so the summary tiles
  *  format consistently. Mirrors the `TAX_RATE`-style local constant note in the
@@ -73,7 +112,7 @@ export default async function EmployeesPage({
   // cashiers)" summary tile — the per-employee shift ledgers are windowed
   // separately below, so they can't share this all-time aggregate). All Server
   // Component Prisma queries.
-  const [users, shifts, storeAgg] = await Promise.all([
+  const [users, shifts, storeAgg, lastSignIns, lastSales] = await Promise.all([
     // Explicit select — deliberately NOT `findMany()`: a broad query would drag
     // `User.pin` (plaintext credential) and `User.passwordHash` into server
     // memory on every roster render. Only the roster-visible fields are needed;
@@ -97,22 +136,70 @@ export default async function EmployeesPage({
         end: true,
         totalSales: true,
         salesCount: true,
+        // Phase 5: only the OPEN break per shift (at most one — `startBreak`
+        // rejects a second), so the roster can show "on break" without loading
+        // every historical break row.
+        breaks: {
+          where: { end: null },
+          select: { id: true },
+        },
       },
     }),
     prisma.sale.aggregate({
       _sum: { totalAmount: true },
       where: { status: "Completed" },
     }),
+    // Phase 5 — the two activity signals that EXIST in the schema and can be
+    // stated truthfully:
+    //   - last successful sign-in: the newest `LOGIN_SUCCESS` audit row for
+    //     that user (`pos/actions.ts` writes one per successful PIN).
+    //   - last ring-up: the newest `Sale` they cashiered.
+    // Both are one grouped query, not one-per-employee, so the roster cost
+    // stays flat as headcount grows.
+    //
+    // Deliberately NOT "last seen": the session cookie carries no last-activity
+    // stamp and nothing writes one, so any such column would be a guess. A
+    // column that reads "active 4 minutes ago" because they last sold something
+    // is worse than no column — it sends a manager after a non-problem.
+    prisma.auditLog.groupBy({
+      by: ["userId"],
+      where: { action: "LOGIN_SUCCESS", userId: { not: null } },
+      _max: { createdAt: true },
+    }),
+    prisma.sale.groupBy({
+      by: ["cashierId"],
+      where: { cashierId: { not: null } },
+      _max: { createdAt: true },
+    }),
   ]);
+
+  const lastSignInAt = new Map<string, Date>();
+  for (const row of lastSignIns) {
+    if (row.userId && row._max.createdAt) {
+      lastSignInAt.set(row.userId, row._max.createdAt);
+    }
+  }
+  const lastSaleAt = new Map<string, Date>();
+  for (const row of lastSales) {
+    if (row.cashierId && row._max.createdAt) {
+      lastSaleAt.set(row.cashierId, row._max.createdAt);
+    }
+  }
 
   // Index open shifts & lifetime snapshots by userId. A user may have at most
   // one open shift at a time (clockIn auto-closes a dangling prior one), so
   // `findLast` of the `end == null` rows picks the active one.
   const openByUserId = new Map<string, boolean>();
+  const onBreakByUserId = new Map<string, boolean>();
   const lifetimeSales = new Map<string, number>();
   const lifetimeCount = new Map<string, number>();
   for (const s of shifts) {
-    if (s.end == null) openByUserId.set(s.userId, true);
+    if (s.end == null) {
+      openByUserId.set(s.userId, true);
+      // The open-shift row's open break (if any) is the "on break" flag —
+      // an open break can only exist on an open shift.
+      if (s.breaks.length > 0) onBreakByUserId.set(s.userId, true);
+    }
     lifetimeSales.set(s.userId, (lifetimeSales.get(s.userId) ?? 0) + s.totalSales);
     lifetimeCount.set(s.userId, (lifetimeCount.get(s.userId) ?? 0) + s.salesCount);
   }
@@ -159,7 +246,15 @@ export default async function EmployeesPage({
     lifetimeCount: lifetimeCount.get(u.id) ?? 0,
     liveSalesTotal: ledgerTotal.get(u.id) ?? 0,
     liveSalesCount: ledgerCount.get(u.id) ?? 0,
+    onBreak: onBreakByUserId.has(u.id),
+    lastSignInAt: lastSignInAt.get(u.id)?.toISOString() ?? null,
+    lastSaleAt: lastSaleAt.get(u.id)?.toISOString() ?? null,
   }));
+
+  // "Now" is read once here and passed to every relative-time call, so a column
+  // can't disagree with itself mid-render. `serverNow()` rather than an inline
+  // `Date.now()` — see that helper for why.
+  const now = serverNow();
 
   // ── Shift-management widget roll-up ────────────────────────────────────
   const clockedInList = employees.filter((e) => e.clockedIn);
@@ -202,7 +297,17 @@ export default async function EmployeesPage({
         {/* "Add New Employee" trigger + modal. Client island; submits to the
             createEmployee Server Action, which inserts via Prisma and
             revalidates this page so the new row streams in. */}
-        <AddEmployeeDialog />
+        <div className="flex items-center gap-2">
+          {/* Phase 5: jump from the roster to the attendance view (breaks,
+              worked time, corrections) without hunting in the sidebar. */}
+          <Link
+            href="/dtr"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            Time &amp; attendance
+          </Link>
+          <AddEmployeeDialog />
+        </div>
       </header>
 
       {/* Phase 2: the sales-activity report. Sits directly under the header so
@@ -266,6 +371,7 @@ export default async function EmployeesPage({
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Sales</th>
                 <th className="px-4 py-3 font-medium">Shift</th>
+                <th className="px-4 py-3 font-medium">Activity</th>
                 <th className="px-4 py-3 text-right font-medium">
                   Actions
                 </th>
@@ -310,7 +416,36 @@ export default async function EmployeesPage({
                     <ClockButton
                       userId={e.id}
                       clockedIn={e.clockedIn}
+                      onBreak={e.onBreak}
                     />
+                  </td>
+                  {/* Phase 5 activity. Two signals, each exactly what it says:
+                      the last SUCCESSFUL sign-in, and the last sale they rang
+                      up. There is deliberately no "last seen" — the session
+                      cookie stores no activity stamp, so showing one would be a
+                      fabricated number. The absolute time is in the `title` so a
+                      manager who needs the exact moment can hover for it. */}
+                  <td className="px-4 py-3 text-xs text-slate-600">
+                    <p
+                      title={
+                        e.lastSignInAt
+                          ? `Signed in ${new Date(e.lastSignInAt).toLocaleString()}`
+                          : "No recorded sign-in"
+                      }
+                      className="whitespace-nowrap"
+                    >
+                      Signed in {relativeTime(e.lastSignInAt, now)}
+                    </p>
+                    <p
+                      title={
+                        e.lastSaleAt
+                          ? `Last sale ${new Date(e.lastSaleAt).toLocaleString()}`
+                          : "No recorded sale"
+                      }
+                      className="whitespace-nowrap text-slate-500"
+                    >
+                      Last sale {relativeTime(e.lastSaleAt, now)}
+                    </p>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
@@ -432,6 +567,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
                 <ClockButton
                   userId={e.id}
                   clockedIn={e.clockedIn}
+                  onBreak={e.onBreak}
                 />
               </div>
             </li>

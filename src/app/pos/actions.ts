@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
-import { getCashier, setCashierCookie, clearCashierCookie } from "@/lib/session";
+import { setCashierCookie } from "@/lib/session";
 import {
   checkRateLimit,
   recordLoginFailure,
@@ -358,25 +358,9 @@ export async function signInStaffPin(input: {
 }
 
 /**
- * Sign the current cashier out of the POS register — clears the session cookie.
- *
- * No payload and no failure mode worth surfacing: deleting a cookie that's
- * already absent is a no-op, and there's nothing else to validate. Idempotent on
- * purpose so a double-click or a stale-tab sign-out can't error out.
+ * Signing out lives in `lockRegister` (`@/lib/actions/auth-actions`), which both
+ * "Lock Register" buttons call. It used to live here as `signOutCashier`, but
+ * nothing invoked it — so locking the register cleared the cookie and wrote no
+ * `LOGOUT` audit row at all. Having the audit in the one action that actually
+ * runs is what makes the trail trustworthy; a second, uncalled copy of it is not.
  */
-export async function signOutCashier(): Promise<void> {
-  // Resolve the actor BEFORE the cookie is cleared — afterwards the id is gone
-  // and the event would be unattributable. A sign-out with no active session is
-  // not an error and writes no audit row (nothing happened).
-  const cashier = await getCashier();
-  await clearCashierCookie();
-  if (cashier) {
-    await recordAudit({
-      action: "LOGOUT",
-      userId: cashier.id,
-      actor: cashier.name,
-      entity: "User",
-      entityId: cashier.id,
-    });
-  }
-}

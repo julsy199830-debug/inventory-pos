@@ -5,7 +5,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { asRole, type Role, type ActionResult } from "@/lib/types";
 import { PIN_PATTERN, hashPin } from "@/lib/pin";
-import { getCashier, roleGuardError } from "@/lib/session";
+import { getCashier, roleGuardError, type CashierSession } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
 
 /** Employee management is restricted to ADMIN and MANAGER at the action layer. */
@@ -13,6 +13,44 @@ const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
 
 async function staffGuardError(): Promise<string | null> {
   return roleGuardError(STAFF_ROLES);
+}
+
+/**
+ * Authorization for the four punches: `clockIn`, `clockOut`, `startBreak`,
+ * `endBreak`.
+ *
+ * These are the only actions in the app that act on a `userId` supplied by the
+ * CLIENT, which makes that id attacker-controlled — a hand-crafted POST can
+ * name any employee. So the check cannot live in the UI:
+ *
+ *   - the `(dashboard)` layout only stops a CASHIER from *rendering*
+ *     `/employees`; it does nothing to a Server Action call, and
+ *   - there is no middleware in front of these actions.
+ *
+ * Rule enforced here: you may punch yourself, or punch someone else only as
+ * ADMIN/MANAGER. The verdict comes back with the authenticated actor so audit
+ * rows attribute the REAL caller (never the form's `userId`) without paying for
+ * a second cookie read.
+ */
+type PunchAuthorization =
+  | { ok: true; actor: CashierSession }
+  | { ok: false; error: string };
+
+async function authorizeShiftPunch(
+  targetUserId: string,
+): Promise<PunchAuthorization> {
+  const actor = await getCashier();
+  if (!actor) return { ok: false, error: "You must be signed in to do that." };
+  // Your own punches are always yours to make — that is the whole point of
+  // `/my-activity`, and it is what a CASHIER is limited to.
+  if (actor.id === targetUserId) return { ok: true, actor };
+  if (actor.role === "ADMIN" || actor.role === "MANAGER") {
+    return { ok: true, actor };
+  }
+  return {
+    ok: false,
+    error: "You can only record your own time punches.",
+  };
 }
 
 /**
@@ -577,6 +615,10 @@ export async function deleteEmployee(formData: FormData): Promise<void> {
 export async function clockIn(formData: FormData): Promise<ShiftResult> {
   const userId = load(formData, "userId");
   if (!userId) return { ok: false, error: "Missing employee. Please reopen and try again." };
+  // `userId` came from the client, so authorize it BEFORE it reaches the
+  // database: your own punch is always allowed, someone else's needs staff.
+  const auth = await authorizeShiftPunch(userId);
+  if (!auth.ok) return { ok: false, error: auth.error };
 
   try {
     // Auto-close any still-open shift for this user before opening a new one.
@@ -594,15 +636,15 @@ export async function clockIn(formData: FormData): Promise<ShiftResult> {
     revalidatePath("/employees");
     // `Shift` records the attendance itself, but not who *pressed* the button
     // (an admin can clock in a colleague). The audit entry captures the actor.
-    const stamper = await getCashier();
+    const actor = auth.actor;
     const subject = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true },
     });
     await recordAudit({
       action: "EMPLOYEE_SHIFT_IN",
-      userId: stamper?.id ?? null,
-      actor: stamper?.name ?? null,
+      userId: actor.id,
+      actor: actor.name,
       entity: "User",
       entityId: userId,
       summary: `Clocked in ${subject?.name ?? "employee"}`,
@@ -638,6 +680,8 @@ export async function clockIn(formData: FormData): Promise<ShiftResult> {
 export async function clockOut(formData: FormData): Promise<ShiftResult> {
   const userId = load(formData, "userId");
   if (!userId) return { ok: false, error: "Missing employee. Please reopen and try again." };
+  const auth = await authorizeShiftPunch(userId);
+  if (!auth.ok) return { ok: false, error: auth.error };
 
   try {
     const open = await prisma.shift.findFirst({
@@ -649,9 +693,25 @@ export async function clockOut(formData: FormData): Promise<ShiftResult> {
       return { ok: true };
     }
 
+    // Break-in-progress guard (Phase 5): an open break means the employee
+    // already declared "not working right now". Clocking out over it would
+    // either swallow the unpaid minutes (end-start counts the break as worked
+    // time) or close the break at a stale instant. Rejecting and naming the
+    // reason is the only honest outcome — the employee ends the break first.
+    const openBreak = await prisma.shiftBreak.findFirst({
+      where: { shiftId: open.id, end: null },
+      select: { id: true },
+    });
+    if (openBreak) {
+      return {
+        ok: false,
+        error: "You're still on break. End your break before clocking out.",
+      };
+    }
+
     const shiftId = await closeShift(open.id, open.start);
     revalidatePath("/employees");
-    const stamper = await getCashier();
+    const actor = auth.actor;
     const subject = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true },
@@ -662,8 +722,8 @@ export async function clockOut(formData: FormData): Promise<ShiftResult> {
     });
     await recordAudit({
       action: "EMPLOYEE_SHIFT_OUT",
-      userId: stamper?.id ?? null,
-      actor: stamper?.name ?? null,
+      userId: actor.id,
+      actor: actor.name,
       entity: "User",
       entityId: userId,
       summary: `Clocked out ${subject?.name ?? "employee"}`,
@@ -688,6 +748,136 @@ export async function clockOut(formData: FormData): Promise<ShiftResult> {
       return { ok: false, error: "This employee no longer exists. Refresh and try again." };
     }
     return { ok: false, error: "Could not clock out. Please try again." };
+  }
+}
+
+/**
+ * Start a break on the employee's open shift (Phase 5 — DTR).
+ *
+ * Form-driven like `clockIn`/`clockOut`: hidden `userId` field only. Precondition
+ * is an open shift (`end IS NULL`); being on the clock is what makes a break
+ * meaningful. Idempotent-ish by rejection rather than silent no-op: starting a
+ * second break while one is already open is a real mistake (double-counted
+ * unpaid time), so it returns an explicit error instead of stacking rows.
+ *
+ * `start` is left to the schema's `@default(now())`, mirroring `Shift.start` —
+ * the action only sends `shiftId`.
+ */
+export async function startBreak(formData: FormData): Promise<ShiftResult> {
+  const userId = load(formData, "userId");
+  if (!userId) return { ok: false, error: "Missing employee. Please reopen and try again." };
+  const auth = await authorizeShiftPunch(userId);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  try {
+    const open = await prisma.shift.findFirst({
+      where: { userId, end: null },
+      select: { id: true },
+    });
+    if (!open) {
+      return { ok: false, error: "Clock in before starting a break." };
+    }
+
+    const existing = await prisma.shiftBreak.findFirst({
+      where: { shiftId: open.id, end: null },
+      select: { id: true },
+    });
+    if (existing) {
+      return { ok: false, error: "You're already on break. End it before starting another." };
+    }
+
+    await prisma.shiftBreak.create({ data: { shiftId: open.id } });
+
+    revalidatePath("/employees");
+    revalidatePath("/my-activity");
+    const actor = auth.actor;
+    const subject = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    await recordAudit({
+      action: "EMPLOYEE_BREAK_START",
+      userId: actor.id,
+      actor: actor.name,
+      entity: "User",
+      entityId: userId,
+      summary: `${subject?.name ?? "Employee"} started a break`,
+      after: { shiftId: open.id },
+    });
+    return { ok: true, shiftId: open.id };
+  } catch (err) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "P2025"
+    ) {
+      return { ok: false, error: "This employee no longer exists. Refresh and try again." };
+    }
+    return { ok: false, error: "Could not start break. Please try again." };
+  }
+}
+
+/**
+ * End the employee's currently-open break (Phase 5 — DTR).
+ *
+ * No-op success when no shift or break is open (same idempotent convention as
+ * `clockOut`: a double-tap must not read as an error). `end` is set to now,
+ * closing the unpaid window so `Shift.end - Shift.start - Σ breaks` can be
+ * computed correctly by the DTR views.
+ */
+export async function endBreak(formData: FormData): Promise<ShiftResult> {
+  const userId = load(formData, "userId");
+  if (!userId) return { ok: false, error: "Missing employee. Please reopen and try again." };
+  const auth = await authorizeShiftPunch(userId);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  try {
+    const open = await prisma.shift.findFirst({
+      where: { userId, end: null },
+      select: { id: true },
+    });
+    if (!open) return { ok: true };
+
+    const openBreak = await prisma.shiftBreak.findFirst({
+      where: { shiftId: open.id, end: null },
+      select: { id: true, start: true },
+    });
+    if (!openBreak) return { ok: true };
+
+    await prisma.shiftBreak.update({
+      where: { id: openBreak.id },
+      data: { end: new Date() },
+    });
+
+    revalidatePath("/employees");
+    revalidatePath("/my-activity");
+    const actor = auth.actor;
+    const subject = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    await recordAudit({
+      action: "EMPLOYEE_BREAK_END",
+      userId: actor.id,
+      actor: actor.name,
+      entity: "User",
+      entityId: userId,
+      summary: `${subject?.name ?? "Employee"} ended a break`,
+      before: { shiftId: open.id, breakStartedAt: openBreak.start },
+      after: { endedAt: new Date() },
+    });
+    return { ok: true, shiftId: open.id };
+  } catch (err) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "P2025"
+    ) {
+      return { ok: false, error: "This employee no longer exists. Refresh and try again." };
+    }
+    return { ok: false, error: "Could not end break. Please try again." };
   }
 }
 

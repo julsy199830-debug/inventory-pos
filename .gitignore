@@ -49,6 +49,8 @@ next-env.d.ts
 /dev.db-journal
 /dev.db-wal
 /dev.db-shm
+# manual pre-migration snapshots taken as `dev.db.<timestamp>.bak`
+/dev.db*.bak
 # local database snapshots written by the scheduled backup in src/lib/db.ts
 /backups
 

@@ -18,7 +18,17 @@ module.exports = {
         return Object.entries(jar).map(([name, value]) => ({ name, value }));
       },
       set() {},
-      delete() {},
+      // FAITHFUL delete: removes the key from the jar.
+      //
+      // This used to be a no-op, which quietly made the jar read-only. That hid
+      // a real class of test: any action whose correctness depends on the
+      // session being GONE on a second call (e.g. `lockRegister` writing exactly
+      // one LOGOUT audit row on a double-click) would have appeared to work
+      // only because the cookie never actually cleared. `clearCashierCookie()`
+      // is the production code under test, so the stub has to do it too.
+      delete(name) {
+        delete jar[name];
+      },
     };
   },
   // `headers()` is request-scoped too. `pos/actions.ts` calls it only to derive

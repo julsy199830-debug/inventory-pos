@@ -8,10 +8,12 @@ import {
   Banknote,
   Barcode,
   CheckCircle2,
+  Clock,
   CreditCard,
   Minus,
   Plus,
   Printer,
+  ReceiptText,
   Search,
   ShoppingCart,
   Trash2,
@@ -1278,6 +1280,33 @@ export default function PosCheckout({
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="hidden sm:inline">Register #1 · </span>Online
           </span>
+          {/* Command-center links (Phase 5): the cashier's own attendance and their own
+              sales both live outside the dashboard shell, reachable from the
+              till because "where are my hours?" and "what did I ring up?" are
+              both asked AT the register. Labels are the cashier's words —
+              "My hours" and "My transactions" — not the manager's "DTR". */}
+          <Link
+            href="/my-transactions"
+            className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
+          >
+            <ReceiptText className="h-4 w-4" />
+            My transactions
+          </Link>
+          <Link
+            href="/my-activity"
+            className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
+          >
+            <Clock className="h-4 w-4" />
+            My hours
+          </Link>
+          {cashier.role !== 'CASHIER' && (
+            <Link
+              href="/dtr"
+              className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 lg:inline-flex"
+            >
+              DTR
+            </Link>
+          )}
           <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 md:inline-flex">
             {cashier.name}
           </span>

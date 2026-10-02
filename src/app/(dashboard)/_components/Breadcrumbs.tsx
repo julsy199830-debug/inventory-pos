@@ -13,6 +13,7 @@ const labelByPath: Record<string, string> = {
   "/suppliers": "Suppliers",
   "/purchasing": "Purchasing",
   "/employees": "Employees",
+  "/dtr": "Time & attendance",
   "/accounting": "Accounting",
   "/audit-log": "Audit log",
   "/settings": "Settings",

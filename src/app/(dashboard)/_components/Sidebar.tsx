@@ -51,6 +51,14 @@ const navItems: NavItem[] = [
     adminOnly: true,
     section: "management",
   },
+  {
+    // Phase 5: attendance records and manager time corrections.
+    label: "Time & attendance",
+    href: "/dtr",
+    icon: ScrollText,
+    adminOnly: true,
+    section: "management",
+  },
   // REPORTS & SALES
   { label: "Reports", href: "/reports", icon: BarChart3, section: "reports" },
   {

@@ -1,8 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, ChevronDown, LogIn, LogOut, Receipt, RotateCcw, XCircle } from 'lucide-react'
-import { clockSelfIn, clockSelfOut, getRegisterStatus, type RegisterStatus } from './pos-actions'
+import { CheckCircle2, ChevronDown, Coffee, LogIn, LogOut, Receipt, RotateCcw, XCircle } from 'lucide-react'
+import {
+  clockSelfIn,
+  clockSelfOut,
+  endBreakSelf,
+  getRegisterStatus,
+  startBreakSelf,
+  type RegisterStatus,
+} from './pos-actions'
 
 /**
  * Register status strip for the till (Phase 4, section 3).
@@ -59,8 +66,11 @@ export default function RegisterStatusBar({
 }) {
   const [status, setStatus] = useState<RegisterStatus | null>(null)
   const [expanded, setExpanded] = useState(false)
-  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Which punch is in flight ('in' | 'out' | 'break-in' | 'break-out'). Null
+  // when idle — the buttons read it to label themselves and to stay disabled,
+  // so two clicks can never race two server writes.
+  const [action, setAction] = useState<'in' | 'out' | 'break-in' | 'break-out' | null>(null)
   const [closed, setClosed] = useState<{
     totalSales: number
     salesCount: number
@@ -111,41 +121,47 @@ export default function RegisterStatusBar({
     return () => clearInterval(t)
   }, [status?.onClock])
 
-  const handleClock = async (closing: boolean) => {
-    setBusy(true)
+  async function run(kind: 'in' | 'out' | 'break-in' | 'break-out') {
+    if (action !== null) return
+    setAction(kind)
     setError(null)
     try {
-      if (closing) {
-        const res = await clockSelfOut()
-        if (!res.ok) {
-          setError(res.error)
-          return
+      let res: { ok: boolean; error?: string }
+      switch (kind) {
+        case 'in':
+          res = await clockSelfIn()
+          break
+        case 'out': {
+          const out = await clockSelfOut()
+          if (out.ok) setClosed(out.data)
+          res = out
+          break
         }
-        // Show the persisted snapshot, not the live figures: this is what the
-        // shift was actually recorded as.
-        setClosed({
-          totalSales: res.data.totalSales,
-          salesCount: res.data.salesCount,
-          endedAt: res.data.endedAt,
-        })
-        setExpanded(true)
-      } else {
-        const res = await clockSelfIn()
-        // The result is checked, not assumed. Ignoring it means a rejected
-        // clock-in looks identical to a successful one: the pill simply stays
-        // "Off shift" and the cashier has no idea why the button did nothing.
-        if (!res.ok) {
-          setError(res.error ?? 'Could not start the shift. Please try again.')
+        case 'break-in':
+          res = await startBreakSelf()
+          break
+        case 'break-out':
+          res = await endBreakSelf()
+          break
+        default:
           return
-        }
       }
+      if (!res.ok) {
+        setError(res.error ?? 'Could not reach the register. Please try again.')
+        return
+      }
+      // Clock-out already read the CLOSED row back server-side (the snapshot
+      // it returns), so the end-of-shift confirmation is persisted data, and
+      // this re-read re-renders the pill from the stored state either way.
       await refresh()
     } catch {
       setError('Could not reach the register. Please try again.')
     } finally {
-      setBusy(false)
+      setAction(null)
     }
   }
+
+  const handleClock = (closing: boolean) => run(closing ? 'out' : 'in')
 
   const live = status?.live ?? null
 
@@ -186,6 +202,18 @@ export default function RegisterStatusBar({
             <span className="text-xs tabular-nums text-slate-600">
               {elapsedSince(status.shiftStartedAt, now)}
             </span>
+            {/* Amber = unpaid time accruing. Mirrors the server-side clock-out
+                guard, so the till's state and the DTR's state say the same
+                thing at a glance. */}
+            {status.onBreak && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                <Coffee className="h-3 w-3" aria-hidden />
+                Break
+                <span className="tabular-nums font-normal">
+                  {elapsedSince(status.breakStartedAt, now)}
+                </span>
+              </span>
+            )}
             <span className="text-xs text-slate-400">·</span>
             {/* data-testid so the E2E suite can read the figure a cashier reads,
                 rather than scraping the DOM around it. */}
@@ -197,9 +225,40 @@ export default function RegisterStatusBar({
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
+          {/* Break toggle: only meaningful while on the clock. Ending a break
+              is the precondition for clocking out (the server rejects it
+              otherwise), so this button only ever exists alongside End shift. */}
+          {status?.onClock &&
+            (!status.onBreak ? (
+              <button
+                type="button"
+                disabled={action !== null}
+                onClick={() => void run('break-in')}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:opacity-50"
+              >
+                <Coffee className="h-3.5 w-3.5" />
+                {action === 'break-in' ? 'Starting…' : 'Start break'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={action !== null}
+                onClick={() => void run('break-out')}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-100 disabled:opacity-50"
+              >
+                <Coffee className="h-3.5 w-3.5" />
+                {action === 'break-out' ? 'Ending…' : 'End break'}
+              </button>
+            ))}
+
           <button
             type="button"
-            disabled={busy || !status}
+            disabled={action !== null || !status || (status.onBreak && status.onClock)}
+            title={
+              status?.onBreak
+                ? 'End your break before ending the shift'
+                : undefined
+            }
             // Closing is decided by the CURRENT state, not its negation: the
             // button reads "End shift" precisely when a shift is open, so
             // `status.onClock` IS the closing flag. Negating it made "Start
