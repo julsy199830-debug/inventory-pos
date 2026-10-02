@@ -1,10 +1,23 @@
 import { prisma } from "@/lib/db";
-import { asRole } from "@/lib/types";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Sign in — InvPos" };
 
-/** Open route: tap your name + enter PIN to open the register. */
+/**
+ * Open route: tap your name + enter PIN to open the register.
+ *
+ * This page is UNAUTHENTICATED, so everything it renders is public to anyone who
+ * can reach the app — including the RSC payload the client hydrates from. It
+ * therefore selects ONLY the display names the picker needs.
+ *
+ * It previously also selected each user's `User.id` and `role`, which made a
+ * public page a directory of session identifiers: the `pos-cashier` cookie held a
+ * bare id with no signature, so reading a known ADMIN id here was enough to forge
+ * a full admin session. The id is no longer published, the cookie is signed
+ * (`src/lib/session-token.ts`), and sign-in re-resolves the chosen name
+ * server-side (`signInStaffPin`). Do not add fields here that the picker does not
+ * display.
+ */
 export default async function LoginPage({
   searchParams,
 }: {
@@ -13,13 +26,13 @@ export default async function LoginPage({
   const { next } = await searchParams;
   const nextPath = Array.isArray(next) ? next[0] : next;
 
-  const users = (
-    await prisma.user.findMany({
-      where: { active: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, role: true },
-    })
-  ).map((u) => ({ ...u, role: asRole(u.role) }));
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    // Names only — see the note above. The picker renders nothing else, and the
+    // sign-in action looks the account up by this exact name.
+    select: { name: true },
+  });
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">

@@ -895,11 +895,20 @@ export async function receivePurchaseOrder(
 }
 
 // readers (plain queries; NOT mutating Server Actions)
+//
+// DENIAL CONVENTION: a reader whose `staffGuardError()` check fails returns an
+// empty result (`[]`, or `null` for a single record) instead of throwing. These
+// functions are also called from Client Components (the PO detail dialogs), and
+// a thrown error there surfaced as an opaque server error — a page-level 500
+// with no useful message, and a stack trace in the log for what is a normal
+// "this viewer isn't staff" outcome. The guard still runs BEFORE any query, so a
+// denied caller reads nothing either way; the layout-level redirect already
+// keeps non-staff humans off these screens, which means the empty result is
+// reachable in practice only by a direct programmatic call.
 
 /** List all POs newest-first with computed line totals. */
 export async function getPurchaseOrders(): Promise<PoListItem[]> {
-  const denied = await staffGuardError();
-  if (denied) throw new Error(denied);
+  if (await staffGuardError()) return [];
 
   const rows = await prisma.purchaseOrder.findMany({
     orderBy: { createdAt: "desc" },
@@ -942,8 +951,7 @@ export type ReceiptHistoryView = {
  * → product so each line shows name, SKU, and quantity received.
  */
 export async function getReceivingHistory(poId: string): Promise<ReceiptHistoryView[]> {
-  const denied = await staffGuardError();
-  if (denied) throw new Error(denied);
+  if (await staffGuardError()) return [];
 
   const rows = await prisma.purchaseReceipt.findMany({
     where: { purchaseOrderId: poId },
@@ -976,8 +984,7 @@ export async function getReceivingHistory(poId: string): Promise<ReceiptHistoryV
 
 /** Fetch one PO with lines plus computed totals. */
 export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
-  const denied = await staffGuardError();
-  if (denied) throw new Error(denied);
+  if (await staffGuardError()) return null;
 
   const po = await prisma.purchaseOrder.findUnique({
     where: { id },
@@ -1023,8 +1030,7 @@ export async function getPurchaseOrder(id: string): Promise<PoDetail | null> {
 
 /** Suppliers for the PO create/edit select, ordered by name. */
 export async function getSuppliersForSelect(): Promise<{ id: string; name: string }[]> {
-  const denied = await staffGuardError();
-  if (denied) throw new Error(denied);
+  if (await staffGuardError()) return [];
 
   return prisma.supplier.findMany({
     orderBy: { name: "asc" },
@@ -1034,8 +1040,7 @@ export async function getSuppliersForSelect(): Promise<{ id: string; name: strin
 
 /** Products for the PO line-item select, ordered by name. */
 export async function getProductsForSelect(): Promise<{ id: string; name: string; sku: string }[]> {
-  const denied = await staffGuardError();
-  if (denied) throw new Error(denied);
+  if (await staffGuardError()) return [];
 
   return prisma.product.findMany({
     orderBy: { name: "asc" },

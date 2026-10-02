@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import Module from "node:module";
 import type { CreateSaleInput } from "@/app/actions/sales";
+import { signSessionValue } from "@/lib/session-token";
 import path from "node:path";
 
 const MOCKS: Record<string, string> = {
@@ -53,7 +54,7 @@ async function check(name: string, fn: () => void | Promise<void>): Promise<void
   try { await fn(); passed += 1; console.log(`ok - ${name}`); }
   catch (error) { failed += 1; console.error(`FAIL - ${name}: ${error instanceof Error ? error.message : String(error)}`); }
 }
-function asUser(id: string): void { globalThis.__PO_TEST_COOKIES__ = { "pos-cashier": id }; }
+function asUser(id: string): void { globalThis.__PO_TEST_COOKIES__ = { "pos-cashier": signSessionValue(id) }; }
 function input(
   paymentMethod: string,
   extra: Record<string, unknown> = {},

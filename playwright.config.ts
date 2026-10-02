@@ -6,6 +6,13 @@ const E2E_DATABASE_URL = `file:./${path.relative(process.cwd(), E2E_DB_PATH).rep
 
 const E2E_PREPARE = 'node tests/setup/prepare-e2e-db.cjs';
 
+// The session cookie is HMAC-signed, so the Playwright worker processes (which
+// mint cookies with `signSessionValue`) and the dev-server webServer (which
+// verifies them) must share the SAME secret. This test-only value is never
+// used in production: `sessionSecret()` throws there when unset.
+const E2E_SESSION_SECRET = 'e2e-shared-test-session-secret-0123456789abcdef';
+process.env.SESSION_SECRET = E2E_SESSION_SECRET;
+
 // Playwright test workers and the web server must resolve the same disposable DB.
 process.env.DATABASE_URL = E2E_DATABASE_URL;
 
@@ -79,6 +86,6 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: false,
     timeout: 120000,
-    env: { DATABASE_URL: E2E_DATABASE_URL },
+    env: { DATABASE_URL: E2E_DATABASE_URL, SESSION_SECRET: E2E_SESSION_SECRET },
   },
 });

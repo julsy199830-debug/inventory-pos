@@ -2,39 +2,41 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInCashierPin } from "@/app/pos/actions";
+import { signInStaffPin } from "@/app/pos/actions";
 import Image from "next/image";
-import type { Role } from "@/lib/types";
 
-type LoginUser = { id: string; name: string; role: Role };
-
-const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: "Admin",
-  MANAGER: "Manager",
-  CASHIER: "Cashier",
-};
-
+/**
+ * Staff picker + PIN entry.
+ *
+ * The list is NAMES ONLY on purpose. `/login` is unauthenticated, so whatever is
+ * passed here is public in the RSC payload — it used to carry every active user's
+ * `User.id` and `role`, which is how a forged (unsigned) `pos-cashier` cookie
+ * became a full admin session. The id is no longer sent and the role badge is
+ * gone: the picker displays a name, and the server re-resolves that name
+ * (`signInStaffPin`) so the client never names an account by its internal id. Add
+ * a field only if the picker actually renders it.
+ */
 export function LoginForm({
   users,
   nextPath,
 }: {
-  users: LoginUser[];
+  users: { name: string }[];
   nextPath: string | null;
 }) {
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const selected = users.find((u) => u.id === selectedId) ?? null;
+  const selected = users.some((u) => u.name === selectedName);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selected) return;
+    if (!selected || !selectedName) return;
     setBusy(true);
     setError(null);
-    const res = await signInCashierPin({ userId: selected.id, pin });
+    const res = await signInStaffPin({ name: selectedName, pin });
     if (res.ok) {
       router.push(res.role === "CASHIER" ? "/pos" : nextPath ?? "/");
       router.refresh();
@@ -71,14 +73,17 @@ export function LoginForm({
           1. Who are you?
         </p>
         <div className="mt-2 grid grid-cols-1 gap-2">
-          {users.map((u) => {
-            const active = u.id === selectedId;
+          {users.map((u, index) => {
+            const active = u.name === selectedName;
             return (
               <button
-                key={u.id}
+                // Names are the only identifier this component receives and
+                // `User.name` is not unique in the schema, so the index
+                // disambiguates the key (the list never reorders client-side).
+                key={`${index}:${u.name}`}
                 type="button"
                 onClick={() => {
-                  setSelectedId(u.id);
+                  setSelectedName(u.name);
                   setPin("");
                   setError(null);
                 }}
@@ -89,13 +94,6 @@ export function LoginForm({
                 }`}
               >
                 <span className="font-medium">{u.name}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    active ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {ROLE_LABEL[u.role]}
-                </span>
               </button>
             );
           })}

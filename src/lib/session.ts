@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { asRole, type Role } from "@/lib/types";
+import {
+  secureCookiesEnabled,
+  signSessionValue,
+  unsignSessionValue,
+} from "@/lib/session-token";
 
 /**
  * Cashier session persistence.
@@ -18,13 +23,18 @@ import { asRole, type Role } from "@/lib/types";
  * Design choices (from the integration plan):
  *   - "Sign in once, persists" → a real `maxAge` cookie, not a per-tab flag, so a
  *     reload or a fresh tab keeps the cashier logged in until they sign out.
+ *   - The cookie value is SIGNED (`<id>.<hmac>`, see `session-token.ts`), not the
+ *     raw `User.id`: the id is public (it used to be serialized into the
+ *     unauthenticated `/login` payload), so an unsigned cookie was forgeable by
+ *     anyone who could load that page. The signature is what makes the id
+ *     non-sufficient on its own.
  *   - The cookie is `httpOnly` + `sameSite: "lax"`: never readable from client JS
  *     (so a third-party script can't exfiltrate the cashier id), but lax is enough
- *     because we don't carry the credential to cross-origin sites. It is NOT
- *     `secure: true` on purpose — this app runs on plain HTTP in dev (`next dev`)
- *     and SQLite locally; a `secure`-only cookie would vanish on localhost and
- *     break the very flow it exists to support. If this ever ships over real
- *     HTTPS, flip `secure` to `true` (or gate it on `process.env.NODE_ENV`).
+ *     because we don't carry the credential to cross-origin sites. `secure` is an
+ *     explicit opt-in via `SESSION_COOKIE_SECURE` (NOT keyed off `NODE_ENV`)
+ *     because this app runs on plain HTTP in dev (`next dev`) and on internal
+ *     LANs; a `secure`-only cookie would vanish there and break the very flow it
+ *     exists to support. An HTTPS deployment sets the flag.
  *
  * `cookies()` is async in Next 16 (see the `04-functions/cookies.md` doc + the
  * `v15.0.0-RC` version-history note): every read/write here `await`s it. Using
@@ -54,22 +64,30 @@ export type CashierSession = {
 /**
  * Set the cashier-session cookie. Call from a Server Action only — Next rejects
  * `cookieStore.set` during Server Component rendering (the cookies doc's
- * "Server Functions" note), and both our callers (`signInCashierPin` in
- * `pos/actions.ts`) are Server Actions, so that's where this belongs.
+ * "Server Functions" note), and both our callers (`signInCashierPin` and
+ * `signInStaffPin` in `pos/actions.ts`) are Server Actions, so that's where this
+ * belongs.
  *
- * The cookie value is the raw `User.id` (a UUID). We don't sign it because the
- * only effect of a forged cookie is attributing future sales to a victim cashier
- * — annoying, not a privilege escalation — and PIN sign-in already validated the
- * identity server-side. If attribution integrity ever matters more, swap in a
- * signed/token value here.
+ * The value written is SIGNED ({@link signSessionValue}), never the bare
+ * `User.id`. The earlier version wrote the raw id and argued that forging it was
+ * "attribution annoyance, not privilege escalation" — that reasoning was wrong:
+ * `getCashier()` is also the trust root for `requirePageAuth` and
+ * `roleGuardError`, so a forged id was a complete session on every protected
+ * route, ADMIN ones included. Do not reintroduce an unsigned write, and do not
+ * add a compatibility branch that accepts unsigned cookies — invalidating
+ * pre-fix cookies once is the intended, one-time cost of the fix.
+ *
+ * `secure` comes from `SESSION_COOKIE_SECURE` (see `session-token.ts`) so an
+ * HTTPS deployment can enforce it without breaking plain-HTTP LAN deployments.
  */
 export async function setCashierCookie(userId: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE, userId, {
+  cookieStore.set(COOKIE, signSessionValue(userId), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE_SECONDS,
+    secure: secureCookiesEnabled(),
   });
 }
 
@@ -85,7 +103,13 @@ export async function clearCashierCookie(): Promise<void> {
 
 /**
  * Read the signed-in cashier off the request, or `null` when there's no session
- * cookie / the id doesn't resolve to an active `User`.
+ * cookie, the cookie's signature doesn't verify, or the id doesn't resolve to an
+ * active `User`.
+ *
+ * This is the app's single trust root: `requirePageAuth`, `roleGuardError`, audit
+ * attribution and the POS all decide from this one answer, so anything accepted
+ * here is effectively authenticated. The signature check is what makes a
+ * *known* `User.id` insufficient to impersonate someone (see `session-token.ts`).
  *
  * `active: true` is part of the lookup because an offboarded cashier (their
  * `active` bit flipped by `toggleEmployeeStatus`) must not continue ringing up
@@ -99,7 +123,25 @@ export async function clearCashierCookie(): Promise<void> {
  */
 export async function getCashier(): Promise<CashierSession | null> {
   const cookieStore = await cookies();
-  const id = cookieStore.get(COOKIE)?.value;
+  const raw = cookieStore.get(COOKIE)?.value;
+  if (!raw) return null;
+
+  // The signature is checked BEFORE the lookup, and the id that reaches the
+  // database is the one the signature vouches for — never the raw cookie text.
+  // An unsigned, forged, truncated or foreign-signed value is therefore not a
+  // session at all, and cannot select a user however well-known the id is.
+  let id: string | null = null;
+  try {
+    id = unsignSessionValue(raw);
+  } catch (error) {
+    // A misconfigured server (production without a valid `SESSION_SECRET`) must
+    // lock everyone out rather than fall back to an unverified cookie. Returning
+    // "no session" keeps that failure closed while still rendering (a redirect to
+    // /login) instead of turning every protected route into a 500; the cause is
+    // logged for the operator.
+    console.error("[session] pos-cashier cookie cannot be verified:", error);
+    return null;
+  }
   if (!id) return null;
 
   const user = await prisma.user.findFirst({

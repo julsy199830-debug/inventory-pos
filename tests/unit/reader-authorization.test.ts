@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import Module from "node:module";
 import path from "node:path";
+import { signSessionValue } from "@/lib/session-token";
 
 const MOCKS: Record<string, string> = {
   "server-only": path.resolve("tests/setup/mocks/server-only.cjs"),
@@ -49,7 +50,7 @@ async function check(name: string, fn: () => void | Promise<void>): Promise<void
   try { await fn(); passed += 1; console.log(`ok - ${name}`); }
   catch (error) { failed += 1; console.error(`FAIL - ${name}: ${error instanceof Error ? error.message : String(error)}`); }
 }
-function asUser(id: string | null): void { globalThis.__PO_TEST_COOKIES__ = id ? { "pos-cashier": id } : {}; }
+function asUser(id: string | null): void { globalThis.__PO_TEST_COOKIES__ = id ? { "pos-cashier": signSessionValue(id) } : {}; }
 
 async function main(): Promise<void> {
   rmSync(DB_DIR, { recursive: true, force: true });
@@ -75,15 +76,18 @@ async function main(): Promise<void> {
       await prisma.user.create({ data: { id, name, email: `${id}@reader.test`, role, active: true, pinHash: "test-only", passwordHash: "test-only" } });
     }
 
-    const readers: Array<[string, () => unknown | Promise<unknown>, "result" | "raw"]> = [
+    const readers: Array<[string, () => unknown | Promise<unknown>, "result" | "empty"]> = [
       ["getDailySummary", () => reports.getDailySummary("2026-09-25"), "result"],
       ["getTopSellingProducts", () => reports.getTopSellingProducts(5, { date: "2026-09-25" }), "result"],
       ["getSalesAnalytics", () => reports.getSalesAnalytics(), "result"],
-      ["getPurchaseOrders", () => purchasing.getPurchaseOrders(), "raw"],
-      ["getReceivingHistory", () => purchasing.getReceivingHistory("missing-po"), "raw"],
-      ["getPurchaseOrder", () => purchasing.getPurchaseOrder("missing-po"), "raw"],
-      ["getSuppliersForSelect", () => purchasing.getSuppliersForSelect(), "raw"],
-      ["getProductsForSelect", () => purchasing.getProductsForSelect(), "raw"],
+      // These five purchasing readers return a safe non-error empty result on
+      // denial (S-6: no thrown `Error(denied)` from a reader path), so denied
+      // callers are asserted on the EMPTY value, not on a rejection.
+      ["getPurchaseOrders", () => purchasing.getPurchaseOrders(), "empty"],
+      ["getReceivingHistory", () => purchasing.getReceivingHistory("missing-po"), "empty"],
+      ["getPurchaseOrder", () => purchasing.getPurchaseOrder("missing-po"), "empty"],
+      ["getSuppliersForSelect", () => purchasing.getSuppliersForSelect(), "empty"],
+      ["getProductsForSelect", () => purchasing.getProductsForSelect(), "empty"],
       ["getStockMovements", () => inventory.getStockMovements("missing-product"), "result"],
     ];
 
@@ -98,7 +102,11 @@ async function main(): Promise<void> {
             assert.match(result.error ?? "", /permission|signed in/i);
             assert.equal("data" in result, false, "denied reader must not return data");
           } else {
-            await assert.rejects(async () => { await invoke(); }, /permission|signed in/i);
+            // Denied purchasing readers resolve to an empty collection (or
+            // null for the single-record fetch) — never data, never a throw.
+            const value = await invoke() as unknown[] | null;
+            assert.ok(value === null || (Array.isArray(value) && value.length === 0),
+              `denied reader ${name} must return an empty result, got ${JSON.stringify(value)}`);
           }
         });
       }
@@ -110,7 +118,10 @@ async function main(): Promise<void> {
         await check(`${label} can read ${name}`, async () => {
           asUser(actor);
           const result = await invoke();
+          // `{ ok }`-shaped readers report success; collection readers return
+          // a non-empty-allowed value (empty only means "no rows", never denial).
           if (kind === "result") assert.equal((result as { ok: boolean }).ok, true);
+          else assert.ok(result === null || Array.isArray(result), `reader ${name} returned an unexpected shape`);
         });
       }
     }

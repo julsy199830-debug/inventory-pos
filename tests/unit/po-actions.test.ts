@@ -29,6 +29,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import Module from "node:module";
 import path from "node:path";
+import { signSessionValue } from "@/lib/session-token";
 
 declare global {
   var __PO_TEST_COOKIES__: Record<string, string> | undefined;
@@ -112,9 +113,9 @@ function poForm(
   return f;
 }
 
-/** Point the mocked cookie jar at a user id. */
+/** Point the mocked cookie jar at a SIGNED session for a user id. */
 function asUser(userId: string): void {
-  globalThis.__PO_TEST_COOKIES__ = { "pos-cashier": userId };
+  globalThis.__PO_TEST_COOKIES__ = { "pos-cashier": signSessionValue(userId) };
 }
 /** Empty jar = signed out (getCashier → null → roleGuardError denies). */
 function signedOut(): void {

@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import Module from "node:module";
 import path from "node:path";
+import { signSessionValue } from "@/lib/session-token";
 
 const MOCKS: Record<string, string> = {
   "server-only": path.resolve("tests/setup/mocks/server-only.cjs"),
@@ -71,7 +72,11 @@ async function check(name: string, fn: () => void | Promise<void>): Promise<void
 }
 
 function asUser(userId: string | null): void {
-  globalThis.__PO_TEST_COOKIES__ = userId ? { "pos-cashier": userId } : {};
+  // Signed session: the cookie is `<id>.<hmac>` (see src/lib/session-token.ts),
+  // so the jar carries a value minted with the app's own signer — a bare id is
+  // rejected by getCashier and would make every authed case fail.
+  globalThis.__PO_TEST_COOKIES__ =
+    userId === null ? {} : { "pos-cashier": signSessionValue(userId) };
 }
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();
