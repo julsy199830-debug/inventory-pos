@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { requirePageAuth } from '@/lib/session'
 import { getFormatSettings } from '@/lib/store-config'
+import { effectiveTaxRate } from '@/lib/format'
 import PosCheckout, { type PosStore } from './PosCheckout'
 
 export default async function POSPage() {
@@ -90,7 +91,13 @@ export default async function POSPage() {
     // each had a private formatter and three of them disagreed about grouping.
     format,
     currencySymbol: settings?.currencySymbol ?? '₱',
-    taxRate: settings?.taxRate ?? 0,
+    // Phase 6: resolve the rate through the shared helper rather than passing
+    // the raw column. `effectiveTaxRate` is 0 when the store has switched tax
+    // OFF as well as when the rate is 0, so the register, the drawer and the
+    // receipt all stop charging tax. Passing `settings.taxRate` straight
+    // through meant the new `taxEnabled` switch was ignored at the till — the
+    // settings page could turn tax off and checkout kept charging it.
+    taxRate: effectiveTaxRate(format),
   }
 
 
