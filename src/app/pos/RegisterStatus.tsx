@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { formatMoney, type FormatSettings } from '@/lib/format'
 import { CheckCircle2, ChevronDown, Coffee, LogIn, LogOut, Receipt, RotateCcw, XCircle } from 'lucide-react'
 import {
   clockSelfIn,
@@ -49,11 +50,17 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 export default function RegisterStatusBar({
   cashierName,
-  currencySymbol,
+  format,
   refreshKey,
 }: {
   cashierName: string
-  currencySymbol: string
+  /**
+   * Phase 6: the resolved settings, not a bare glyph. The takings bar previously
+   * rendered `${currencySymbol}${n.toFixed(2)}` with no thousands grouping, so
+   * the shift total at the top of the register disagreed with the same figure in
+   * the drawer below it.
+   */
+  format: FormatSettings
   /**
    * Bumped by the register whenever a sale, refund or void completes.
    *
@@ -79,8 +86,8 @@ export default function RegisterStatusBar({
   const [now, setNow] = useState(() => Date.now())
 
   const money = useCallback(
-    (n: number) => `${currencySymbol}${n.toFixed(2)}`,
-    [currencySymbol],
+    (n: number) => formatMoney(n, format),
+    [format],
   )
 
   const refresh = useCallback(async () => {

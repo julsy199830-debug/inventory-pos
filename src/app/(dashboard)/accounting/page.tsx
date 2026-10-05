@@ -1,4 +1,5 @@
-import { getStoreSettings } from "@/app/actions/settings";
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import {
   getFinancialSummary,
   type ProductBreakdownRow,
@@ -52,21 +53,6 @@ function windowFor(preset: RangePreset, now: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
-/** Format a number as currency using the store's symbol. We read the symbol
- * from StoreSetting (the settings page externalizes it for exactly this
- * reason); if no settings row exists yet we fall back to "₱" rather than
- * refusing to render. The amount is formatted with grouping and two decimals,
- * independent of the glyph — yen etc. still get the symbol prepended. */
-function money(amount: number, symbol: string): string {
-  const body = Math.abs(amount).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const sign = amount < 0 ? "-" : "";
-  const glyph = symbol || "₱";
-  return `${sign}${glyph}${body}`;
-}
-
 /** Format a percentage with one decimal, e.g. 23.456 -> "23.5%". Negative
  * margins (a loss) render with the sign so the table never reads as a positive
  * when it isn't. */
@@ -89,16 +75,15 @@ export default async function AccountingPage({
 
   // `now` anchors the window at request time. Both the window and the summary
   // are derived from it so the date label and the figures can never disagree.
-  // The store's currency symbol is read in parallel so the page renders with
-  // the manager's chosen glyph rather than a hardcoded "₱".
+  // Phase 6: the resolved store settings supply the currency and locale, so this
+  // page formats through the same shared helper as every other screen.
   const now = new Date();
   const { start, end } = windowFor(preset, now);
 
-  const [summary, settings] = await Promise.all([
+  const [summary, format] = await Promise.all([
     getFinancialSummary({ startDate: start, endDate: end }),
-    getStoreSettings(),
+    getFormatSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "₱";
 
   const { revenue, cogs, tax, profit, margin, productBreakdown } = summary;
   const unitsSold = productBreakdown.reduce(
@@ -137,10 +122,10 @@ export default async function AccountingPage({
           breakdown below (and in `getFinancialSummary`), so the four cards stay
           to the four figures a manager reads first. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total Revenue" value={money(revenue, symbol)} />
+        <KpiCard label="Total Revenue" value={formatMoney(revenue, format)} />
         <KpiCard
           label="Net Profit"
-          value={money(profit, symbol)}
+          value={formatMoney(profit, format)}
           tone={profit >= 0 ? "positive" : "negative"}
         />
         <KpiCard
@@ -150,7 +135,7 @@ export default async function AccountingPage({
         />
         <KpiCard
           label="Tax"
-          value={money(tax, symbol)}
+          value={formatMoney(tax, format)}
         />
       </div>
 
@@ -160,7 +145,7 @@ export default async function AccountingPage({
         <div className={SECONDARY_SURFACE_CLS}>
           <p className="text-sm font-medium text-slate-500">Cost of Goods Sold</p>
           <p className="mt-2 text-xl font-semibold text-slate-900">
-            {money(cogs, symbol)}
+            {formatMoney(cogs, format)}
           </p>
         </div>
         <div className={SECONDARY_SURFACE_CLS}>
@@ -200,7 +185,7 @@ export default async function AccountingPage({
                 <ProductRow
                   key={row.productId}
                   row={row}
-                  symbol={symbol}
+                  format={format}
                 />
               ))}
             </tbody>
@@ -244,13 +229,16 @@ function KpiCard({
 }
 
 /** One row of the per-product breakdown. Profit and margin are colored by
- * sign so a product sold at a loss can't read as a contributor. */
+ * sign so a product sold at a loss can't read as a contributor.
+ *
+ * Phase 6: takes the resolved settings rather than a bare glyph, so this row
+ * uses the same formatter — and the same locale grouping — as the page above it. */
 function ProductRow({
   row,
-  symbol,
+  format,
 }: {
   row: ProductBreakdownRow;
-  symbol: string;
+  format: FormatSettings;
 }) {
   const profitTone = row.profit >= 0 ? "text-indigo-700" : "text-red-700";
   const marginTone = row.margin >= 0 ? "text-indigo-700" : "text-red-700";
@@ -263,13 +251,13 @@ function ProductRow({
         {row.quantitySold.toLocaleString()}
       </td>
       <td className="px-5 py-3 text-right text-slate-900">
-        {money(row.revenue, symbol)}
+        {formatMoney(row.revenue, format)}
       </td>
       <td className="px-5 py-3 text-right text-slate-500">
-        {money(row.cogs, symbol)}
+        {formatMoney(row.cogs, format)}
       </td>
       <td className={`px-5 py-3 text-right font-medium ${profitTone}`}>
-        {money(row.profit, symbol)}
+        {formatMoney(row.profit, format)}
       </td>
       <td className={`px-5 py-3 text-right font-medium ${marginTone}`}>
         {percent(row.margin)}

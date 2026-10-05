@@ -1,3 +1,4 @@
+import { formatMoney } from "@/lib/format";
 import { getFormatSettings } from "@/lib/store-config";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -127,7 +128,7 @@ return (
               {sale.refundedAmount > 0 && (
                 <p className="text-xs font-semibold text-amber-700">
                   Refunded {store.currencySymbol}
-                  {sale.refundedAmount.toFixed(2)}
+                  {formatMoney(sale.refundedAmount, format)}
                 </p>
               )}
               {sale.voidReason && (
@@ -143,7 +144,7 @@ return (
               {sale.refunds.map((r) => (
                 <li key={r.id} className="text-xs text-slate-600">
                   Refunded {store.currencySymbol}
-                  {r.amount.toFixed(2)} Â· {r.reason} Â·{" "}
+                  {formatMoney(r.amount, format)} Â· {r.reason} Â·{" "}
                   <span className="tabular-nums">
                     {r.createdAt.toLocaleString()}
                   </span>

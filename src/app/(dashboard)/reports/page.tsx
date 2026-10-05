@@ -1,4 +1,6 @@
 import { getStoreSettings } from "@/app/actions/settings";
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import {
   getDailySummary,
   getSalesExportCashiers,
@@ -58,18 +60,6 @@ function formatDateLabel(iso: string): string {
   });
 }
 
-/** Format a number as money using the store's currency symbol — same helper
- * convention as the accounting page. The glyph falls back to "₱" when no
- * StoreSetting row exists yet. */
-function money(amount: number, symbol: string): string {
-  const body = Math.abs(amount).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const sign = amount < 0 ? "-" : "";
-  return `${sign}${symbol || "₱"}${body}`;
-}
-
 export default async function ReportsPage({
   searchParams,
 }: {
@@ -79,13 +69,16 @@ export default async function ReportsPage({
   const isoDate = resolveDate(date);
   const dateLabel = formatDateLabel(isoDate);
 
-  const [summaryResult, topResult, settings, cashierResult] = await Promise.all([
-    getDailySummary(isoDate),
-    getTopSellingProducts(10, { date: isoDate }),
-    getStoreSettings(),
-    getSalesExportCashiers(),
-  ]);
-  const symbol = settings?.currencySymbol ?? "₱";
+  const [summaryResult, topResult, settings, cashierResult, format] =
+    await Promise.all([
+      getDailySummary(isoDate),
+      getTopSellingProducts(10, { date: isoDate }),
+      getStoreSettings(),
+      getSalesExportCashiers(),
+      // Phase 6: the resolved settings drive every amount on this page and on
+      // the printable Z-report, so the screen and the printout cannot drift.
+      getFormatSettings(),
+    ]);
   const summary = summaryResult.ok ? summaryResult.data : null;
   const topProducts = topResult.ok ? topResult.data : [];
   // An RBAC failure here must not break the report page — the export dialog
@@ -168,17 +161,17 @@ export default async function ReportsPage({
 
       {/* KPI cards — the four headline figures of the day. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Revenue" value={money(revenue, symbol)} />
+        <KpiCard label="Revenue" value={formatMoney(revenue, format)} />
         <KpiCard
           label="Net Profit"
-          value={money(netProfit, symbol)}
+          value={formatMoney(netProfit, format)}
           tone={netProfit >= 0 ? "positive" : "negative"}
         />
         <KpiCard
           label="Total Transactions"
           value={salesCount.toLocaleString()}
         />
-        <KpiCard label="Avg Order Value" value={money(avgOrderValue, symbol)} />
+        <KpiCard label="Avg Order Value" value={formatMoney(avgOrderValue, format)} />
       </div>
 
       {/* Printable Z-Report sheet. Carries the ONLY printable class in @media
@@ -190,10 +183,9 @@ export default async function ReportsPage({
           phone={settings?.phone ?? null}
           dateLabel={dateLabel}
           isoDate={isoDate}
-          symbol={symbol}
+          format={format}
           summary={summary}
           topProducts={topProducts}
-          money={money}
         />
       </div>
     </div>
@@ -234,24 +226,28 @@ function ZReportSheet({
   phone,
   dateLabel,
   isoDate,
-  symbol,
+  format,
   summary,
   topProducts,
-  money: fmt,
 }: {
   storeName: string;
   address: string | null;
   phone: string | null;
   dateLabel: string;
   isoDate: string;
-  symbol: string;
+  /**
+   * Phase 6: the resolved settings. The sheet used to receive a `symbol` string
+   * AND a `money` callback from its parent, which meant the printout's grouping
+   * was whatever the page happened to pass. It now formats with the same shared
+   * helper as the screen above it.
+   */
+  format: FormatSettings;
   summary: ReturnType<typeof getDailySummary> extends Promise<infer R>
     ? R extends { ok: true; data: infer D }
       ? D
       : null
     : never;
   topProducts: TopProduct[];
-  money: (n: number, symbol: string) => string;
 }) {
   const cogs = summary?.cogs ?? 0;
   const revenue = summary?.revenue ?? 0;
@@ -308,7 +304,7 @@ function ZReportSheet({
                       {row.count.toLocaleString()}
                     </td>
                     <td className="py-1.5 text-right text-slate-900">
-                      {fmt(row.total, symbol)}
+                      {formatMoney(row.total, format)}
                     </td>
                   </tr>
                 ))}
@@ -322,7 +318,7 @@ function ZReportSheet({
                     {salesCount.toLocaleString()}
                   </td>
                   <td className="py-1.5 text-right font-semibold text-slate-900">
-                    {fmt(revenue, symbol)}
+                    {formatMoney(revenue, format)}
                   </td>
                 </tr>
               </tfoot>
@@ -337,16 +333,16 @@ function ZReportSheet({
             <dl className="mt-2 divide-y divide-slate-100 border-b border-slate-300 text-sm">
               <div className="flex justify-between py-1.5">
                 <dt className="text-slate-600">Gross Revenue</dt>
-                <dd className="text-slate-900">{fmt(revenue, symbol)}</dd>
+                <dd className="text-slate-900">{formatMoney(revenue, format)}</dd>
               </div>
               <div className="flex justify-between py-1.5">
                 <dt className="text-slate-600">Cost of Goods Sold</dt>
-                <dd className="text-slate-900">− {fmt(cogs, symbol)}</dd>
+                <dd className="text-slate-900">− {formatMoney(cogs, format)}</dd>
               </div>
               <div className="flex justify-between border-t-2 border-blue-600 py-2 font-semibold text-slate-900">
                 <dt>Net Profit</dt>
                 <dd className={netProfit >= 0 ? "" : "text-red-700"}>
-                  {fmt(netProfit, symbol)}
+                  {formatMoney(netProfit, format)}
                 </dd>
               </div>
             </dl>
@@ -383,7 +379,7 @@ function ZReportSheet({
                       {row.quantitySold.toLocaleString()}
                     </td>
                     <td className="py-1.5 text-right text-slate-900">
-                      {fmt(row.revenue, symbol)}
+                      {formatMoney(row.revenue, format)}
                     </td>
                   </tr>
                 ))}

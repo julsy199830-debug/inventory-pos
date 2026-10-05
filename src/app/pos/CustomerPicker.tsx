@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronDown, Loader2, Plus, Search, UserRound, X } from 'lucide-react'
 import type { PosCustomer } from './PosCheckout'
 import { rankCustomerMatches, relativeSince, shouldOfferCreate } from './customer-search'
+import { formatMoney, type FormatSettings } from '@/lib/format'
 
 /**
  * Window event the register fires to focus the customer picker (F4).
@@ -40,7 +41,7 @@ export default function CustomerPicker({
   customers,
   value,
   onChange,
-  currencySymbol,
+  format,
   canCreate,
   onCreate,
   creating,
@@ -50,7 +51,12 @@ export default function CustomerPicker({
   /** Currently attached customer id, or '' for a walk-in. */
   value: string
   onChange: (id: string) => void
-  currencySymbol: string
+  /**
+   * Phase 6: the resolved settings rather than a bare glyph. The outstanding
+   * balance was printed as a bare `toFixed(2)` with the symbol on a separate
+   * text node and no thousands grouping; it now comes from the shared formatter.
+   */
+  format: FormatSettings
   /** Mirrors the server's ADMIN/MANAGER gate on `createCustomer`. */
   canCreate: boolean
   /** Runs the existing `createCustomer` server action. */
@@ -316,9 +322,10 @@ export default function CustomerPicker({
                             : ''
                         }`}
                       >
-                        owes {currencySymbol}
-                        {c.currentBalance.toFixed(2)}
-                        {c.creditLimit > 0 ? ` / ${c.creditLimit.toFixed(0)}` : ''}
+                        owes {formatMoney(c.currentBalance, format)}
+                        {c.creditLimit > 0
+                          ? ` / ${formatMoney(c.creditLimit, format)}`
+                          : ''}
                       </span>
                     )}
                     <span className="text-slate-400">

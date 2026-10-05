@@ -460,7 +460,7 @@ export default function PosCheckout({
 
   // Store-symbol money formatter — the same glyph the Receipt uses, so the cart
   // and the printed slip can never disagree (defaults to ₱ via StoreSetting).
-  const money = (value: number) => `${store.currencySymbol}${value.toFixed(2)}`
+  const money = (value: number) => formatMoney(value, store.format)
 
   const onCheckout = () => {
     if (cart.length === 0 || pending || creditBlocked) return
@@ -732,7 +732,7 @@ export default function PosCheckout({
           state is visible without scrolling; one line collapsed. */}
       <RegisterStatusBar
         cashierName={cashier.name}
-        currencySymbol={store.currencySymbol}
+        format={store.format}
         refreshKey={registerActivity}
       />
       {/* Dedicated barcode search box — scanning while this is focused types
@@ -776,6 +776,7 @@ export default function PosCheckout({
           unchanged, so every downstream rule still sees the same state. */}
       <CustomerPicker
         customers={pickerCustomers}
+        format={store.format}
         value={customerId}
         onChange={(id) => {
           setCustomerId(id)
@@ -783,7 +784,6 @@ export default function PosCheckout({
           // the previous customer rather than carrying it over.
           setRedeemPoints(0)
         }}
-        currencySymbol={store.currencySymbol}
         canCreate={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'}
         onCreate={createQuickCustomer}
         creating={creatingCustomer}

@@ -897,7 +897,7 @@ export default function TransactionHistory({ canVoid, store, taxRate }: Props) {
               {details.status === 'Voided'
                 ? 'VOID — this transaction was reversed. No goods were sold and no payment was taken.'
                 : details.refundedAmount > 0
-                  ? `PARTLY REFUNDED — ${store.currencySymbol}${details.refundedAmount.toFixed(2)} of ${store.currencySymbol}${details.totalAmount.toFixed(2)} returned. The slip below shows the original sale and the returned items.`
+                  ? `PARTLY REFUNDED — ${formatMoney(details.refundedAmount, store.format)} of ${formatMoney(details.totalAmount, store.format)} returned. The slip below shows the original sale and the returned items.`
                   : `ORIGINAL SALE — the figures below are the stored record of this transaction, not a recalculation.`}
             </div>
 
