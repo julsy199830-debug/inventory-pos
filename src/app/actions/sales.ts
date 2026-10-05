@@ -337,11 +337,41 @@ export async function createSale(
       // Loyalty point movement — spend first, then earn, as one net update. The
       // balance was re-read above inside this transaction, so the deduction is
       // based on a value that cannot have moved underneath us.
+      //
+      // Phase 6: each side also gets its own `LoyaltyEvent` row. Without them a
+      // points balance can only be explained by diffing sales, which can never
+      // account for a manual correction and can never tell the customer why
+      // their points moved. Earning and spending are written separately so the
+      // history reads as two real events rather than one opaque net number.
       if (customerId && (earnedPoints > 0 || outcome.points > 0)) {
         await tx.customer.update({
           where: { id: customerId },
           data: { loyaltyPoints: { increment: earnedPoints - outcome.points } },
         });
+        if (outcome.points > 0) {
+          await tx.loyaltyEvent.create({
+            data: {
+              customerId,
+              delta: -outcome.points,
+              kind: "REDEEMED",
+              reason: `Redeemed at checkout on ${`Sale #${created.id.slice(0, 8)}`}`,
+              saleId: created.id,
+              createdById: cashier.id,
+            },
+          });
+        }
+        if (earnedPoints > 0) {
+          await tx.loyaltyEvent.create({
+            data: {
+              customerId,
+              delta: earnedPoints,
+              kind: "EARNED",
+              reason: `Earned on ${`Sale #${created.id.slice(0, 8)}`}`,
+              saleId: created.id,
+              createdById: cashier.id,
+            },
+          });
+        }
       }
 
       return created;
@@ -440,7 +470,7 @@ export async function voidSale(
         if (!cust) throw new Error("CUSTOMER_NOT_FOUND");
         if (cust.currentBalance - sale.totalAmount < 0) throw new Error("CUSTOMER_BALANCE_CONFLICT");
         await tx.customer.update({ where: { id: sale.customerId }, data: { currentBalance: { decrement: sale.totalAmount } } });
-        await tx.customerPayment.create({ data: { customerId: sale.customerId, cashierId: cashier.id, paymentMethod: sale.paymentMethod, amount: sale.totalAmount, notes: `Void reversal of Sale ${tid} - ${rsn}` } });
+        await tx.customerPayment.create({ data: { customerId: sale.customerId, cashierId: cashier.id, paymentMethod: sale.paymentMethod, amount: sale.totalAmount, kind: "VOID_REVERSAL", notes: `Void reversal of Sale ${tid} - ${rsn}` } });
         // Net point reversal (Phase 1d): hand back points the customer SPENT at
         // checkout, claw back points the sale EARNED. With no redemption this is
         // exactly the old `decrement: earnedPoints`, so existing void behaviour
@@ -449,6 +479,7 @@ export async function voidSale(
         if (pointDelta !== 0) {
           if (cust.loyaltyPoints + pointDelta < 0) throw new Error("LOYALTY_BALANCE_CONFLICT");
           await tx.customer.update({ where: { id: sale.customerId }, data: { loyaltyPoints: { increment: pointDelta } } });
+          await tx.loyaltyEvent.create({ data: { customerId: sale.customerId, delta: pointDelta, kind: "REVERSED", reason: `Void reversal on Sale #${tid.slice(0, 8)} - ${rsn}`, saleId: sale.id, createdById: cashier.id } });
         }
       } else if (sale.customerId && (sale.earnedPoints > 0 || sale.redeemedPoints > 0)) {
         const cust = await tx.customer.findUnique({ where: { id: sale.customerId }, select: { loyaltyPoints: true } });
@@ -456,6 +487,7 @@ export async function voidSale(
         const pointDelta = sale.redeemedPoints - sale.earnedPoints;
         if (cust.loyaltyPoints + pointDelta < 0) throw new Error("LOYALTY_BALANCE_CONFLICT");
         await tx.customer.update({ where: { id: sale.customerId }, data: { loyaltyPoints: { increment: pointDelta } } });
+        await tx.loyaltyEvent.create({ data: { customerId: sale.customerId, delta: pointDelta, kind: "REVERSED", reason: `Void reversal on Sale #${tid.slice(0, 8)} - ${rsn}`, saleId: sale.id, createdById: cashier.id } });
       }
       return updated;
     });
@@ -700,6 +732,16 @@ export async function refundSale(input: RefundSaleInput): Promise<RefundSaleResu
             await tx.customer.update({
               where: { id: customer.id },
               data: { loyaltyPoints: { decrement: reverse } },
+            });
+            await tx.loyaltyEvent.create({
+              data: {
+                customerId: customer.id,
+                delta: -reverse,
+                kind: "REVERSED",
+                reason: `Points clawed back on refund — ${reason}`,
+                saleId,
+                createdById: cashier.id,
+              },
             });
           }
         }

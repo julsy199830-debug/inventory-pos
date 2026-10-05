@@ -10,7 +10,7 @@ import {
 } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
 import type { MutationResult } from "@/lib/types";
-import { isRevenueSale, round2 } from "@/lib/analytics";
+import { isRevenueSale, round2 } from "@/lib/analytics"; import { buildLedger, type LedgerEntryKind } from "@/lib/ledger"; import { loadLedgerEvents } from "@/lib/ledger-data";
 
 export type CustomerRow = {
   id: string;
@@ -45,13 +45,45 @@ export type CustomerPaymentInput = {
   notes?: string | null;
 };
 
+/** Date window for a statement. Both bounds optional; a null bound is unbounded. */
+export type StatementFilters = {
+  from?: Date | null;
+  to?: Date | null;
+};
+
+export type AccountAdjustmentInput = {
+  customerId: string;
+  /** Signed: positive raises what the customer owes, positive-negative lowers it. */
+  amount: number;
+  kind?: "ADJUSTMENT" | "WRITE_OFF";
+  reason: string;
+};
+
+export type LoyaltyAdjustmentInput = {
+  customerId: string;
+  /** Signed point movement. */
+  delta: number;
+  reason: string;
+};
+
+/**
+ * Phase 6: a statement row is now a real ledger movement, not "a sale".
+ *
+ * The pre-Phase-6 version listed EVERY sale for a customer — including cash and
+ * card sales that never touched their account — so the statement implied debt
+ * the customer did not owe. Rows now carry the movement `kind`, its signed
+ * effect on the balance, and the running balance after it.
+ */
 export type StatementEntry = {
   id: string;
-  type: "SALE" | "PAYMENT";
+  kind: LedgerEntryKind;
   date: Date;
+  /** Signed effect on the outstanding balance. */
   amount: number;
-  paymentMethod: string;
-  notes?: string | null;
+  label: string;
+  detail: string | null;
+  /** Balance owed immediately after this entry. */
+  balance: number;
 };
 
 export type CustomerStatement = {
@@ -68,6 +100,11 @@ export type CustomerStatement = {
     createdAt: Date;
   };
   entries: StatementEntry[];
+  /** Derived from the records, not read from the stored column. */
+  balance: number;
+  openingBalance: number;
+  totalCharges: number;
+  totalPayments: number;
 };
 
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -328,6 +365,7 @@ export async function recordCustomerPayment(
 
 export async function getCustomerStatement(
   id: string,
+  filters?: StatementFilters,
 ): Promise<{ ok: true; data: CustomerStatement } | { ok: false; error: string }> {
   const actor = await requireActor();
   if (!actor.ok) return actor;
@@ -345,50 +383,199 @@ export async function getCustomerStatement(
       loyaltyPoints: true,
       notes: true,
       createdAt: true,
-      sales: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          createdAt: true,
-          totalAmount: true,
-          paymentMethod: true,
-          status: true,
-        },
-      },
-      payments: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          createdAt: true,
-          amount: true,
-          paymentMethod: true,
-          notes: true,
-        },
-      },
     },
   });
   if (!customer) return { ok: false, error: "Customer not found." };
 
-  const entries: StatementEntry[] = [
-    ...customer.sales.map((s) => ({
-      id: s.id,
-      type: "SALE" as const,
-      date: s.createdAt,
-      amount: s.totalAmount,
-      paymentMethod: s.paymentMethod,
-      notes: null as string | null,
-    })),
-    ...customer.payments.map((p) => ({
-      id: p.id,
-      type: "PAYMENT" as const,
-      date: p.createdAt,
-      amount: p.amount,
-      paymentMethod: p.paymentMethod,
-      notes: p.notes,
-    })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  // The balance is REBUILT from the records, never read from
+  // `currentBalance`. That column stays as a cache updated inside the same
+  // transactions that write the records; this function is the audit that proves
+  // the two agree, and it is what the statement prints.
+  const events = await loadLedgerEvents(id);
+  const result = buildLedger(events, {
+    from: filters?.from ?? null,
+    to: filters?.to ?? null,
+  });
 
-  const { sales: _sales, payments: _payments, ...rest } = customer;
+  const entries: StatementEntry[] = result.entries.map((e) => ({
+    id: e.id,
+    kind: e.kind,
+    date: e.date,
+    amount: e.amount,
+    label: e.label,
+    detail: e.detail ?? null,
+    balance: e.balance,
+  }));
 
-  return { ok: true as const, data: { customer: rest, entries } };
+  return {
+    ok: true as const,
+    data: {
+      customer,
+      entries,
+      balance: result.balance,
+      openingBalance: result.openingBalance,
+      totalCharges: result.totalCharges,
+      totalPayments: result.totalPayments,
+    },
+  };
+}
+
+/**
+ * Phase 6 — a manager-entered correction to a customer's outstanding balance.
+ *
+ * This writes an `AccountAdjustment` row AND moves `currentBalance` in the same
+ * transaction. The row is why the balance is correct; the column is only a cache
+ * of it. Moving the column without the row would leave a balance no statement
+ * could justify, which is exactly what "auditable" rules out.
+ *
+ * Manager-only, with a mandatory reason: an unexplained movement of a customer's
+ * debt is not something the store should be able to do quietly.
+ */
+export async function recordAccountAdjustment(
+  input: AccountAdjustmentInput,
+): Promise<MutationResult<{ id: string; balance: number }>> {
+  const denied = await roleGuardError(STAFF_ROLES);
+  if (denied) return { ok: false, error: denied };
+
+  const amount = round2(Number(input.amount));
+  if (!Number.isFinite(amount) || amount === 0) {
+    return { ok: false, error: "Adjustment must not be zero." };
+  }
+  const reason = input.reason?.trim();
+  if (!reason) {
+    return { ok: false, error: "A reason is required for an account adjustment." };
+  }
+  const kind = input.kind === "WRITE_OFF" ? "WRITE_OFF" : "ADJUSTMENT";
+
+  const actor = await getCashier();
+  try {
+    const out = await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, currentBalance: true },
+      });
+      if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+
+      // The same "never negative" clamp the ledger applies, so a write-off
+      // larger than the debt settles it instead of creating a credit.
+      const applied =
+        amount < 0
+          ? -round2(Math.min(Math.abs(amount), customer.currentBalance))
+          : amount;
+
+      const updated = await tx.customer.update({
+        where: { id: customer.id },
+        data: { currentBalance: { increment: applied } },
+      });
+      const row = await tx.accountAdjustment.create({
+        data: {
+          customerId: customer.id,
+          amount: applied,
+          kind,
+          reason,
+          createdById: actor?.id ?? null,
+        },
+        select: { id: true },
+      });
+      return { id: row.id, balance: updated.currentBalance };
+    });
+
+    revalidatePath("/customers");
+    await recordAudit({
+      action: "CUSTOMER_ADJUSTMENT",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "Customer",
+      entityId: input.customerId,
+      summary:
+        kind === "WRITE_OFF"
+          ? `Wrote off customer balance by ${amount}`
+          : `Adjusted customer balance by ${amount}`,
+      after: { amount, kind, reason, balance: out.balance },
+    });
+    return { ok: true as const, data: out };
+  } catch (err) {
+    if (err instanceof Error && err.message === "CUSTOMER_NOT_FOUND") {
+      return { ok: false, error: "Customer not found." };
+    }
+    return {
+      ok: false,
+      error: "Could not record the adjustment. Please try again.",
+    };
+  }
+}
+
+/**
+ * Phase 6 — a manager-entered loyalty points correction.
+ *
+ * Mirrors {@link recordAccountAdjustment}: the `LoyaltyEvent` row is the record,
+ * `Customer.loyaltyPoints` is the cache. Same rule, same mandatory reason.
+ */
+export async function recordLoyaltyAdjustment(
+  input: LoyaltyAdjustmentInput,
+): Promise<MutationResult<{ id: string; points: number }>> {
+  const denied = await roleGuardError(STAFF_ROLES);
+  if (denied) return { ok: false, error: denied };
+
+  const delta = Math.trunc(Number(input.delta));
+  if (!Number.isFinite(delta) || delta === 0) {
+    return { ok: false, error: "Points adjustment must not be zero." };
+  }
+  const reason = input.reason?.trim();
+  if (!reason) {
+    return { ok: false, error: "A reason is required for a points adjustment." };
+  }
+
+  const actor = await getCashier();
+  try {
+    const out = await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, loyaltyPoints: true },
+      });
+      if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+      if (customer.loyaltyPoints + delta < 0) throw new Error("POINTS_CONFLICT");
+
+      const updated = await tx.customer.update({
+        where: { id: customer.id },
+        data: { loyaltyPoints: { increment: delta } },
+      });
+      const row = await tx.loyaltyEvent.create({
+        data: {
+          customerId: customer.id,
+          delta,
+          kind: "ADJUSTED",
+          reason,
+          createdById: actor?.id ?? null,
+        },
+        select: { id: true },
+      });
+      return { id: row.id, points: updated.loyaltyPoints };
+    });
+
+    revalidatePath("/customers");
+    await recordAudit({
+      action: "LOYALTY_ADJUST",
+      userId: actor?.id ?? null,
+      actor: actor?.name ?? null,
+      entity: "Customer",
+      entityId: input.customerId,
+      summary: `Adjusted loyalty points by ${delta}`,
+      after: { delta, reason, points: out.points },
+    });
+    return { ok: true as const, data: out };
+  } catch (err) {
+    if (err instanceof Error) {
+      if (err.message === "CUSTOMER_NOT_FOUND") {
+        return { ok: false, error: "Customer not found." };
+      }
+      if (err.message === "POINTS_CONFLICT") {
+        return { ok: false, error: "That would take the points below zero." };
+      }
+    }
+    return {
+      ok: false,
+      error: "Could not record the adjustment. Please try again.",
+    };
+  }
 }

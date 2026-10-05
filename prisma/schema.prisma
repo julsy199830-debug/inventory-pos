@@ -37,6 +37,9 @@ model User {
   dtrCorrections         DtrCorrection[]
   purchaseOrders         PurchaseOrder[]
   receivedPurchaseOrders PurchaseReceipt[]
+  /// Phase 6: who moved a customer balance / loyalty total.
+  accountAdjustments     AccountAdjustment[]
+  loyaltyEvents          LoyaltyEvent[]
 }
 
 model Product {
@@ -139,6 +142,10 @@ model Customer {
   updatedAt      DateTime          @updatedAt
   payments       CustomerPayment[]
   sales          Sale[]
+  /// Phase 6: the append-only records the account balance and loyalty points
+  /// are derived from. See {@link AccountAdjustment} and {@link LoyaltyEvent}.
+  adjustments    AccountAdjustment[]
+  loyaltyEvents  LoyaltyEvent[]
 }
 
 /// A debt settlement (payment) applied against a {@link Customer}'s outstanding
@@ -167,12 +174,84 @@ model CustomerPayment {
   cashierId     String?
   /// Free-text note (e.g. "Payment on account", "Weekly settle"). Optional.
   notes         String?
+  /// Phase 6 discriminator, so the account ledger can tell a real settlement
+  /// apart from the synthetic row `voidSale` writes to reverse a credit sale.
+  ///
+  /// Why this matters: a voided STORE_CREDIT sale must contribute NOTHING to the
+  /// balance. The sale stops being a Completed charge, and its reversal row is
+  /// tagged VOID_REVERSAL so the ledger does not ALSO count it as money in.
+  /// Counting both would show a phantom credit. Defaulting to "PAYMENT" keeps
+  /// every pre-existing row (and the normal `recordCustomerPayment` path)
+  /// behaving exactly as before.
+  kind          String   @default("PAYMENT")
   createdAt     DateTime @default(now())
   cashier       User?    @relation(fields: [cashierId], references: [id])
   customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
   @@index([cashierId])
+  @@index([createdAt])
+}
+
+/// Phase 6 — Customer account ledger, manual movements.
+///
+/// Every change to a customer's outstanding money that is NOT already implied by
+/// a sale or a refund. `src/lib/ledger.ts` derives the balance from sales,
+/// refunds, payments and THESE rows, so the balance can always be re-derived
+/// from records rather than trusted from a single stored float.
+///
+/// `amount` is SIGNED and uses the SAME direction as `Customer.currentBalance`:
+/// positive means the customer now owes MORE, negative means they owe LESS.
+/// One convention across the whole feature — a ledger row therefore needs no
+/// separate direction flag, and the statement can sum the column directly.
+model AccountAdjustment {
+  id         String   @id @default(uuid())
+  customerId String
+  /// Signed movement of the outstanding balance. + = owes more, - = owes less.
+  /// Never 0 — the action layer rejects a zero adjustment.
+  amount     Float
+  /// "ADJUSTMENT" (manager correction) | "WRITE_OFF" (debt forgiven).
+  /// Plain String + TS narrowing, matching this schema's convention.
+  kind       String   @default("ADJUSTMENT")
+  /// Mandatory. An account movement with no stated reason is not auditable, so
+  /// the action layer rejects a blank one rather than defaulting it.
+  reason     String
+  /// Staff member who made it. Optional + SetNull so offboarding an employee
+  /// never deletes the evidence of who moved a balance.
+  createdById String?
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy  User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+/// Phase 6 — loyalty points history.
+///
+/// `Customer.loyaltyPoints` stays as a cached total, but this table is the
+/// record that total is derivable from. Without it, a points balance can only be
+/// explained by diffing sales, which can never account for a manual correction
+/// and can never show the customer why their points moved.
+model LoyaltyEvent {
+  id          String   @id @default(uuid())
+  customerId  String
+  /// Signed point movement. Positive earns, negative spends or claws back.
+  delta       Int
+  /// "EARNED" | "REDEEMED" | "REVERSED" | "ADJUSTED".
+  kind        String
+  reason      String
+  /// The sale that caused it, when there was one. SetNull: a sale may be purged
+  /// while the points it earned remain on the customer's account.
+  saleId      String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  sale        Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([saleId])
   @@index([createdAt])
 }
 
@@ -227,6 +306,8 @@ model Sale {
   customer       Customer?  @relation(fields: [customerId], references: [id])
   items          SaleItem[]
   refunds        SaleRefund[]
+  /// Phase 6: the points this sale earned/redeemed, as individual events.
+  loyaltyEvents  LoyaltyEvent[]
 
   @@index([customerId])
   @@index([cashierId])
@@ -421,6 +502,28 @@ model StoreSetting {
   taxRate        Float    @default(0)
   /// Short currency glyph, e.g. "₱", "€", "¥". Kept tiny on purpose.
   currencySymbol String   @default("₱")
+  /// Phase 6: master switch for tax. The EFFECTIVE rate is 0 when this is false
+  /// OR when `taxRate` is 0, so the original "taxRate = 0 means no tax"
+  /// convention above keeps behaving exactly as it did before this column
+  /// existed. Nothing else in the schema changes meaning.
+  taxEnabled     Boolean  @default(true)
+  /// Phase 6: BCP-47 locale driving number grouping and separators, and the
+  /// date/time formats below. Defaults to the store's original en-PH setting.
+  locale         String   @default("en-PH")
+  /// Phase 6: ISO-4217 code behind `currencySymbol` ("PHP"). Kept separate from
+  /// the glyph so an operator can render "$" or "US$" for an overseas supplier
+  /// without the schema losing which currency the amounts actually are.
+  currencyCode   String   @default("PHP")
+  /// Phase 6: date display pattern. Supported: "MMM D, YYYY", "DD/MM/YYYY",
+  /// "MM/DD/YYYY", "YYYY-MM-DD". Rendered by `src/lib/format.ts` ONLY — pages
+  /// must not hand-roll their own date string.
+  dateFormat     String   @default("MMM D, YYYY")
+  /// Phase 6: "h:mm a" (12-hour) or "HH:mm" (24-hour).
+  timeFormat     String   @default("h:mm a")
+  /// Phase 6: store contact block printed on receipts and statements.
+  email          String?
+  /// Phase 6: free-text footer printed on receipts (thank-you line, TIN, etc).
+  receiptFooter  String?
   updatedAt      DateTime
 }
 

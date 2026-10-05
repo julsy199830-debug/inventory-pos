@@ -11,6 +11,12 @@ import {
   type CustomerStatement,
 } from "./actions";
 import { downloadCsv } from "@/lib/csv";
+import {
+  formatDateTime,
+  formatMoney,
+  type FormatSettings,
+} from "@/lib/format";
+import type { LedgerEntryKind } from "@/lib/ledger";
 import { Modal } from "@/app/_components/ui/Modal";
 
 /** Rows per page. Small enough to scan, large enough to avoid constant paging. */
@@ -50,16 +56,23 @@ function sinceLabel(iso: string | null): string {
   return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`;
 }
 
-const f = (n: number) =>
-  new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
-const fd = (d: Date) =>
-  new Date(d).toLocaleString("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+/** Phase 6: how each ledger movement is labelled on the statement. */
+const LEDGER_LABEL: Record<LedgerEntryKind, string> = {
+  CHARGE: "On account",
+  PAYMENT: "Payment",
+  REFUND: "Refund",
+  VOID: "Voided",
+  ADJUSTMENT: "Adjustment",
+};
+
+/** Colour key: money coming in (debt) vs money going out (settled). */
+const LEDGER_BADGE: Record<LedgerEntryKind, string> = {
+  CHARGE: "rounded bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700",
+  PAYMENT: "rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700",
+  REFUND: "rounded bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700",
+  VOID: "rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600",
+  ADJUSTMENT: "rounded bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700",
+};
 const input =
   "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
 const primary =
@@ -67,7 +80,22 @@ const primary =
 const ghost =
   "inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700";
 
-export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] }) {
+export function CustomersClient({
+  initialRows,
+  format,
+}: {
+  initialRows: CustomerRow[];
+  /** Phase 6: resolved Store Settings, so every amount obeys the store currency. */
+  format: FormatSettings;
+}) {
+  /** Phase 6: the single money/date convention. No page formats money itself. */
+  const fmt = useMemo(
+    () => ({
+      money: (n: number) => formatMoney(n, format),
+      dateTime: (d: Date | string) => formatDateTime(d, format),
+    }),
+    [format],
+  );
   const [rows, setRows] = useState(initialRows);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -339,10 +367,10 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
               <tr key={r.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>
                 <td className="px-4 py-3 text-slate-600">{r.phone ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{f(r.creditLimit)}</td>
+                <td className="px-4 py-3 text-slate-600">{fmt.money(r.creditLimit)}</td>
                 <td className="px-4 py-3">
                   <span className={r.currentBalance > 0 ? "font-semibold text-red-600" : "text-slate-500"}>
-                    {f(r.currentBalance)}
+                    {fmt.money(r.currentBalance)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">
@@ -352,7 +380,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                 <td className="px-4 py-3 tabular-nums text-slate-700">
                   {r.loyaltyPoints}
                 </td>
-                <td className="px-4 py-3 tabular-nums text-slate-700">{f(r.totalSpent)}</td>
+                <td className="px-4 py-3 tabular-nums text-slate-700">{fmt.money(r.totalSpent)}</td>
                 <td className="px-4 py-3 text-xs text-slate-500">{sinceLabel(r.lastSaleAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
@@ -475,7 +503,7 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
         <Modal open title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
           <form onSubmit={pay} className="space-y-3">
             <p className="text-sm text-slate-500">
-              Outstanding debt: <span className="font-semibold text-rose-600">{f(paying.currentBalance)}</span>
+              Outstanding debt: <span className="font-semibold text-rose-600">{fmt.money(paying.currentBalance)}</span>
             </p>
             <input className={input} placeholder="Amount *" type="number" min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} required />
             <select className={input} value={payment.method} onChange={(e) => setPayment({ ...payment, method: e.target.value })}>
@@ -498,11 +526,12 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Credit Limit</p>
-              <p className="text-sm font-semibold text-slate-900">{f(statement.customer.creditLimit)}</p>
+              <p className="text-sm font-semibold text-slate-900">{fmt.money(statement.customer.creditLimit)}</p>
             </div>
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
-              <p className="text-xs text-rose-600">Current Debt</p>
-              <p className="text-sm font-semibold text-rose-700">{f(statement.customer.currentBalance)}</p>
+              <p className="text-xs text-rose-600">Outstanding Balance</p>
+              {/* Derived from the ledger, not the cached column — see getCustomerStatement. */}
+              <p className="text-sm font-semibold text-rose-700">{fmt.money(statement.balance)}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Loyalty Points</p>
@@ -516,28 +545,32 @@ export function CustomersClient({ initialRows }: { initialRows: CustomerRow[] })
                   <th className="pb-2">Date</th>
                   <th className="pb-2">Type</th>
                   <th className="pb-2 text-right">Amount</th>
+                  <th className="pb-2 text-right">Balance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/80">
                 {statement.entries.map((e) => (
                   <tr key={e.id}>
-                    <td className="py-2 text-slate-600">{fd(e.date)}</td>
+                    <td className="py-2 text-slate-600">{fmt.dateTime(e.date)}</td>
                     <td className="py-2">
-                      <span className={e.type === "SALE"
-                        ? "rounded bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700"
-                        : "rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"}>
-                        {e.type === "SALE" ? "On Account" : "Payment"} · {e.paymentMethod}
+                      <span className={LEDGER_BADGE[e.kind]}>
+                        {LEDGER_LABEL[e.kind]}
                       </span>
+                      {e.detail && (
+                        <p className="mt-0.5 pl-1 text-xs text-slate-500">{e.detail}</p>
+                      )}
                     </td>
                     <td className="py-2 text-right font-medium">
-                      {e.type === "SALE" ? "+" : "−"}
-                      {f(e.amount)}
+                      {e.amount === 0 ? "—" : `${e.amount > 0 ? "+" : "−"}${fmt.money(Math.abs(e.amount))}`}
                     </td>
+                    <td className="py-2 text-right text-slate-600">{fmt.money(e.balance)}</td>
                   </tr>
                 ))}
                 {statement.entries.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="py-8 text-center text-slate-500">No credit activity yet.</td>
+                    <td colSpan={4} className="py-8 text-center text-slate-500">
+                      No credit activity yet.
+                    </td>
                   </tr>
                 )}
               </tbody>
