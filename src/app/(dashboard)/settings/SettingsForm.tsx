@@ -6,6 +6,7 @@ import {
   type SaveSettingsResult,
   type StoreSettingsData,
 } from "@/app/actions/settings";
+import { DATE_FORMATS, TIME_FORMATS } from "@/lib/format";
 
 /**
  * The store settings form — the interactive island on the Settings page.
@@ -172,26 +173,156 @@ export default function SettingsForm({
           )}
         </Field>
 
-        <Field label="Currency symbol" htmlFor="currencySymbol" required>
+        </div>
+
+      {/* ── Phase 6: global formatting & identity ───────────────────────────────
+          These change how EVERY screen renders money and dates, not just this
+          page. Grouped with a heading so a manager can tell store-wide settings
+          apart from the contact details above. */}
+      <fieldset className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Currency, tax &amp; date format
+        </legend>
+        <p className="text-xs text-slate-500">
+          These apply across the whole app — the register, receipts, reports and
+          every list. Changing them does not alter any recorded sale.
+        </p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Currency symbol" htmlFor="currencySymbol" required>
+            <input
+              id="currencySymbol"
+              name="currencySymbol"
+              type="text"
+              required
+              maxLength={8}
+              disabled={pending}
+              value={currencySymbol}
+              onChange={(e) => setCurrencySymbol(e.target.value)}
+              aria-invalid={!currencySymbolValid}
+              className={inputCls}
+            />
+            {!currencySymbolValid && (
+              <p className="mt-1 text-xs text-red-600">
+                Must be 8 characters or fewer.
+              </p>
+            )}
+          </Field>
+
+          <Field label="Currency code" htmlFor="currencyCode" required>
+            <input
+              id="currencyCode"
+              name="currencyCode"
+              type="text"
+              required
+              maxLength={3}
+              placeholder="PHP"
+              defaultValue={settings?.currencyCode ?? "PHP"}
+              disabled={pending}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+
+        <Field label="Email" htmlFor="email">
           <input
-            id="currencySymbol"
-            name="currencySymbol"
-            type="text"
-            required
-            maxLength={8}
+            id="email"
+            name="email"
+            type="email"
             disabled={pending}
-            value={currencySymbol}
-            onChange={(e) => setCurrencySymbol(e.target.value)}
-            aria-invalid={!currencySymbolValid}
+            defaultValue={settings?.email ?? ""}
+            placeholder="e.g. hello@ocamarket.ph"
             className={inputCls}
           />
-          {!currencySymbolValid && (
-            <p className="mt-1 text-xs text-red-600">
-              Must be 8 characters or fewer.
-            </p>
-          )}
         </Field>
-      </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Locale" htmlFor="locale" required>
+            <input
+              id="locale"
+              name="locale"
+              type="text"
+              required
+              placeholder="en-PH"
+              defaultValue={settings?.locale ?? "en-PH"}
+              disabled={pending}
+              className={inputCls}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              BCP-47 tag, e.g. en-PH, en-US, en-MY.
+            </p>
+          </Field>
+
+          <Field label="Date format" htmlFor="dateFormat" required>
+            <select
+              id="dateFormat"
+              name="dateFormat"
+              required
+              defaultValue={settings?.dateFormat ?? "MMM D, YYYY"}
+              disabled={pending}
+              className={inputCls}
+            >
+              {DATE_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Time format" htmlFor="timeFormat" required>
+            <select
+              id="timeFormat"
+              name="timeFormat"
+              required
+              defaultValue={settings?.timeFormat ?? "h:mm a"}
+              disabled={pending}
+              className={inputCls}
+            >
+              {TIME_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {f === "HH:mm" ? "24-hour (14:30)" : "12-hour (2:30 PM)"}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div className="space-y-1.5">
+            <span className="block text-xs font-medium uppercase tracking-wide text-slate-600">
+              Tax
+            </span>
+            <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm">
+              <input
+                id="taxEnabled"
+                name="taxEnabled"
+                type="checkbox"
+                defaultChecked={settings?.taxEnabled ?? true}
+                disabled={pending}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Apply tax at checkout
+            </label>
+            <p className="text-xs text-slate-500">
+              A rate of 0 also means no tax — this switch is an explicit override.
+            </p>
+          </div>
+        </div>
+
+        <Field label="Receipt footer" htmlFor="receiptFooter">
+          <input
+            id="receiptFooter"
+            name="receiptFooter"
+            type="text"
+            maxLength={200}
+            disabled={pending}
+            defaultValue={settings?.receiptFooter ?? ""}
+            placeholder="e.g. Thank you for shopping with us!"
+            className={inputCls}
+          />
+        </Field>
+      </fieldset>
 
       <div className="flex items-center justify-end gap-3 pt-2">
         <button

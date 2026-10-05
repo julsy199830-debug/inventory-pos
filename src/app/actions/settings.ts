@@ -5,6 +5,10 @@ import { prisma } from "@/lib/db";
 import type { StoreSetting } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/types";
 import { roleGuardError } from "@/lib/session";
+import {
+  DATE_FORMATS,
+  TIME_FORMATS,
+} from "@/lib/format";
 
 /** Staff-only guard — settings are store-wide configuration. */
 const STAFF_ROLES = ["ADMIN", "MANAGER"] as const;
@@ -37,7 +41,22 @@ function load(formData: FormData, key: string): string | undefined {
  */
 export type StoreSettingsData = Pick<
   StoreSetting,
-  "storeName" | "address" | "phone" | "taxRate" | "currencySymbol" | "updatedAt"
+  | "storeName"
+  | "address"
+  | "phone"
+  | "taxRate"
+  | "currencySymbol"
+  | "updatedAt"
+  // Phase 6 — the global formatting/identity configuration. These are the same
+  // columns `src/lib/format.ts` reads, so editing them here changes every
+  // screen in the app rather than one page.
+  | "taxEnabled"
+  | "locale"
+  | "currencyCode"
+  | "dateFormat"
+  | "timeFormat"
+  | "email"
+  | "receiptFooter"
 >;
 
 /**
@@ -68,6 +87,13 @@ export async function getStoreSettings(): Promise<StoreSettingsData | null> {
     taxRate: row.taxRate,
     currencySymbol: row.currencySymbol,
     updatedAt: row.updatedAt,
+    taxEnabled: row.taxEnabled,
+    locale: row.locale,
+    currencyCode: row.currencyCode,
+    dateFormat: row.dateFormat,
+    timeFormat: row.timeFormat,
+    email: row.email,
+    receiptFooter: row.receiptFooter,
   };
 }
 
@@ -106,6 +132,45 @@ export async function saveSettings(
   const phone = load(formData, "phone");
   const taxRateRaw = load(formData, "taxRate");
   const currencySymbol = load(formData, "currencySymbol");
+  // ── Phase 6: the global formatting/identity fields ─────────────────────────
+  const email = load(formData, "email");
+  const receiptFooter = load(formData, "receiptFooter");
+  const locale = load(formData, "locale") ?? "en-PH";
+  const currencyCode = (load(formData, "currencyCode") ?? "PHP").toUpperCase();
+  const dateFormat = load(formData, "dateFormat") ?? "MMM D, YYYY";
+  const timeFormat = load(formData, "timeFormat") ?? "h:mm a";
+  // An unchecked checkbox is absent from FormData entirely, so "missing" means
+  // OFF. `load()` is therefore NOT used here: it would map "off" to undefined,
+  // which is the same thing, but the intent is clearer stated directly.
+  const taxEnabled = formData.get("taxEnabled") === "on";
+
+  // Reject anything the shared formatter does not actually support, rather than
+  // silently storing a value that would fall back to a default at render time.
+  // `DATE_FORMATS`/`TIME_FORMATS` are the single source of truth for what the
+  // UI offers; this is the server refusing anything else.
+  if (!DATE_FORMATS.includes(dateFormat as (typeof DATE_FORMATS)[number])) {
+    return { ok: false, error: "Choose one of the listed date formats." };
+  }
+  if (!TIME_FORMATS.includes(timeFormat as (typeof TIME_FORMATS)[number])) {
+    return { ok: false, error: "Choose one of the listed time formats." };
+  }
+  // A locale that `Intl` cannot parse would make every amount fall back to a
+  // bare number at render time, so it is rejected here rather than discovered
+  // on the till.
+  try {
+    new Intl.NumberFormat(locale);
+  } catch {
+    return { ok: false, error: "That locale is not recognised." };
+  }
+  if (!/^[A-Z]{3}$/.test(currencyCode)) {
+    return { ok: false, error: "Currency code must be 3 letters, e.g. PHP." };
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "Enter a valid email address." };
+  }
+  if (receiptFooter && receiptFooter.length > 200) {
+    return { ok: false, error: "Receipt footer must be 200 characters or fewer." };
+  }
 
   // ── Required-field & shape validation (server-authoritative) ───────────────
   if (!storeName) {
@@ -140,30 +205,29 @@ export async function saveSettings(
   try {
     const existing = await prisma.storeSetting.findFirst({ select: { id: true } });
     const updatedAt = new Date();
+    // One payload for both branches so an update and a first-create cannot drift
+    // apart — the Phase 6 fields were exactly the kind of thing that gets added
+    // to `update` and forgotten in `create`.
+    const data = {
+      storeName,
+      address,
+      phone,
+      email,
+      receiptFooter,
+      // Round to one decimal to dodge float noise (8.5, not 8.499999…).
+      taxRate: Math.round(taxRate * 10) / 10,
+      taxEnabled,
+      currencySymbol: symbol,
+      locale,
+      currencyCode,
+      dateFormat,
+      timeFormat,
+      updatedAt,
+    };
     if (existing) {
-      await prisma.storeSetting.update({
-        where: { id: existing.id },
-        data: {
-          storeName,
-          address,
-          phone,
-          // Round to one decimal to dodge float noise (8.5, not 8.499999…).
-          taxRate: Math.round(taxRate * 10) / 10,
-          currencySymbol: symbol,
-          updatedAt,
-        },
-      });
+      await prisma.storeSetting.update({ where: { id: existing.id }, data });
     } else {
-      await prisma.storeSetting.create({
-        data: {
-          storeName,
-          address,
-          phone,
-          taxRate: Math.round(taxRate * 10) / 10,
-          currencySymbol: symbol,
-          updatedAt,
-        },
-      });
+      await prisma.storeSetting.create({ data });
     }
   } catch {
     // Any failure (constraint, adapter error) is surfaced as a generic, leak-free
@@ -173,5 +237,26 @@ export async function saveSettings(
   }
 
   revalidatePath("/settings");
+  // Phase 6: these settings are GLOBAL. `src/lib/format.ts` is read by the POS,
+  // receipts, the dashboard, every report, inventory, purchasing, employees,
+  // customers and suppliers — so the paths that render money are revalidated
+  // too. Revalidating only `/settings` left the till showing the old currency
+  // until a hard refresh, which is precisely the bug this feature exists to fix.
+  for (const path of [
+    "/pos",
+    "/",
+    "/inventory",
+    "/reports",
+    "/reports/analytics",
+    "/accounting",
+    "/purchasing",
+    "/employees",
+    "/dtr",
+    "/customers",
+    "/suppliers",
+    "/my-transactions",
+  ]) {
+    revalidatePath(path);
+  }
   return { ok: true };
 }

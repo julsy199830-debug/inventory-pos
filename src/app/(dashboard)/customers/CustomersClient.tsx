@@ -245,6 +245,15 @@ export function CustomersClient({
     } else setError(res.error);
   }
 
+  /**
+   * Phase 6: the full account page, not the quick modal. `exportStatementCsv`
+   * already renders a data: URL, so the statement's own Export button gives a
+   * complete CSV — this link is the path to it.
+   */
+  function openAccount(row: CustomerRow) {
+    window.location.href = `/customers/${row.id}`;
+  }
+
   const statement = viewing ? statements[viewing.id] : null;
 
   return (
@@ -386,6 +395,14 @@ export function CustomersClient({
                   <div className="flex justify-end gap-2">
                     <button type="button" className={ghost} onClick={() => openStatement(r)}>
                       Statement
+                    </button>
+                    <button
+                      type="button"
+                      className={ghost}
+                      data-testid={`open-account-${r.id}`}
+                      onClick={() => openAccount(r)}
+                    >
+                      Account
                     </button>
                     {r.currentBalance > 0 && (
                       <button
