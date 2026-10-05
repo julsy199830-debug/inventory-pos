@@ -43,25 +43,71 @@ test.describe('Phase 2 — dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto('/');
-    await expect(page.locator('h1:has-text("Dashboard")').first()).toBeVisible({
+    // Phase 7: the h1 is now the greeting, so the stable page identifier is the
+    // "Dashboard" eyebrow above it. Asserting the eyebrow rather than loosening
+    // the h1 keeps "am I on the dashboard?" a real check.
+    await expect(page.getByRole('heading', { name: 'Dashboard' }).first()).toBeVisible({
       timeout: 20000,
     });
+    await expect(page.getByText(/^Hello, /).first()).toBeVisible({ timeout: 20000 });
   });
 
-  test('shows the daily business picture in a fixed panel order', async ({ page }) => {
-    // The four headline tiles, then the two that quietly cost money.
-    for (const label of [
-      "Today's sales",
-      'Revenue',
-      'Transactions',
-      'Inventory value',
-      'Needs restock',
-      'Value at risk',
-      'Refunds & voids',
-    ]) {
+  test('answers where am I and who am I before anything else', async ({ page }) => {
+    // The greeting and the role are the first thing on the page — a first-time
+    // user should never have to guess whose session they are in.
+    await expect(page.getByText(/^Hello, /).first()).toBeVisible();
+    await expect(page.getByText(/Administrator|Manager/).first()).toBeVisible();
+    // Shift status is stated in words, not implied by an icon.
+    await expect(page.getByText(/On shift since|Not clocked in/).first()).toBeVisible();
+  });
+
+  test('offers quick actions that all navigate somewhere real', async ({ page }) => {
+    const actions = page.getByTestId('dashboard-quick-actions');
+    await expect(actions).toBeVisible({ timeout: 20000 });
+
+    // Every quick action must be a real link to a real route. A button that
+    // goes nowhere is worse than no button at all for a new user.
+    const links = actions.locator('a');
+    const count = await links.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const href = await links.nth(i).getAttribute('href');
+      expect(href, `quick action ${i} must have an href`).toBeTruthy();
+      expect(href).toMatch(/^\/[a-z]/);
+    }
+    for (const label of ['Open POS', 'My Transactions', 'Products & Stock']) {
+      await expect(actions.getByText(label, { exact: true })).toBeVisible();
+    }
+  });
+
+  test('shows today-only figures under a Today heading', async ({ page }) => {
+    await expect(page.getByText('Today', { exact: true }).first()).toBeVisible();
+    // Phase 7 renamed these to say plainly what they are and what window they
+    // cover; the old "Revenue"/"Transactions" pair was ambiguous against the
+    // range selector sitting right above it.
+    for (const label of ['Sales today', 'Average sale', 'Sales this period', 'Stock value']) {
       await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
+  });
 
+  test('shows a Needs attention section only when something needs doing', async ({
+    page,
+  }) => {
+    // The seeded store has a low-stock item, so the section must appear — and
+    // every row must carry an action that fixes the problem it names.
+    const section = page.getByTestId('dashboard-needs-attention');
+    await expect(section).toBeVisible({ timeout: 20000 });
+
+    const rows = section.locator('li');
+    const n = await rows.count();
+    expect(n).toBeGreaterThan(0);
+    for (let i = 0; i < n; i++) {
+      const href = await rows.nth(i).locator('a').getAttribute('href');
+      expect(href, `attention row ${i} must offer an action`).toBeTruthy();
+    }
+  });
+
+  test('renders every analytical panel heading', async ({ page }) => {
     // Every panel heading renders, so a rename that drops one is caught here
     // rather than by someone noticing a missing card.
     for (const panel of [

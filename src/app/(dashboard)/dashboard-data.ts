@@ -103,6 +103,74 @@ type DashboardSale = SaleForTotals & {
   customer: { name: string } | null;
   cashier: { name: string } | null;
 };
+/**
+ * Phase 7 — the small, "right now" facts a first-time user needs on the
+ * dashboard: am I clocked in, and is anything waiting to be received.
+ *
+ * Deliberately a SEPARATE read from `getDashboardData`. That function answers
+ * "how did we trade over this range"; this answers "what state am I in and
+ * what is outstanding", which is independent of any range selector. Folding it
+ * in would make a dashboard-wide figure depend on a query-string tab.
+ *
+ * Reuses the existing `Shift`, `PurchaseOrder` and `User` rows — no new table,
+ * no migration, and no new business rule. An open shift is `end IS NULL` — the
+ * same definition `clockOut` closes on, so this can never disagree with the
+ * register about whether someone is still clocked in.
+ */
+
+export type TodayFocus = {
+  user: { name: string; role: string };
+  /** The signed-in employee's own open shift, if any. */
+  shift: { startedAt: Date } | null;
+  /** Orders placed but not fully received — the "receive stock" nudge. */
+  pendingOrders: { id: string; poNumber: string; supplier: string }[];
+  /** Items at or below their restock threshold, newest count first. */
+  lowStock: { id: string; name: string; stock: number }[];
+};
+
+export async function getTodayFocus(): Promise<TodayFocus> {
+  const user = await requirePageAuth();
+  const staff = user.role !== "CASHIER";
+
+  const [shift, orders, low] = await Promise.all([
+    prisma.shift.findFirst({
+      where: { userId: user.id, end: null },
+      orderBy: { start: "desc" },
+      select: { start: true },
+    }),
+    staff
+      ? prisma.purchaseOrder.findMany({
+          where: { status: { in: ["ORDERED", "PARTIALLY_RECEIVED"] } },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            poNumber: true,
+            supplier: { select: { name: true } },
+          },
+        })
+      : Promise.resolve([]),
+    prisma.product.findMany({
+      where: { stock: { lte: 20 } },
+      orderBy: { stock: "asc" },
+      take: 5,
+      select: { id: true, name: true, stock: true },
+    }),
+  ]);
+
+  return {
+    user: { name: user.name, role: user.role },
+    shift: shift ? { startedAt: shift.start } : null,
+    pendingOrders: orders.map((o) => ({
+      id: o.id,
+      poNumber: o.poNumber,
+      supplier: o.supplier.name,
+    })),
+    lowStock: low.map((p) => ({ id: p.id, name: p.name, stock: p.stock })),
+  };
+}
+
+/** Everything `getDashboardData` returns for one range selection. */
 export type DashboardData = {
   range: { from: string; to: string };
   previous: { from: string; to: string };

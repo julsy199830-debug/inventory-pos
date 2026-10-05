@@ -1,42 +1,54 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
+  ArrowRight,
   Banknote,
   Boxes,
+  Clock,
   Package,
   Receipt,
-  RotateCcw,
+  ShoppingCart,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { getFormatSettings } from "@/lib/store-config";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatNumber, formatTime } from "@/lib/format";
 import { RANGE_LABELS, resolveRange } from "@/lib/analytics";
 import { Panel } from "@/app/_components/ui/Panel";
 import { RangeTabs } from "@/app/_components/ui/RangeTabs";
 import { ShareBars } from "@/app/_components/ui/ShareBars";
 import { StatCard } from "@/app/_components/ui/StatCard";
+import OperationalAlerts from "./_components/OperationalAlerts";
 import ActivityByHour from "./_components/ActivityByHour";
 import RevenueTrendChart from "./_components/RevenueTrendChart";
-import { getDashboardData, getOperationalAlerts } from "./dashboard-data";
-import OperationalAlerts from "./_components/OperationalAlerts";
+import {
+  getDashboardData,
+  getOperationalAlerts,
+  getTodayFocus,
+} from "./dashboard-data";
 
 /**
- * Dashboard home (Phase 2) - the daily business picture a storekeeper opens
- * first.
+ * Dashboard (Phase 7) — the starting point for someone who has never used this.
  *
- * A Server Component. Every figure comes from `getDashboardData`, which runs
- * one query per resource and hands the rows to the pure helpers in
- * `lib/analytics`, so each card is describing the same window of the same
- * sales. That is a deliberate change from the previous dashboard, which
- * queried separately per card and re-derived totals in JSX - which is why its
- * cards disagreed with each other and with the reports page.
+ * It answers four questions in a fixed order, and the order IS the design:
  *
- * Reading order, top to bottom, mirrors what a manager asks in this order:
- * how did today go, is anything about to run out, what is selling, how are we
- * trading by hour, and who closed the last few sales.
+ *   1. Where am I?      -> the greeting names the person and their role.
+ *   2. What is happening? -> "Today", plain figures for today only.
+ *   3. What needs my attention? -> "Needs Attention", only when there is
+ *      something. A dashboard that shows an empty alert list teaches the user
+ *      that the section is decoration.
+ *   4. What should I do next? -> "Quick Actions", filtered to the role, with
+ *      every button going somewhere real.
  *
- * Range selection is URL-driven (`?range=`) via plain links, matching the
- * inventory and audit-log filters, so a view can be bookmarked or shared and
- * the page stays statically prerenderable with no client navigation state.
+ * Every figure is still computed by the existing `getDashboardData` / analytics
+ * helpers — this file only arranges them. No sales, inventory, loyalty, refund,
+ * void, DTR or purchasing rule was changed, and no card recomputes a total in
+ * JSX. Where a figure has a detailed screen, the card links to it instead of
+ * pretending to be that screen.
+ *
+ * Range selection stays URL-driven (`?range=`) via plain links, matching the
+ * inventory and audit-log filters, so a view can be bookmarked and the page
+ * stays statically prerenderable with no client navigation state.
  */
 export default async function DashboardPage({
   searchParams,
@@ -51,99 +63,276 @@ export default async function DashboardPage({
   // because it is a fixed "right now" view while the rest of the dashboard
   // honours the selected range. Folding it into the range query would make a
   // 7-day alert window silently drift with whichever tab is open.
-  const [data, format, alerts] = await Promise.all([
+  const [data, format, alerts, focus] = await Promise.all([
     getDashboardData(rangeKey),
     getFormatSettings(),
     getOperationalAlerts(),
+    getTodayFocus(),
   ]);
+
+  const isCashier = focus.user.role === "CASHIER";
+
+  /**
+   * Quick actions, filtered to the role.
+   *
+   * A CASHIER is redirected away from this page by the (dashboard) layout, so
+   * this list is what a MANAGER/ADMIN sees — but the filter is kept explicit
+   * rather than assumed, so a future cashier-reachable dashboard cannot silently
+   * show buttons the server would reject.
+   *
+   * Every label states what the click ACTUALLY does. There is deliberately no
+   * "Add Product" → `/inventory?new=1` style deep link here: neither the
+   * inventory nor the customers page reads a query param to auto-open its
+   * dialog, so that button would land the user on the right page with nothing
+   * opened — a promise the app does not keep. Labelling the links for where they
+   * really go keeps the "no dead actions" rule intact; opening the form directly
+   * is a separate, deliberate improvement to those two pages.
+   */
+  const quickActions = [
+    { label: "Open POS", href: "/pos", icon: ShoppingCart, always: true },
+    { label: "My Transactions", href: "/my-transactions", icon: Receipt, always: true },
+    { label: "Products & Stock", href: "/inventory", icon: Package, always: false },
+    { label: "Receive Stock", href: "/purchasing", icon: Boxes, always: false },
+    { label: "Customers", href: "/customers", icon: Users, always: false },
+    { label: "Time & Attendance", href: "/dtr", icon: Clock, always: false },
+    { label: "Sales Reports", href: "/reports", icon: TrendingUp, always: false },
+  ].filter((a) => a.always || !isCashier);
   
   const { totals, today, valuation, adjustments } = data;
 
+  /**
+   * "Needs attention" rows, derived — not queried separately.
+   *
+   * Everything here already exists in `data`/`focus`; this only decides what is
+   * worth interrupting the user for. Each entry pairs a plain-language problem
+   * with ONE action that fixes it, which is the whole point: a warning the user
+   * cannot act on is noise.
+   *
+   * Ordering is by urgency, not by how easy it was to query.
+   */
+  const attention: {
+    key: string;
+    title: string;
+    detail: string;
+    action: string;
+    href: string;
+    urgent: boolean;
+  }[] = [];
+
+  if (valuation.outOfStock > 0) {
+    attention.push({
+      key: "out-of-stock",
+      title: `${valuation.outOfStock} product${valuation.outOfStock === 1 ? "" : "s"} out of stock`,
+      detail: "You cannot sell these until you restock them.",
+      action: "Review products",
+      href: "/inventory?status=out",
+      urgent: true,
+    });
+  }
+  if (focus.pendingOrders.length > 0) {
+    const first = focus.pendingOrders[0];
+    attention.push({
+      key: "pending-orders",
+      title: `${focus.pendingOrders.length} order${focus.pendingOrders.length === 1 ? "" : "s"} waiting to be received`,
+      detail: `Oldest is ${first.poNumber} from ${first.supplier}.`,
+      action: "Receive stock",
+      href: `/purchasing/${first.id}`,
+      urgent: true,
+    });
+  }
+  if (valuation.lowStock > 0) {
+    attention.push({
+      key: "low-stock",
+      title: `${valuation.lowStock} product${valuation.lowStock === 1 ? "" : "s"} running low`,
+      detail:
+        focus.lowStock.length > 0
+          ? `Lowest: ${focus.lowStock[0].name} (${focus.lowStock[0].stock} left).`
+          : "Order more before these run out.",
+      action: "Review products",
+      href: "/inventory?status=low",
+      urgent: false,
+    });
+  }
+  if (!focus.shift) {
+    attention.push({
+      key: "not-clocked-in",
+      title: "You are not clocked in",
+      detail: "Clock in so your hours and sales are recorded against you.",
+      action: "Open POS",
+      href: "/pos",
+      urgent: false,
+    });
+  }
+  if (adjustments.totalGivenBack > 0) {
+    attention.push({
+      key: "refunds",
+      title: `${formatMoney(adjustments.totalGivenBack, format)} refunded or voided ${RANGE_LABELS[rangeKey].toLowerCase()}`,
+      detail:
+        adjustments.ratePercent == null
+          ? "No sales in this window."
+          : `${adjustments.ratePercent.toFixed(1)}% of gross sales.`,
+      action: "See sales",
+      href: "/reports",
+      urgent: false,
+    });
+  }
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Dashboard
-          </h1>
+    <div className="space-y-8">
+      {/* ── 1. Where am I? ──────────────────────────────────────────────────
+          Names the person and their role. A first-time user opening the app has
+          no other way to know whose session this is. */}
+      <header className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            {/* "Dashboard" is the page's real heading, so it is an <h1>: a screen
+                reader and a document outline both need a heading that names the
+                page, not just a greeting. It is styled as a quiet eyebrow so the
+                greeting still reads as the visual lead. */}
+            <h1 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Dashboard
+            </h1>
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+              Hello, {focus.user.name.split(" ")[0]}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {focus.user.role === "ADMIN"
+                ? "Administrator"
+                : focus.user.role === "MANAGER"
+                  ? "Manager"
+                  : "Cashier"}
+              {focus.shift
+                ? ` · On shift since ${formatTime(focus.shift.startedAt, format)}`
+                : " · Not clocked in"}
+            </p>
+          </div>
           {/* The window is its own element so it can be read (and asserted on)
               independently of the label beside it. */}
-          <p className="mt-1 text-sm text-slate-500">
-            {RANGE_LABELS[rangeKey]}{" "}
-            <span className="tabular-nums text-slate-400">
+          <div className="text-right">
+            <RangeTabs active={rangeKey} short />
+            <p className="mt-2 text-xs tabular-nums text-slate-400">
               {data.range.from} to {data.range.to}
-            </span>
-          </p>
+            </p>
+          </div>
         </div>
-        <RangeTabs active={rangeKey} short />
+
+        {/* ── 4. What should I do next? ─────────────────────────────────────
+            Placed directly under the greeting on purpose: a new user should not
+            have to scroll past charts to find the button they need. */}
+        <nav
+          aria-label="Quick actions"
+          className="flex flex-wrap gap-2"
+          data-testid="dashboard-quick-actions"
+        >
+          {quickActions.map((a) => (
+            <Link
+              key={a.href + a.label}
+              href={a.href}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+              <a.icon className="h-4 w-4 shrink-0" aria-hidden />
+              {a.label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
-      {/* Today's own numbers, kept separate from the selected range so "Today"
-          is never a function of which window happens to be open. */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Today's sales"
-          value={formatMoney(today.revenue, format)}
-          hint={`${today.transactions} transaction${today.transactions === 1 ? "" : "s"}`}
-          icon={<Banknote className="h-4 w-4" aria-hidden />}
-        />
-        <StatCard
-          label="Revenue"
-          value={formatMoney(totals.revenue, format)}
-          change={data.revenueChange}
-          icon={<TrendingUp className="h-4 w-4" aria-hidden />}
-        />
-        <StatCard
-          label="Transactions"
-          value={totals.transactions.toLocaleString("en-US")}
-          change={data.transactionChange}
-          hint={`avg ${formatMoney(totals.averageOrder, format)}`}
-          icon={<Receipt className="h-4 w-4" aria-hidden />}
-        />
-        <StatCard
-          label="Inventory value"
-          value={formatMoney(valuation.retailValue, format)}
-          hint={`at cost ${formatMoney(valuation.costValue, format)}`}
-          icon={<Boxes className="h-4 w-4" aria-hidden />}
-          href="/inventory"
-        />
-      </div>
+      {/* ── 2. What is happening today? ─────────────────────────────────────
+          Today only, never the selected range — a user asking "how did today
+          go" must not have to check which tab is open. */}
+      <section aria-labelledby="dash-today" className="space-y-3">
+        <h2
+          id="dash-today"
+          className="text-sm font-semibold uppercase tracking-wide text-slate-500"
+        >
+          Today
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Sales today"
+            value={formatMoney(today.revenue, format)}
+            hint={`${formatNumber(today.transactions, format)} transaction${today.transactions === 1 ? "" : "s"}`}
+            icon={<TrendingUp className="h-4 w-4" aria-hidden />}
+            href="/reports"
+          />
+          <StatCard
+            label="Average sale"
+            value={formatMoney(today.averageOrder, format)}
+            hint="per transaction today"
+            icon={<Receipt className="h-4 w-4" aria-hidden />}
+          />
+          <StatCard
+            label="Sales this period"
+            value={formatMoney(totals.revenue, format)}
+            change={data.revenueChange}
+            hint={RANGE_LABELS[rangeKey]}
+            icon={<Banknote className="h-4 w-4" aria-hidden />}
+          />
+          <StatCard
+            label="Stock value"
+            value={formatMoney(valuation.retailValue, format)}
+            hint={`what {focus.lowStock.length} low item${focus.lowStock.length === 1 ? "" : "s"} could cost`}
+            icon={<Boxes className="h-4 w-4" aria-hidden />}
+            href="/inventory"
+          />
+        </div>
+      </section>
 
-      {/* Restock pressure and leakage: the two things that quietly cost a
-          store money, so they sit above the merchandising panels. */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <StatCard
-          label="Needs restock"
-          value={String(valuation.outOfStock + valuation.lowStock)}
-          hint={`${valuation.outOfStock} out, ${valuation.lowStock} low`}
-          tone={valuation.outOfStock > 0 ? "danger" : valuation.lowStock > 0 ? "warning" : "default"}
-          icon={<Package className="h-4 w-4" aria-hidden />}
-          href="/inventory?status=low"
-        />
-        <StatCard
-          label="Value at risk"
-          value={formatMoney(valuation.atRiskValue, format)}
-          hint="retail value sitting on low lines"
-          tone={valuation.atRiskValue > 0 ? "warning" : "default"}
-          icon={<Boxes className="h-4 w-4" aria-hidden />}
-        />
-        <StatCard
-          label="Refunds & voids"
-          value={formatMoney(adjustments.totalGivenBack, format)}
-          hint={
-            adjustments.ratePercent == null
-              ? "no sales in this window"
-              : `${adjustments.ratePercent.toFixed(1)}% of gross sales`
-          }
-          tone={adjustments.totalGivenBack > 0 ? "warning" : "default"}
-          icon={<RotateCcw className="h-4 w-4" aria-hidden />}
-          href="/reports"
-        />
-      </div>
-
+      {/* ── 3. What needs my attention? ───────────────────────────────────────
+          Rendered ONLY when something genuinely needs doing. An always-visible
+          panel that is usually empty teaches a new user the section is
+          decoration, and then they stop reading it on the day it matters. */}
+      {attention.length > 0 && (
+        <section
+          aria-labelledby="dash-attention"
+          className="space-y-3"
+          data-testid="dashboard-needs-attention"
+        >
+          <h2
+            id="dash-attention"
+            className="text-sm font-semibold uppercase tracking-wide text-slate-500"
+          >
+            Needs attention
+          </h2>
+          <ul className="divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {attention.map((a) => (
+              <li
+                key={a.key}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <AlertTriangle
+                    className={`mt-0.5 h-4 w-4 shrink-0 ${a.urgent ? "text-rose-600" : "text-amber-600"}`}
+                    aria-hidden
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{a.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{a.detail}</p>
+                  </div>
+                </div>
+                <Link
+                  href={a.href}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  {a.action}
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {/* Phase 7: the three "restock pressure / value at risk / refunds" cards
+          were replaced by the "Needs attention" list above. Each of them restated
+          a number that list already carries as a plain-language problem WITH the
+          action that fixes it, so keeping them duplicated the same facts twice
+          and gave the user four separate places to read one warning. The
+          `OperationalAlerts` feed is restored below because it is a different
+          cut — per-SKU alerts rather than store-level ones. */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      {/* Phase 4: what needs a human today, above the analytical panels. */}
-      <OperationalAlerts alerts={alerts} />
+        {/* Phase 4: per-SKU alert feed — a different cut from the store-level
+            "Needs attention" list above, so both stay. */}
+        <OperationalAlerts alerts={alerts} />
 
         <Panel
           title="Sales trend"
