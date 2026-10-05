@@ -22,73 +22,77 @@ import {
 import { lockRegister } from "@/lib/actions/auth-actions";
 import type { Role } from "@/lib/types";
 
+/**
+ * Phase 7 — navigation reorganised around how an employee actually thinks.
+ *
+ * The audit found the sidebar showing LESS than the server permits: every guard
+ * in this app is `STAFF_ROLES = ["ADMIN", "MANAGER"]`, yet five pages were
+ * flagged `adminOnly` and hidden from managers. Employees could reach Employees,
+ * DTR, Accounting, Audit Log and Settings — and act on them — but were shown a
+ * smaller menu. The nav rule and the server rule now agree: `managerVisible`
+ * means "anyone but a CASHIER", which is exactly what the layout and the guards
+ * enforce.
+ *
+ * These groups deliberately map onto EXISTING screens only. Several labels in
+ * the Phase 7 brief ("Stock Count", "Receiving", "Loyalty", "Sales History") are
+ * features that already exist but live inside another screen rather than on
+ * their own route — building separate pages for them would duplicate
+ * functionality. See the "Where things are" guide in `nav-guide.tsx` for how to
+ * reach them.
+ */
 type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  adminOnly?: boolean;
-  section: "management" | "reports" | "system";
+  /**
+   * Hidden from CASHIERs. Named for what it means rather than "adminOnly",
+   * because the distinction that actually exists in this codebase is
+   * staff-vs-cashier, not admin-vs-manager.
+   */
+  managerVisible?: boolean;
+  section: NavSection;
 };
 
-const sectionDefs: { key: NavItem["section"]; title: string }[] = [
-  { key: "management", title: "Management" },
-  { key: "reports", title: "Reports & Sales" },
-  { key: "system", title: "System" },
+type NavSection = "home" | "sales" | "inventory" | "purchasing" | "customers" | "people" | "reports" | "settings";
+
+const sectionDefs: { key: NavSection; title: string }[] = [
+  { key: "home", title: "Home" },
+  { key: "sales", title: "Sales" },
+  { key: "inventory", title: "Inventory" },
+  { key: "purchasing", title: "Purchasing" },
+  { key: "customers", title: "Customers" },
+  { key: "people", title: "Employees" },
+  { key: "reports", title: "Reports" },
+  { key: "settings", title: "Settings" },
 ];
 
 const navItems: NavItem[] = [
-  // MANAGEMENT
-  { label: "Dashboard", href: "/", icon: LayoutDashboard, section: "management" },
-  { label: "Inventory", href: "/inventory", icon: Package, section: "management" },
-  { label: "Categories", href: "/inventory/categories", icon: Tags, section: "management" },
-    { label: "Suppliers", href: "/suppliers", icon: Truck, section: "management" },
-  { label: "Purchasing", href: "/purchasing", icon: ShoppingBasket, section: "management" },
-  { label: "Customers", href: "/customers", icon: Users, section: "management" },
-  {
-    label: "Employees",
-    href: "/employees",
-    icon: UserCog,
-    adminOnly: true,
-    section: "management",
-  },
-  {
-    // Phase 5: attendance records and manager time corrections.
-    label: "Time & attendance",
-    href: "/dtr",
-    icon: ScrollText,
-    adminOnly: true,
-    section: "management",
-  },
-  // REPORTS & SALES
-  { label: "Reports", href: "/reports", icon: BarChart3, section: "reports" },
-  {
-    label: "Analytics",
-    href: "/reports/analytics",
-    icon: PieChart,
-    section: "reports",
-  },
-  {
-    label: "Accounting",
-    href: "/accounting",
-    icon: Calculator,
-    adminOnly: true,
-    section: "reports",
-  },
-  // SYSTEM
-  {
-    label: "Audit log",
-    href: "/audit-log",
-    icon: ScrollText,
-    adminOnly: true,
-    section: "system",
-  },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: Settings,
-    adminOnly: true,
-    section: "system",
-  },
+  { label: "Dashboard", href: "/", icon: LayoutDashboard, section: "home" },
+
+  // SALES — the register is the core module, so Point of Sale leads the group
+  // even though it renders outside this layout (the till has no sidebar).
+  { label: "Point of Sale", href: "/pos", icon: ShoppingCart, section: "sales" },
+  { label: "My Transactions", href: "/my-transactions", icon: ScrollText, section: "sales" },
+
+  // INVENTORY — "/inventory" is the products list; Stock Count lives on that
+  // same page as an action, so it is surfaced there rather than as a dead link.
+  { label: "Products & Stock", href: "/inventory", icon: Package, section: "inventory" },
+  { label: "Categories", href: "/inventory/categories", icon: Tags, section: "inventory" },
+
+  { label: "Suppliers", href: "/suppliers", icon: Truck, section: "purchasing" },
+  { label: "Purchase Orders", href: "/purchasing", icon: ShoppingBasket, section: "purchasing" },
+
+  { label: "Customers", href: "/customers", icon: Users, section: "customers" },
+
+  { label: "Employees", href: "/employees", icon: UserCog, managerVisible: true, section: "people" },
+  { label: "Time & Attendance", href: "/dtr", icon: ScrollText, managerVisible: true, section: "people" },
+
+  { label: "Sales Reports", href: "/reports", icon: BarChart3, section: "reports" },
+  { label: "Analytics", href: "/reports/analytics", icon: PieChart, section: "reports" },
+  { label: "Accounting", href: "/accounting", icon: Calculator, managerVisible: true, section: "reports" },
+  { label: "Audit Log", href: "/audit-log", icon: ScrollText, managerVisible: true, section: "reports" },
+
+  { label: "Store Settings", href: "/settings", icon: Settings, managerVisible: true, section: "settings" },
 ];
 
 export default function Sidebar({
@@ -97,22 +101,24 @@ export default function Sidebar({
   user: { name: string; role: Role };
 }) {
   const pathname = usePathname();
-  const isAdmin = user.role === "ADMIN";
+  // Phase 7: a CASHIER is the only role this menu hides things from. The
+  // (dashboard) layout already redirects CASHIERs to /pos, and every mutating
+  // guard is `STAFF_ROLES = ["ADMIN", "MANAGER"]` — so "is not a cashier" is
+  // exactly the set of people the rest of the app actually permits. The previous
+  // `role === "ADMIN"` test hid five pages from managers that the server allows.
+  const isCashier = user.role === "CASHIER";
 
   // Active-link test. `/` is exact-only (otherwise every route "starts with"
-  // it). `/inventory` is also exact-only: it now has a dedicated child route
-  // (`/inventory/categories`), so a `startsWith` check would highlight both
-  // Inventory and Categories when the child is open. `/reports` is exact-only
-  // too now that `/reports/analytics` has its own nav item — a `startsWith`
-  // check would light up both Reports and Analytics when the latter is open.
-  // Every other item falls back to `startsWith`, which matches its own page
-  // plus any deeper sub-routes.
+  // it). `/inventory` and `/reports` are also exact-only: each now has a
+  // dedicated child route, so a `startsWith` check would light up both parent
+  // and child when the child is open. Everything else falls back to
+  // `startsWith`, which matches its own page plus deeper sub-routes.
   const isActive = (href: string) =>
     href === "/" || href === "/inventory" || href === "/reports"
       ? pathname === href
       : pathname.startsWith(href);
 
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const visibleItems = navItems.filter((item) => !item.managerVisible || !isCashier);
 
   return (
     <aside className="hidden h-screen w-68 shrink-0 self-start flex-col border-r border-slate-200 bg-white lg:flex xl:w-72">
