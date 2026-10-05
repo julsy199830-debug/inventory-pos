@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Modal } from '@/app/_components/ui/Modal'
 import { refundSale, voidSale } from '@/app/actions/sales'
 import { refundValueFor, round2, saleItemUnitValues } from '@/lib/loyalty'
+import { formatMoney } from '@/lib/format'
 import { getHistoryFacets, getRecentSales, getSaleDetails } from './history-actions'
 import type {
   HistoryFacet,
@@ -148,7 +149,7 @@ const REFUND_REASONS = [
   'Quality issue',
 ] as const
 
-const money = (n: number) => `₱${n.toFixed(2)}`
+
 
 const fmtDateTime = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -182,6 +183,11 @@ type Props = {
 }
 
 export default function TransactionHistory({ canVoid, store, taxRate }: Props) {
+  // Phase 6: money renders through the shared formatter. This used to be a
+  // module-level `₱${n.toFixed(2)}` with the peso hardcoded, so the history list
+  // ignored the store's currency entirely and showed no thousands grouping.
+  const money = (value: number) => formatMoney(value, store.format)
+
   const [open, setOpen] = useState(false)
   const [scope, setScope] = useState<HistoryScope>('recent')
   const [query, setQuery] = useState('')

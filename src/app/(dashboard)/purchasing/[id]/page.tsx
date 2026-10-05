@@ -1,3 +1,5 @@
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPurchaseOrder } from "../actions";
@@ -8,8 +10,8 @@ import ReceiveStockDialog from "../ReceiveStockDialog";
 import { getReceivingHistory } from "../actions";
 
 /** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
-function formatPrice(value: number): string {
-  return value.toLocaleString("en-PH", { style: "currency", currency: "PHP" });
+function formatPrice(value: number, format: FormatSettings): string {
+  return formatMoney(value, format);
 }
 
 /** Format a date for the meta grid, e.g. "Aug 20, 2026". */
@@ -47,6 +49,7 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const format = await getFormatSettings();
   const po = await getPurchaseOrder(id);
   if (!po) notFound();
 
@@ -87,7 +90,7 @@ export default async function PurchaseOrderDetailPage({
               {po.itemCount.toLocaleString()}{" "}
               {po.itemCount === 1 ? "item" : "items"} ·{" "}
               <span className="font-medium text-slate-600">
-                {formatPrice(po.total)}
+                {formatPrice(po.total, format)}
               </span>{" "}
               total · created by {po.createdByName}
             </p>
@@ -186,10 +189,10 @@ export default async function PurchaseOrderDetailPage({
                       {item.stock.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-600">
-                      {formatPrice(item.unitCost)}
+                      {formatPrice(item.unitCost, format)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-900">
-                      {formatPrice(item.lineTotal)}
+                      {formatPrice(item.lineTotal, format)}
                     </td>
                   </tr>
                 ))
@@ -208,7 +211,7 @@ export default async function PurchaseOrderDetailPage({
                   colSpan={2}
                   className="px-4 py-3 text-right text-base font-semibold text-slate-900"
                 >
-                  {formatPrice(po.total)}
+                  {formatPrice(po.total, format)}
                 </td>
               </tr>
             </tfoot>

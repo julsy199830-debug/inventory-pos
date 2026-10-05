@@ -1,3 +1,4 @@
+import type { FormatSettings } from '@/lib/format'
 import type { AnalyticsTopProduct } from "../actions";
 import { formatMoney } from "./chart-theme";
 
@@ -13,10 +14,10 @@ import { formatMoney } from "./chart-theme";
  */
 export default function TopProductsTable({
   products,
-  currencySymbol = "₱",
+  format,
 }: {
   products: AnalyticsTopProduct[];
-  currencySymbol?: string;
+  format?: FormatSettings;
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -75,7 +76,7 @@ export default function TopProductsTable({
                     {product.unitsSold.toLocaleString()}
                   </td>
                   <td className="px-5 py-3 text-right font-semibold text-indigo-700">
-                    {formatMoney(product.revenue, currencySymbol)}
+                    {formatMoney(product.revenue, format)}
                   </td>
                 </tr>
               ))}

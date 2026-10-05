@@ -30,29 +30,31 @@ export const DONUT_PALETTE = [
   "#818cf8", // indigo-400
 ] as const;
 
+/**
+ * Phase 6: money formatting is owned by `@/lib/format`. These two remain only
+ * as the names the report charts already import, so the chart components did not
+ * all have to change shape in one go. Both delegate — there is no second copy of
+ * the formatting logic left in this file.
+ */
+import {
+  formatMoneyCompact,
+  formatMoney as formatMoneyShared,
+  DEFAULT_FORMAT,
+  type FormatSettings,
+} from "@/lib/format";
+
 /** Format a money value for tooltips and tables: ₱1,234.56. */
-export function formatMoney(amount: number, symbol = "₱"): string {
-  const body = Math.abs(amount).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${amount < 0 ? "-" : ""}${symbol}${body}`;
+export function formatMoney(
+  amount: number,
+  format: FormatSettings = DEFAULT_FORMAT,
+): string {
+  return formatMoneyShared(amount, format);
 }
 
-/** Compact money for chart axes — ₱12k / ₱1.2M. Drops the trailing `.0` so
- * axis labels stay short and readable. */
-export function formatMoneyAxis(amount: number, symbol = "₱"): string {
-  const sign = amount < 0 ? "-" : "";
-  const abs = Math.abs(amount);
-  if (abs >= 1_000_000) {
-    return `${sign}${symbol}${trimZero((abs / 1_000_000).toFixed(1))}M`;
-  }
-  if (abs >= 1_000) {
-    return `${sign}${symbol}${trimZero((abs / 1_000).toFixed(1))}k`;
-  }
-  return `${sign}${symbol}${Math.round(abs)}`;
-}
-
-function trimZero(value: string): string {
-  return value.replace(/\.0$/, "");
+/** Compact money for chart axes — ₱12k / ₱1.2M. */
+export function formatMoneyAxis(
+  amount: number,
+  format: FormatSettings = DEFAULT_FORMAT,
+): string {
+  return formatMoneyCompact(amount, format);
 }

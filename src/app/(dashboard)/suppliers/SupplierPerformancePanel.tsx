@@ -1,3 +1,4 @@
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import Link from "next/link";
 import { Panel } from "@/app/_components/ui/Panel";
 import { RangeTabs } from "@/app/_components/ui/RangeTabs";
@@ -19,19 +20,15 @@ import type { SupplierPerformanceData } from "./supplier-data";
  */
 export default function SupplierPerformancePanel({
   data,
-  currencySymbol,
+  format,
   activeRange,
 }: {
   data: SupplierPerformanceData;
-  currencySymbol: string;
+  format?: FormatSettings;
   /** The raw `?range=` token, so the tabs can mark the active one. */
   activeRange: string;
 }) {
-  const money = (value: number) =>
-    `${currencySymbol}${value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const money = (value: number) => formatMoney(value, format);
   const { totals, rows } = data;
   const rangeKey = resolveRange(activeRange);
 

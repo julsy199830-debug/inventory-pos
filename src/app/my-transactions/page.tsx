@@ -1,3 +1,5 @@
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney } from "@/lib/format";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageAuth } from "@/lib/session";
@@ -102,7 +104,7 @@ export default async function MyTransactionsPage({
   // 23:59:59.999 hack, so a sale rung up late isn't clipped at midnight.
   const lt = localDayEnd(toKey);
 
-  const [sales, settings] = await Promise.all([
+  const [sales] = await Promise.all([
     prisma.sale.findMany({
       // `cashierId` is the scope. Session-derived, never client-supplied.
       where: {
@@ -135,11 +137,10 @@ export default async function MyTransactionsPage({
         _count: { select: { items: true } },
       },
     }),
-    prisma.storeSetting.findFirst(),
   ]);
+  const format = await getFormatSettings();
 
-  const symbol = settings?.currencySymbol ?? "₱";
-  const money = (n: number) => `${symbol}${n.toFixed(2)}`;
+  const money = (n: number) => formatMoney(n, format);
   const netTotal = sales.reduce(
     (sum, s) => sum + s.totalAmount - s.refundedAmount,
     0,

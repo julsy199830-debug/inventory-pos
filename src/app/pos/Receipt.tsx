@@ -24,12 +24,21 @@ export type ReceiptLine = {
 }
 
 /** Store identity shown on the receipt header — a subset of `StoreSetting`. */
+import type { FormatSettings } from '@/lib/format'
+import { formatDateTime, formatMoney } from '@/lib/format'
+
 export type ReceiptStore = {
   storeName: string
   address: string | null
   phone: string | null
   /** Short currency glyph, e.g. "₱", "€", "¥". */
   currencySymbol: string
+  /**
+   * Phase 6: the resolved global settings. The receipt prints through this, so
+   * a reprint always uses the currency/date format the store is configured for
+   * rather than whatever the component last hardcoded.
+   */
+  format: FormatSettings
 }
 
 /** One line of a REFUND receipt, reusing the sale line shape. */
@@ -117,17 +126,13 @@ export default function Receipt({
   originalTotal?: number | null
   thanks?: string
 }) {
-  const money = (value: number) =>
-    `${store.currencySymbol}${value.toFixed(2)}`
+  // Phase 6: the receipt prints through the ONE shared formatter, using the
+  // store's configured symbol and locale. The previous version hardcoded the
+  // glyph off the prop AND dropped thousands grouping, so a reprint could
+  // disagree with the till that produced the sale.
+  const money = (value: number) => formatMoney(value, store.format)
 
-  const formattedTimestamp = new Date(timestamp).toLocaleString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  })
+  const formattedTimestamp = formatDateTime(new Date(timestamp), store.format)
 
   const isRefund = refundLines.length > 0
   const unitCount = lines.reduce((n, l) => n + l.qty, 0)

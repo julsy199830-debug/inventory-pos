@@ -1,4 +1,6 @@
 "use client";
+import type { FormatSettings } from '@/lib/format'
+
 
 import {
   ResponsiveContainer,
@@ -41,10 +43,10 @@ const TICK = "#64748b"; // readable axis labels
  */
 export default function RevenueTrendChart({
   data,
-  currencySymbol = "₱",
+  format,
 }: {
   data: TrendPoint[];
-  currencySymbol?: string;
+  format?: FormatSettings;
 }) {
   const hasSales = data.some((point) => point.revenue > 0);
   // Show ~8 evenly spaced x labels regardless of bucket count (30-day series
@@ -76,11 +78,11 @@ export default function RevenueTrendChart({
               axisLine={false}
               width={54}
               tick={{ fill: TICK, fontSize: 11 }}
-              tickFormatter={(value: number) => formatMoneyAxis(value, currencySymbol)}
+              tickFormatter={(value: number) => formatMoneyAxis(value, format)}
             />
             <Tooltip
               cursor={{ stroke: INDIGO, strokeWidth: 1, strokeDasharray: "4 4" }}
-              content={<TrendTooltip currencySymbol={currencySymbol} />}
+              content={<TrendTooltip format={format} />}
             />
             <Area
               type="monotone"
@@ -104,7 +106,7 @@ function TrendTooltip({
   active,
   payload,
   label,
-  currencySymbol,
+  format,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{
@@ -113,7 +115,7 @@ function TrendTooltip({
     color?: string;
   }>;
   label?: string | number;
-  currencySymbol: string;
+  format?: FormatSettings;
 }) {
   if (!active || !payload?.length) return null;
   const value = payload[0]?.value ?? 0;
@@ -121,7 +123,7 @@ function TrendTooltip({
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-900/10">
       <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className="mt-0.5 text-sm font-semibold tabular-nums text-slate-900">
-        {formatMoney(Number(value), currencySymbol)}
+        {formatMoney(Number(value), format)}
       </p>
     </div>
   );

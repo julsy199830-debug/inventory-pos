@@ -1,3 +1,4 @@
+import { getFormatSettings } from "@/lib/store-config";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Printer } from "lucide-react";
@@ -31,7 +32,7 @@ export default async function MyTransactionDetailPage({
   const me = await requirePageAuth();
   const { id } = await params;
 
-  const [sale, settings] = await Promise.all([
+  const [sale, settings, format] = await Promise.all([
     prisma.sale.findFirst({
       // The AND is the authorization. See the file header.
       where: { id, cashierId: me.id },
@@ -75,6 +76,7 @@ export default async function MyTransactionDetailPage({
       },
     }),
     prisma.storeSetting.findFirst(),
+getFormatSettings(),
   ]);
 
   if (!sale) notFound();
@@ -84,6 +86,7 @@ export default async function MyTransactionDetailPage({
     address: settings?.address ?? null,
     phone: settings?.phone ?? null,
     currencySymbol: settings?.currencySymbol ?? "â‚±",
+    format,
   };
 return (
     <div className="min-h-screen bg-slate-50">

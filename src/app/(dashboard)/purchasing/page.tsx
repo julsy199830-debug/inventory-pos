@@ -1,3 +1,5 @@
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import Link from "next/link";
 import {
   getPurchaseOrders,
@@ -10,11 +12,8 @@ import OrderPurchaseOrderButton from "./OrderPurchaseOrderButton";
 import CancelPurchaseOrderButton from "./CancelPurchaseOrderButton";
 
 /** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
-function formatPrice(value: number): string {
-  return value.toLocaleString("en-PH", {
-    style: "currency",
-    currency: "PHP",
-  });
+function formatPrice(value: number, format: FormatSettings): string {
+  return formatMoney(value, format);
 }
 
 /** Format a date for the table, e.g. "Aug 20, 2026". */
@@ -58,6 +57,7 @@ export default async function PurchasingPage({
     getSuppliersForSelect(),
     getProductsForSelect(),
   ]);
+  const format = await getFormatSettings();
 
   const orders = allOrders.filter((po) => {
     const matchesTerm =
@@ -209,7 +209,7 @@ export default async function PurchasingPage({
                       {po.itemCount.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-900">
-                      {formatPrice(po.total)}
+                      {formatPrice(po.total, format)}
                     </td>
                     <td className="px-4 py-3">
                       {/* Phase 1 transitions only: DRAFT → ORDERED, and

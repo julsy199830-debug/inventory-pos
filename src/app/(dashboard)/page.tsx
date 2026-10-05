@@ -7,7 +7,8 @@ import {
   RotateCcw,
   TrendingUp,
 } from "lucide-react";
-import { getStoreSettings } from "@/app/actions/settings";
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney } from "@/lib/format";
 import { RANGE_LABELS, resolveRange } from "@/lib/analytics";
 import { Panel } from "@/app/_components/ui/Panel";
 import { RangeTabs } from "@/app/_components/ui/RangeTabs";
@@ -50,12 +51,12 @@ export default async function DashboardPage({
   // because it is a fixed "right now" view while the rest of the dashboard
   // honours the selected range. Folding it into the range query would make a
   // 7-day alert window silently drift with whichever tab is open.
-  const [data, settings, alerts] = await Promise.all([
+  const [data, format, alerts] = await Promise.all([
     getDashboardData(rangeKey),
-    getStoreSettings(),
+    getFormatSettings(),
     getOperationalAlerts(),
   ]);
-  const symbol = settings?.currencySymbol ?? "P";
+  
   const { totals, today, valuation, adjustments } = data;
 
   return (
@@ -82,13 +83,13 @@ export default async function DashboardPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Today's sales"
-          value={money(today.revenue, symbol)}
+          value={formatMoney(today.revenue, format)}
           hint={`${today.transactions} transaction${today.transactions === 1 ? "" : "s"}`}
           icon={<Banknote className="h-4 w-4" aria-hidden />}
         />
         <StatCard
           label="Revenue"
-          value={money(totals.revenue, symbol)}
+          value={formatMoney(totals.revenue, format)}
           change={data.revenueChange}
           icon={<TrendingUp className="h-4 w-4" aria-hidden />}
         />
@@ -96,13 +97,13 @@ export default async function DashboardPage({
           label="Transactions"
           value={totals.transactions.toLocaleString("en-US")}
           change={data.transactionChange}
-          hint={`avg ${money(totals.averageOrder, symbol)}`}
+          hint={`avg ${formatMoney(totals.averageOrder, format)}`}
           icon={<Receipt className="h-4 w-4" aria-hidden />}
         />
         <StatCard
           label="Inventory value"
-          value={money(valuation.retailValue, symbol)}
-          hint={`at cost ${money(valuation.costValue, symbol)}`}
+          value={formatMoney(valuation.retailValue, format)}
+          hint={`at cost ${formatMoney(valuation.costValue, format)}`}
           icon={<Boxes className="h-4 w-4" aria-hidden />}
           href="/inventory"
         />
@@ -121,14 +122,14 @@ export default async function DashboardPage({
         />
         <StatCard
           label="Value at risk"
-          value={money(valuation.atRiskValue, symbol)}
+          value={formatMoney(valuation.atRiskValue, format)}
           hint="retail value sitting on low lines"
           tone={valuation.atRiskValue > 0 ? "warning" : "default"}
           icon={<Boxes className="h-4 w-4" aria-hidden />}
         />
         <StatCard
           label="Refunds & voids"
-          value={money(adjustments.totalGivenBack, symbol)}
+          value={formatMoney(adjustments.totalGivenBack, format)}
           hint={
             adjustments.ratePercent == null
               ? "no sales in this window"
@@ -153,7 +154,7 @@ export default async function DashboardPage({
         >
           <RevenueTrendChart
             data={data.trend.map((p) => ({ label: p.label, revenue: p.revenue }))}
-            currencySymbol={symbol}
+            format={format}
           />
         </Panel>
 
@@ -161,7 +162,7 @@ export default async function DashboardPage({
           title="Activity by time"
           subtitle="Busiest hours, from actual sales"
         >
-          <ActivityByHour buckets={data.hours} currencySymbol={symbol} />
+          <ActivityByHour buckets={data.hours} format={format} />
         </Panel>
       </div>
 
@@ -183,7 +184,7 @@ export default async function DashboardPage({
             rows={data.top.map((row) => ({
               label: row.label,
               detail: row.detail,
-              value: money(row.revenue, symbol),
+              value: formatMoney(row.revenue, format),
               share: row.share,
             }))}
           />
@@ -194,7 +195,7 @@ export default async function DashboardPage({
             tone="emerald"
             rows={data.categories.map((row) => ({
               label: row.label,
-              value: money(row.revenue, symbol),
+              value: formatMoney(row.revenue, format),
               share: row.share,
             }))}
           />
@@ -207,7 +208,7 @@ export default async function DashboardPage({
             tone="slate"
             rows={data.payments.map((row) => ({
               label: paymentLabel(row.label),
-              value: money(row.revenue, symbol),
+              value: formatMoney(row.revenue, format),
               share: row.share,
             }))}
           />
@@ -286,7 +287,7 @@ export default async function DashboardPage({
                     </p>
                   </div>
                   <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
-                    {money(row.revenue, symbol)}
+                    {formatMoney(row.revenue, format)}
                   </span>
                 </li>
               ))}
@@ -340,7 +341,7 @@ export default async function DashboardPage({
                     </span>
                   ) : null}
                   <span className="text-sm font-semibold tabular-nums text-slate-900">
-                    {money(sale.total, symbol)}
+                    {formatMoney(sale.total, format)}
                   </span>
                 </div>
               </li>
@@ -350,15 +351,6 @@ export default async function DashboardPage({
       </Panel>
     </div>
   );
-}
-
-/** Format a figure as store currency, with the sign carried outside the glyph. */
-function money(value: number, symbol: string): string {
-  const body = Math.abs(value).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${value < 0 ? "-" : ""}${symbol}${body}`;
 }
 
 /** "STORE_CREDIT" -> "Store credit". Mirrors the POS's own payment labels. */

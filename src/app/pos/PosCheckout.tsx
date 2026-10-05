@@ -31,6 +31,7 @@ import {
 } from '@/lib/loyalty'
 import { lockRegister } from '@/lib/actions/auth-actions'
 import Receipt, { type ReceiptLine } from './Receipt'
+import { formatMoney, type FormatSettings } from '@/lib/format'
 import CustomerPicker, { FOCUS_CUSTOMER_EVENT } from './CustomerPicker'
 import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
@@ -97,6 +98,11 @@ export type PosStore = {
   currencySymbol: string
   /** Sales-tax percentage as a number, e.g. `8.5` means 8.5%. 0 = tax disabled. */
   taxRate: number
+  /**
+   * Phase 6: the resolved global settings. Checkout, the receipt and the history
+   * panel all format through this rather than each inventing a `₱${n.toFixed(2)}`.
+   */
+  format: FormatSettings
 }
 
 /** Signed-in operator driving the register — passed down from `page.tsx`. */
@@ -430,7 +436,10 @@ export default function PosCheckout({
   }, [tenderedRaw])
 
   const quickTenderOptions = useMemo(() => {
-    const fmt = (value: number) => `${store.currencySymbol}${value.toFixed(2)}`
+    // Phase 6: one shared formatter. The old inline version had no thousands
+    // grouping, so a large total printed as "₱12345.00" here and "₱12,345.00"
+    // on the receipt — the same amount rendered two ways on one screen.
+    const fmt = (value: number) => formatMoney(value, store.format)
     const options: { label: string; value: number }[] = [
       { label: `Exact ${fmt(round2(total))}`, value: round2(total) },
     ]
@@ -441,7 +450,7 @@ export default function PosCheckout({
       }
     }
     return options
-  }, [total, store.currencySymbol])
+  }, [total, store.format])
 
   const selectedCustomer = customers.find((c) => c.id === customerId)
   const creditBlocked =

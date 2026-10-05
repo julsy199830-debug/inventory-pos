@@ -1,3 +1,5 @@
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import {
@@ -113,11 +115,8 @@ type Product = {
 };
 
 /** Format a number as Philippine Peso currency, e.g. 199 -> "₱199.00". */
-function formatPrice(value: number): string {
-  return value.toLocaleString("en-PH", {
-    style: "currency",
-    currency: "PHP",
-  });
+function formatPrice(value: number, format: FormatSettings): string {
+  return formatMoney(value, format);
 }
 
 export default async function InventoryPage({
@@ -162,6 +161,7 @@ export default async function InventoryPage({
     prisma.product.count(),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
+  const format = await getFormatSettings();
 
   // Category option set shared by the filter, the Add dialog, and the Edit
   // dialog — a single source of truth so all three show the same names/ids and
@@ -204,8 +204,8 @@ export default async function InventoryPage({
       name: p.name,
       categoryName: p.category?.name ?? null,
       categoryId: p.categoryId,
-      retail: formatPrice(p.price),
-      cost: formatPrice(p.cost),
+      retail: formatPrice(p.price, format),
+      cost: formatPrice(p.cost, format),
       stock: p.stock,
       rawPrice: p.price,
       rawCost: p.cost,
@@ -351,22 +351,22 @@ export default async function InventoryPage({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Retail value"
-            value={formatPrice(valuation.retailValue)}
+            value={formatPrice(valuation.retailValue, format)}
             hint={`${valuation.units.toLocaleString("en-US")} units across ${valuation.skus} SKUs`}
           />
           <StatCard
             label="Cost value"
-            value={formatPrice(valuation.costValue)}
+            value={formatPrice(valuation.costValue, format)}
             hint="what the stock is on hand for"
           />
           <StatCard
             label="Gross margin"
             value={`${valuation.marginPercent.toFixed(1)}%`}
-            hint={`${formatPrice(valuation.marginValue)} on the shelf`}
+            hint={`${formatPrice(valuation.marginValue, format)} on the shelf`}
           />
           <StatCard
             label="Value at risk"
-            value={formatPrice(valuation.atRiskValue)}
+            value={formatPrice(valuation.atRiskValue, format)}
             hint="retail value sitting on low lines"
             tone={valuation.atRiskValue > 0 ? "warning" : "default"}
           />
@@ -458,7 +458,7 @@ export default async function InventoryPage({
           rows={categoryBreakdown.map((row) => ({
             label: row.name,
             detail: categoryDetail(row),
-            value: formatPrice(row.retailValue),
+            value: formatPrice(row.retailValue, format),
             share: row.unitShare,
           }))}
         />
@@ -577,7 +577,7 @@ export default async function InventoryPage({
                       uses, so the column a storekeeper reads always agrees with
                       the order they clicked. */}
                   <td className="px-4 py-3 tabular-nums text-slate-700">
-                    {formatPrice(p.stock * p.rawPrice)}
+                    {formatPrice(p.stock * p.rawPrice, format)}
                   </td>
                   <td className="px-4 py-3">
                     <StockBadge stock={p.stock} threshold={p.threshold} />

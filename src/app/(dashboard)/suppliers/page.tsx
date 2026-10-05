@@ -1,9 +1,9 @@
+import { getFormatSettings } from "@/lib/store-config";
 import { prisma } from "@/lib/db";
 import AddSupplierDialog from "./AddSupplierDialog";
 import DeleteSupplierButton from "./DeleteSupplierButton";
 import SupplierPerformancePanel from "./SupplierPerformancePanel";
 import { getSupplierPerformance } from "./supplier-data";
-import { getStoreSettings } from "@/app/actions/settings";
 import EditSupplierDialog from "./EditSupplierDialog";
 
 type Supplier = {
@@ -33,11 +33,10 @@ export default async function SuppliersPage({
   // Promise<searchParams> (see the page file convention docs).
   const sp = await searchParams;
   const { q = "" } = sp;
-  const [performance, settings] = await Promise.all([
+  const [performance] = await Promise.all([
     getSupplierPerformance(sp.range),
-    getStoreSettings(),
   ]);
-  const currencySymbol = settings?.currencySymbol ?? "P";
+  const format = await getFormatSettings();
   const query = Array.isArray(q) ? q[0] ?? "" : q;
   const term = query.trim().toLowerCase();
 
@@ -101,7 +100,7 @@ export default async function SuppliersPage({
           and what is still outstanding", which is a different question. */}
       <SupplierPerformancePanel
         data={performance}
-        currencySymbol={currencySymbol}
+        format={format}
         activeRange={Array.isArray(sp.range) ? sp.range[0] : sp.range ?? ""}
       />
 

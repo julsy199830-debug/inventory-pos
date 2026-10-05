@@ -1,4 +1,5 @@
 "use client";
+import type { FormatSettings } from "@/lib/format";
 
 import { useState, type ReactNode } from "react";
 import {
@@ -33,11 +34,11 @@ import {
 export default function SalesBarChart({
   monthly,
   weekly,
-  currencySymbol = "₱",
+  format,
 }: {
   monthly: SalesVolumePoint[];
   weekly: SalesVolumePoint[];
-  currencySymbol?: string;
+  format?: FormatSettings;
 }) {
   const [period, setPeriod] = useState<"month" | "week">("month");
   const data = period === "month" ? monthly : weekly;
@@ -95,12 +96,12 @@ export default function SalesBarChart({
                 width={58}
                 tick={{ fill: SLATE_500, fontSize: 12 }}
                 tickFormatter={(value: number) =>
-                  formatMoneyAxis(value, currencySymbol)
+                  formatMoneyAxis(value, format)
                 }
               />
               <Tooltip
                 cursor={{ fill: "#f1f5f9" }}
-                content={<VolumeTooltip currencySymbol={currencySymbol} />}
+                content={<VolumeTooltip format={format} />}
               />
               {/* Rendered first = bottom segment; the last Bar is the top of
                   the stack, so it carries the rounded `radius` corners. */}
@@ -176,7 +177,7 @@ function VolumeTooltip({
   active,
   payload,
   label,
-  currencySymbol,
+  format,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{
@@ -185,7 +186,7 @@ function VolumeTooltip({
     color?: string;
   }>;
   label?: string | number;
-  currencySymbol: string;
+  format?: FormatSettings;
 }) {
   if (!active || !payload?.length) return null;
   const total = payload.reduce(
@@ -206,12 +207,12 @@ function VolumeTooltip({
           />
           <span className="font-medium">{entry.name}</span>
           <span className="ml-auto pl-4 font-semibold text-slate-900">
-            {formatMoney(Number(entry.value ?? 0), currencySymbol)}
+            {formatMoney(Number(entry.value ?? 0), format)}
           </span>
         </p>
       ))}
       <p className="mt-1.5 border-t border-slate-100 pt-1.5 text-xs font-semibold text-slate-900">
-        Total {formatMoney(total, currencySymbol)}
+        Total {formatMoney(total, format)}
       </p>
     </div>
   );

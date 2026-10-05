@@ -1,4 +1,6 @@
 "use client";
+import type { FormatSettings } from '@/lib/format'
+
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { CategorySalesSlice } from "../actions";
@@ -15,10 +17,10 @@ import { DONUT_PALETTE, formatMoney } from "./chart-theme";
  */
 export default function CategoryDonutChart({
   data,
-  currencySymbol = "₱",
+  format,
 }: {
   data: CategorySalesSlice[];
-  currencySymbol?: string;
+  format?: FormatSettings;
 }) {
   const total = data.reduce((sum, slice) => sum + slice.revenue, 0);
 
@@ -61,7 +63,7 @@ export default function CategoryDonutChart({
                   />
                 ))}
               </Pie>
-              <Tooltip content={<DonutTooltip currencySymbol={currencySymbol} />} />
+              <Tooltip content={<DonutTooltip format={format} />} />
             </PieChart>
           </ResponsiveContainer>
         ) : (
@@ -78,7 +80,7 @@ export default function CategoryDonutChart({
               Total
             </p>
             <p className="text-lg font-semibold text-slate-900">
-              {formatMoney(total, currencySymbol)}
+              {formatMoney(total, format)}
             </p>
           </div>
         )}
@@ -112,7 +114,7 @@ export default function CategoryDonutChart({
 function DonutTooltip({
   active,
   payload,
-  currencySymbol,
+  format,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{
@@ -121,7 +123,7 @@ function DonutTooltip({
     color?: string;
     payload?: { percent?: number };
   }>;
-  currencySymbol: string;
+  format?: FormatSettings;
 }) {
   if (!active || !payload?.length) return null;
   const entry = payload[0];
@@ -136,7 +138,7 @@ function DonutTooltip({
         {entry.name}
       </p>
       <p className="mt-0.5 text-sm font-semibold text-slate-900">
-        {formatMoney(Number(entry.value ?? 0), currencySymbol)}
+        {formatMoney(Number(entry.value ?? 0), format)}
         <span className="ml-1.5 font-medium text-slate-500">
           ({percent.toFixed(1)}%)
         </span>

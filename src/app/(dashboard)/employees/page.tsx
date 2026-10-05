@@ -1,10 +1,11 @@
+import { getFormatSettings } from "@/lib/store-config";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
 import EmployeePerformancePanel from "./EmployeePerformancePanel";
 import { getEmployeePerformance } from "./performance-data";
-import { getStoreSettings } from "@/app/actions/settings";
 import EditEmployeeDialog from "./EditEmployeeDialog";
 import DeleteEmployeeButton from "./DeleteEmployeeButton";
 import ToggleActiveButton from "./ToggleActiveButton";
@@ -98,7 +99,7 @@ function relativeTime(iso: string | null, now: number): string {
  *  format consistently. Mirrors the `TAX_RATE`-style local constant note in the
  *  `StoreSetting` schema comment (these are externalized there, but the
  *  Employees summary predates wiring it in). */
-const CURRENCY = "₱";
+
 
 export default async function EmployeesPage({
   searchParams,
@@ -271,12 +272,11 @@ export default async function EmployeesPage({
   // link still works - it just falls back to the default range.
   const sp = (await searchParams) ?? {};
   const rangeToken = sp.range;
-  const [performance, settings] = await Promise.all([
+  const [performance] = await Promise.all([
     getEmployeePerformance(rangeToken),
-    getStoreSettings(),
   ]);
-  const currencySymbol = settings?.currencySymbol ?? "P";
-
+  const format = await getFormatSettings();
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -315,7 +315,7 @@ export default async function EmployeesPage({
           roster and shift controls below it. */}
       <EmployeePerformancePanel
         data={performance}
-        currencySymbol={currencySymbol}
+        format={format}
         activeRange={Array.isArray(rangeToken) ? rangeToken[0] : rangeToken ?? ""}
       />
 
@@ -336,7 +336,7 @@ export default async function EmployeesPage({
         />
         <SummaryTile
           label="Lifetime sales"
-          value={`${CURRENCY}${totalLifetimeSales.toLocaleString(undefined, {
+          value={`${format.currencySymbol}${totalLifetimeSales.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`}
@@ -345,7 +345,7 @@ export default async function EmployeesPage({
         />
         <SummaryTile
           label="Live sales (all cashiers)"
-          value={`${CURRENCY}${totalLiveSales.toLocaleString(undefined, {
+          value={`${format.currencySymbol}${totalLiveSales.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`}
@@ -357,7 +357,7 @@ export default async function EmployeesPage({
       {/* Shift management widget — who is currently clocked in, with clock-in
           / clock-out controls. Reads from the same underlying shift data as the
           per-row ClockButton so the widget and table stay consistent. */}
-      <ShiftWidget employees={clockedInList} />
+      <ShiftWidget employees={clockedInList} format={format} />
 
       {/* Employee management table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -406,7 +406,7 @@ export default async function EmployeesPage({
                       {e.lifetimeCount.toLocaleString()}
                     </span>{" "}
                     sales ·{" "}
-                    {CURRENCY}
+                    {format.currencySymbol}
                     {e.lifetimeSales.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -519,7 +519,14 @@ function SummaryTile({
  * artifact. Each row's `ClockButton` is a Client Component island (manages the
  * clock-out call + pending/error); the surrounding list is server-rendered.
  */
-function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
+function ShiftWidget({
+  employees,
+  format,
+}: {
+  employees: EmployeeRow[];
+  /** Phase 6: resolved settings, so this widget obeys the store currency. */
+  format: FormatSettings;
+}) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
@@ -556,11 +563,7 @@ function ShiftWidget({ employees }: { employees: EmployeeRow[] }) {
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">
                   <span className="font-medium text-slate-900">
-                    {CURRENCY}
-                    {e.liveSalesTotal.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatMoney(e.liveSalesTotal, format)}
                   </span>{" "}
                   · {e.liveSalesCount.toLocaleString()} sales this ledger
                 </span>

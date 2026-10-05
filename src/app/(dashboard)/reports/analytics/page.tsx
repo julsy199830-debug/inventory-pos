@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { getStoreSettings } from "@/app/actions/settings";
+import { getFormatSettings } from "@/lib/store-config";
 import { getSalesAnalytics } from "../actions";
 import SalesBarChart from "../_components/SalesBarChart";
 import CategoryDonutChart from "../_components/CategoryDonutChart";
@@ -23,11 +23,12 @@ import { formatMoney } from "../_components/chart-theme";
  * rounded-2xl slate-200/80 border + white card.
  */
 export default async function SalesAnalyticsPage() {
-  const [result, settings] = await Promise.all([
+  // Phase 6: the whole resolved settings object, so the KPIs and every chart
+  // share one currency/locale convention instead of a bare glyph string.
+  const [result, format] = await Promise.all([
     getSalesAnalytics(),
-    getStoreSettings(),
+    getFormatSettings(),
   ]);
-  const symbol = settings?.currencySymbol ?? "₱";
 
   if (!result.ok) {
     return (
@@ -51,7 +52,7 @@ export default async function SalesAnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
           label="Revenue · 30 days"
-          value={formatMoney(totals.revenue30d, symbol)}
+          value={formatMoney(totals.revenue30d, format)}
           sparkline={
             <OrdersSparkline data={data.orderTrend} color="blue" height={56} />
           }
@@ -65,7 +66,7 @@ export default async function SalesAnalyticsPage() {
         />
         <KpiTile
           label="Avg Order Value"
-          value={formatMoney(totals.avgOrderValue30d, symbol)}
+          value={formatMoney(totals.avgOrderValue30d, format)}
         />
         <KpiTile
           label="Top Category"
@@ -85,14 +86,14 @@ export default async function SalesAnalyticsPage() {
           <SalesBarChart
             monthly={data.monthly}
             weekly={data.weekly}
-            currencySymbol={symbol}
+            format={format}
           />
         </div>
-        <CategoryDonutChart data={data.categories} currencySymbol={symbol} />
+        <CategoryDonutChart data={data.categories} format={format} />
       </div>
 
       {/* Top movers */}
-      <TopProductsTable products={data.topProducts} currencySymbol={symbol} />
+      <TopProductsTable products={data.topProducts} format={format} />
     </div>
   );
 }

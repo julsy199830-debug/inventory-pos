@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/db'
 import { requirePageAuth } from '@/lib/session'
+import { getFormatSettings } from '@/lib/store-config'
 import PosCheckout, { type PosStore } from './PosCheckout'
 
 export default async function POSPage() {
   const user = await requirePageAuth()
 
-  const [productRows, customers, settings] = await Promise.all([
+  const [productRows, customers, settings, format] = await Promise.all([
     prisma.product.findMany({
       orderBy: { name: 'asc' },
       select: {
@@ -43,6 +44,7 @@ export default async function POSPage() {
       },
     }),
     prisma.storeSetting.findFirst(),
+    getFormatSettings(),
   ])
 
   const products = productRows.map((p) => ({
@@ -82,6 +84,11 @@ export default async function POSPage() {
     storeName: settings?.storeName ?? 'InvPos Store',
     address: settings?.address ?? null,
     phone: settings?.phone ?? null,
+    // Phase 6: the whole resolved settings object travels to the register so
+    // checkout, the receipt and the history panel all render money through the
+    // ONE shared formatter. Previously the register, the receipt and the history
+    // each had a private formatter and three of them disagreed about grouping.
+    format,
     currencySymbol: settings?.currencySymbol ?? '₱',
     taxRate: settings?.taxRate ?? 0,
   }

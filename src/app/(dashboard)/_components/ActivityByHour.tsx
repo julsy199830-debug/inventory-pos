@@ -1,4 +1,5 @@
 import type { HourBucket } from "@/lib/analytics";
+import { formatMoney, type FormatSettings } from "@/lib/format";
 
 /**
  * "Activity by time" for the dashboard: when during the day people actually buy.
@@ -23,11 +24,11 @@ import type { HourBucket } from "@/lib/analytics";
  */
 export default function ActivityByHour({
   buckets,
-  currencySymbol = "P",
+  format,
 }: {
   /** Per-hour totals, already in clock order, from `hourlyProfile`. */
   buckets: HourBucket[];
-  currencySymbol?: string;
+  format?: FormatSettings;
 }) {
   if (buckets.length === 0) {
     return (
@@ -68,7 +69,7 @@ export default function ActivityByHour({
                   style={{ height: `${heightPct}%` }}
                   title={
                     hasSales
-                      ? `${bucket.label} - ${money(bucket.revenue, currencySymbol)} across ${bucket.transactions} sale${bucket.transactions === 1 ? "" : "s"}`
+                      ? `${bucket.label} - ${money(bucket.revenue, format)} across ${bucket.transactions} sale${bucket.transactions === 1 ? "" : "s"}`
                       : `${bucket.label} - no sales`
                   }
                 />
@@ -89,10 +90,6 @@ export default function ActivityByHour({
 }
 
 /** Compact money for the bar tooltips. */
-function money(value: number, symbol: string): string {
-  const rounded = Math.round(value * 100) / 100;
-  return `${symbol}${rounded.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+function money(value: number, format?: FormatSettings): string {
+  return formatMoney(Math.round(value * 100) / 100, format);
 }

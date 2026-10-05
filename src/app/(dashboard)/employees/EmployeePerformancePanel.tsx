@@ -1,3 +1,4 @@
+import { formatMoney, type FormatSettings } from "@/lib/format";
 import { Panel } from "@/app/_components/ui/Panel";
 import { RangeTabs } from "@/app/_components/ui/RangeTabs";
 import { StatCard } from "@/app/_components/ui/StatCard";
@@ -26,15 +27,15 @@ import type { EmployeePerformanceData } from "./performance-data";
  */
 export default function EmployeePerformancePanel({
   data,
-  currencySymbol,
+  format,
   activeRange,
 }: {
   data: EmployeePerformanceData;
-  currencySymbol: string;
+  format?: FormatSettings;
   /** The raw `?range=` token, so the tabs can mark the active one. */
   activeRange: string;
 }) {
-  const money = (value: number) => `${currencySymbol}${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const money = (value: number) => formatMoney(value, format);
   const { totals, rows, storeRevenue } = data;
   const hasSales = storeRevenue > 0;
 

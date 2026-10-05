@@ -143,6 +143,31 @@ export function formatNumber(
   }
 }
 
+/**
+ * Compact money for chart axes: "₱12k", "₱1.2M".
+ *
+ * Lives here rather than in a report component so an axis and a tooltip can
+ * never disagree about the symbol — they are the same value at two densities.
+ * The k/M suffixes are English abbreviations, which is what every chart library
+ * expects; they are presentation, not a separate currency convention.
+ */
+export function formatMoneyCompact(
+  value: number,
+  s: FormatSettings = DEFAULT_FORMAT,
+): string {
+  const safe = Number.isFinite(value) ? value : 0;
+  const sign = safe < 0 ? "-" : "";
+  const abs = Math.abs(safe);
+  const trim = (v: string) => v.replace(/\.0$/, "");
+  if (abs >= 1_000_000) {
+    return `${sign}${s.currencySymbol}${trim((abs / 1_000_000).toFixed(1))}M`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}${s.currencySymbol}${trim((abs / 1_000).toFixed(1))}k`;
+  }
+  return `${sign}${s.currencySymbol}${Math.round(abs)}`;
+}
+
 // ── Tax ───────────────────────────────────────────────────────────────────────
 
 /**
