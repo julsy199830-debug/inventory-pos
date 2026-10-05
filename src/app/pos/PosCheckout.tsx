@@ -1,19 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
 import {
-  ArrowLeft,
   Banknote,
   Barcode,
   CheckCircle2,
-  Clock,
   CreditCard,
   Minus,
   Plus,
   Printer,
-  ReceiptText,
   Search,
   ShoppingCart,
   Trash2,
@@ -37,7 +32,7 @@ import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
-import TransactionHistory from './TransactionHistory'
+import PosHeader from './PosHeader'
 import { stockStatusAt } from '@/lib/types'
 import type { Role } from '@/lib/types'
 
@@ -1233,106 +1228,18 @@ export default function PosCheckout({
   return (
     <div className="flex h-screen w-full flex-col bg-slate-100">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm sm:px-6 sm:py-2.5">
-        <h1 className="sr-only">Point of Sale</h1>
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <Image
-            src="/Logo final.png"
-            alt="InvPos"
-            width={120}
-            height={120}
-            priority
-            className="h-8 w-auto object-contain"
-          />
-          {cashier.role === 'ADMIN' || cashier.role === 'MANAGER' ? (
-            <>
-              <Link
-                href="/"
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
-                <span className="sm:hidden">Back</span>
-              </Link>
-              <nav
-                className="hidden items-center gap-2 text-sm sm:flex"
-                aria-label="Breadcrumb"
-              >
-                <Link
-                  href="/"
-                  className="font-medium text-slate-500 transition-colors hover:text-indigo-600"
-                >
-                  Dashboard
-                </Link>
-                <span aria-hidden className="text-slate-600">
-                  /
-                </span>
-                <span className="font-semibold text-slate-900">Point of Sale</span>
-              </nav>
-            </>
-          ) : (
-            // Cashiers have no dashboard access, so swap the navigation for a
-            // register title + operator badge instead of a dead link.
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="truncate text-base font-semibold tracking-tight text-slate-900">
-                InvPos Register
-              </span>
-              <span className="hidden items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 ring-1 ring-indigo-200 md:inline-flex">
-                <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                {cashier.name} · {cashier.role.charAt(0) + cashier.role.slice(1).toLowerCase()}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="hidden sm:inline">Register #1 · </span>Online
-          </span>
-          {/* Command-center links (Phase 5): the cashier's own attendance and their own
-              sales both live outside the dashboard shell, reachable from the
-              till because "where are my hours?" and "what did I ring up?" are
-              both asked AT the register. Labels are the cashier's words —
-              "My hours" and "My transactions" — not the manager's "DTR". */}
-          <Link
-            href="/my-transactions"
-            className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
-          >
-            <ReceiptText className="h-4 w-4" />
-            My transactions
-          </Link>
-          <Link
-            href="/my-activity"
-            className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
-          >
-            <Clock className="h-4 w-4" />
-            My hours
-          </Link>
-          {cashier.role !== 'CASHIER' && (
-            <Link
-              href="/dtr"
-              className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 lg:inline-flex"
-            >
-              DTR
-            </Link>
-          )}
-          <span className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 md:inline-flex">
-            {cashier.name}
-          </span>
-          <TransactionHistory
-          canVoid={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'}
-          store={store}
-          taxRate={store.taxRate ?? 0}
-        />
-          <button
-            type="button"
-            onClick={() => lockRegister()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
-          >
-            Lock
-          </button>
-        </div>
-      </header>
+      {/* Phase 7: extracted verbatim into `PosHeader` — no markup, prop or
+          behaviour change. It lives in its own file so the later Section 3 work
+          has one readable place to make the register understandable. */}
+      <PosHeader
+        cashier={cashier}
+        canVoid={cashier.role === 'ADMIN' || cashier.role === 'MANAGER'}
+        store={store}
+        taxRate={store.taxRate ?? 0}
+        onLock={() => {
+          void lockRegister();
+        }}
+      />
 
       {/* ── Split screen: catalog (left) + cart (right) ───────────────── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
