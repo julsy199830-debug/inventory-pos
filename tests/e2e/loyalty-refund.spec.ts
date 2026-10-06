@@ -115,9 +115,9 @@ async function openNewestSaleDetails(page: Page) {
   await expect(page.locator('text=Sale details').first()).toBeVisible({ timeout: 10000 });
 }
 
-/** The cart's grand-total figure. */
+/** The cart's total figure — its own testid since the label became "Total". */
 function grandTotal(page: Page) {
-  return page.locator('span:has-text("Grand Total")').locator('xpath=following-sibling::span[1]');
+  return page.locator('[data-testid="order-total"]');
 }
 
 /** Read a rendered peso amount ("₱1,234.50") as a number. */

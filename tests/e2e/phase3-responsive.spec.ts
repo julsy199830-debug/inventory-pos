@@ -74,7 +74,7 @@ test.describe('Phase 3 - responsive layout', () => {
         // width. "Process Payment" is not: on a phone it lives inside the
         // closed cart drawer. That is correct behaviour, but it makes the
         // button useless as a readiness marker for a mobile check.
-        ['register', '/pos', 'input[aria-label^="Search products"]'],
+        ['register', '/pos', 'input[aria-label^="Search or scan"]'],
       ] as const) {
         await page.goto(path);
         await expect(page.locator(ready).first()).toBeVisible({ timeout: 25000 });
@@ -92,7 +92,7 @@ test.describe('Phase 3 - responsive layout', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/pos');
     await expect(
-      page.locator('input[aria-label^="Search products"]').first(),
+      page.locator('input[aria-label^="Search or scan"]').first(),
     ).toBeVisible({ timeout: 20000 });
 
     // Add something so the mobile summary bar and its View Cart button appear.

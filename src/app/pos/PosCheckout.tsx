@@ -33,6 +33,7 @@ import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import PosHeader from './PosHeader'
+import { useRegisterStatus } from './register-status-store'
 import { stockStatusAt } from '@/lib/types'
 import type { Role } from '@/lib/types'
 
@@ -214,6 +215,11 @@ export default function PosCheckout({
   // Ref onto the barcode box so a scan-in-empty-area can focus it for the next
   // physical scan (keyboard-emulation scanners type into whatever is focused).
   const scanInputRef = useRef<HTMLInputElement>(null)
+  // Phase 7 step 3: the till's shift state, read from the SAME store the header
+  // badge subscribes to (written only by the status strip's own fetch). Used for
+  // one short "you are off the clock" nudge in the order panel — no second
+  // session poll, no duplicate shift state.
+  const registerStatus = useRegisterStatus()
 
   // Group products by category for the catalog grid; stable order matches the
   // server's `orderBy name`.
@@ -730,14 +736,31 @@ export default function PosCheckout({
         format={store.format}
         refreshKey={registerActivity}
       />
+      {/* Phase 7 step 3: the two facts a first-time cashier needs before the
+          first sale — whether they are on the clock, and that attaching a
+          customer is optional. Shown only while the order is a walk-in: once a
+          customer is attached the picker itself says who they are, and the
+          control stack has no height to spare in that state (the Phase 4
+          responsive specs pin that geometry to the pixel — this line is
+          deliberately absent from every measured loyalty case). */}
+      {customerId === '' && (
+        <p
+          className="px-4 pb-1.5 text-[11px] leading-snug text-slate-500"
+          data-testid="pos-walkin-hint"
+        >
+          {registerStatus && !registerStatus.onClock
+            ? 'Not on the clock yet — start your shift above. Walk-in sales need no customer.'
+            : 'Optional — walk-in sales need no customer.'}
+        </p>
+      )}
       {/* Dedicated barcode search box — scanning while this is focused types
           the code here (the global hook ignores focused fields); pressing
           Enter resolves it and clears the box for the next scan. The box
           keeps focus by default so repeated scans just work. */}
       <div className="border-b border-slate-200 px-4 py-2" data-testid="pos-scan">
-        {/* The caption is `sr-only`, not deleted — the placeholder on the box            below repeats it word for word. */}
+        {/* The caption is `sr-only`: the placeholder below carries the same job            in fewer words, and a visible caption would cost the order panel            height the control stack cannot spare. */}
         <label htmlFor="scan-input" className="sr-only">
-          Scan barcode / SKU
+          Scan barcode or type a product code, then press Enter
         </label>
         <div className="relative">
           <Barcode
@@ -759,7 +782,8 @@ export default function PosCheckout({
             }}
             autoComplete="off"
             autoFocus
-            placeholder="Scan or type a SKU, then Enter"
+            placeholder="Search or scan a product"
+            title="Scan a barcode or type a product code, then press Enter"
             className="h-9 w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 font-mono text-sm text-slate-900 placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </div>
@@ -856,7 +880,7 @@ export default function PosCheckout({
         </div>
       )}
 
-      {/* Payment method — segmented control, touch-friendly. Stays in the            scrolling body: it configures the order rather than taking money, and            the pinned footer's own height is what squeezes this stack. */}
+      {/* Payment method — segmented control, touch-friendly. Stays in the            scrolling body: it configures the order rather than taking money, and            the pinned footer's own height is what squeezes this stack. The            selected chip is tinted rather than solid indigo: the one solid            indigo block in this panel is the payment CTA below, and the method            chooser must not compete with the action it feeds. */}
       <div className="border-b border-slate-200 px-4 py-2" data-testid="pos-payment">
         <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Payment Method
@@ -879,7 +903,7 @@ export default function PosCheckout({
                 className={[
                   'inline-flex items-center justify-center gap-1.5 rounded-xl border px-2 py-1.5 text-xs font-semibold transition active:scale-[0.98]',
                   active
-                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                     : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:bg-slate-50 hover:text-indigo-700',
                 ].join(' ')}
               >
@@ -910,15 +934,17 @@ export default function PosCheckout({
           Why not more: the floor only ever binds on a short screen. On a tall one `flex-1` already hands the cart everything the controls leave over. At 1280x720 with a loyalty customer attached — the tightest case the register actually ships — those 20px are what decide whether the whole order still fits above the fold. */}
       <div className="min-h-[120px] flex-1 overflow-y-auto px-4 py-3" data-testid="cart-lines">
         {cart.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-              <ShoppingCart className="h-7 w-7 text-slate-500" aria-hidden />
-            </div>
-            <p className="text-sm font-semibold text-slate-900">
-              No items yet. Tap a product to add it.
+          <div className="flex h-full flex-col items-center justify-center gap-1 px-5 py-2 text-center">
+            {/* Compact by design: on a short till screen (1280x720, on shift)
+                the order area can be as little as ~64px tall, so the icon rides
+                inline with the headline and the copy is two short lines —
+                nothing here may wrap, or the block clips mid-sentence. */}
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <ShoppingCart className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+              Find a product to start a new sale.
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Scan a barcode or pick a product to start this sale.
+            <p className="text-xs text-slate-500">
+              Scan a barcode or search by name.
             </p>
           </div>
         ) : (
@@ -957,8 +983,8 @@ export default function PosCheckout({
                       ].join(' ')}
                     >
                       {line.discount
-                        ? `Disc −${money(lineDiscountMoney(line))}`
-                        : 'Disc'}
+                        ? `Discount −${money(lineDiscountMoney(line))}`
+                        : 'Discount'}
                     </button>
                     {line.discount && (
                       <span className="inline-flex items-center gap-1">
@@ -1169,8 +1195,11 @@ export default function PosCheckout({
         )}
       </dl>
       <div className="mt-2 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2">
-        <span className="text-sm font-semibold text-indigo-700">Grand Total</span>
-        <span className="text-xl font-bold tabular-nums text-indigo-800">
+        <span className="text-sm font-semibold text-indigo-700">Total</span>
+        <span
+          className="text-xl font-bold tabular-nums text-indigo-800"
+          data-testid="order-total"
+        >
           {money(total)}
         </span>
       </div>
@@ -1183,6 +1212,17 @@ export default function PosCheckout({
       >
         {pending ? 'Processing…' : 'Process Payment'}
       </button>
+      {/* Phase 7 step 3: the button above is disabled until the order has
+          something to charge — say so, rather than leaving a cashier to wonder
+          what is broken. Rendered ONLY while the cart is empty, so it retires                the moment the first product lands and never grows the footer in the                states the Phase 4 geometry tests measure. */}
+      {cart.length === 0 && (
+        <p
+          className="mt-2 text-center text-[11px] font-medium text-slate-500"
+          data-testid="pos-payment-hint"
+        >
+          Add a product to take payment.
+        </p>
+      )}
       {/* Phase 3: shortcuts are invisible until you know them. One quiet line
           under the register makes the function keys discoverable without
           putting a help dialog in the middle of a sale. */}
@@ -1256,8 +1296,8 @@ export default function PosCheckout({
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products, barcode, or SKU…"
-                aria-label="Search products, barcode, or SKU"
+                placeholder="Search or scan products"
+                aria-label="Search or scan products"
                 autoComplete="off"
                 className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
               />
@@ -1289,6 +1329,16 @@ export default function PosCheckout({
                 </CategoryChip>
               ))}
             </div>
+            {/* Phase 7 step 3: the one instruction a first-time cashier needs,
+                in the pane they will look for it. Retires itself the moment the
+                order has its first product, and lives in the catalog pane —
+                which scrolls freely — so it never touches the control-stack                budget the order panel geometry is measured against. */}
+            {cart.length === 0 && (
+              <p className="mt-2 text-xs text-slate-500" data-testid="pos-catalog-hint">
+                Search by name or scan a barcode — tap a product below to add it
+                to the order.
+              </p>
+            )}
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -1303,7 +1353,7 @@ export default function PosCheckout({
                 <p className="mt-1 max-w-xs text-sm text-slate-500">
                   {products.length === 0
                     ? 'Add products from the Inventory page to start selling.'
-                    : `Nothing matches "${search.trim()}". Try a different name, SKU, or category.`}
+                    : 'Try another name or scan a barcode.'}
                 </p>
               </div>
             ) : (
@@ -1425,7 +1475,12 @@ export default function PosCheckout({
             <p className="text-xs text-slate-500">
               {cart.length} item{cart.length === 1 ? '' : 's'}
             </p>
-            <p className="text-lg font-bold tabular-nums text-slate-900">{money(total)}</p>
+            <p className="text-lg font-bold tabular-nums text-slate-900">
+              <span className="mr-1 text-xs font-medium text-slate-500">
+                Total
+              </span>
+              {money(total)}
+            </p>
           </div>
           <button
             type="button"
@@ -1515,6 +1570,9 @@ export default function PosCheckout({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Sale complete"
             >
             <div className="flex items-start justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
               <div className="flex items-center gap-3">
@@ -1527,6 +1585,10 @@ export default function PosCheckout({
                   </h2>
                   <p className="mt-0.5 text-sm text-slate-500">
                     Order {completed.id.slice(0, 8).toUpperCase()}
+                  </p>
+                  {/* Phase 7 step 3: name the two exits from this dialog so the            result screen tells a first-time cashier what happens next. */}
+                  <p className="mt-1 text-xs text-slate-500">
+                    Print the receipt if they want one, then start a new sale.
                   </p>
                 </div>
               </div>
@@ -1564,17 +1626,18 @@ export default function PosCheckout({
             </div>
 
             <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
+              {/* Hierarchy: the repeatable next step — a new sale — is the            primary action; printing stays one click away but secondary, so            the filled indigo block marks where the workflow continues. */}
               <button
                 type="button"
                 onClick={() => setCompleted(null)}
-                className="inline-flex items-center rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98]"
               >
                 New Sale
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 <Printer className="h-4 w-4" />
                 Print Receipt
@@ -1629,7 +1692,7 @@ export default function PosCheckout({
                   htmlFor="tendered-input"
                   className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
-                  Tendered amount
+                  Amount received
                 </label>
                 <input
                   id="tendered-input"
@@ -1664,7 +1727,7 @@ export default function PosCheckout({
                 ) : tenderedValue < total ? (
                   <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
                     <span aria-hidden>⚠</span>
-                    <span>Tendered amount is less than the total due.</span>
+                    <span>Amount received is less than the total due.</span>
                   </p>
                 ) : (
                   <div
@@ -1712,6 +1775,7 @@ export default function PosCheckout({
  * blue state; inactive chips are white with a slate hairline. Touch-sized
  * (rounded-full) for the register's tap-first workflow.
  */
+
 function CategoryChip({
   active,
   onClick,

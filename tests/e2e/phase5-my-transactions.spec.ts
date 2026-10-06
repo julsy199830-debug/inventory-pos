@@ -83,7 +83,7 @@ async function completeCardSale(page: Page, product: string) {
     timeout: 25000,
   });
   await page.locator('button:has-text("New Sale")').first().click();
-  await expect(page.locator('text=No items yet').first()).toBeVisible({
+  await expect(page.locator('text=Find a product to start a new sale').first()).toBeVisible({
     timeout: 20000,
   });
 }

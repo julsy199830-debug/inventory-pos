@@ -102,7 +102,7 @@ async function login(page: Page) {
  */
 async function openRegister(page: Page) {
   await page.goto('/pos');
-  await expect(page.locator('input[aria-label^="Search products"]').first()).toBeVisible({
+  await expect(page.locator('input[aria-label^="Search or scan"]').first()).toBeVisible({
     timeout: 25000,
   });
   await expect(page.locator('[data-register-loaded="true"]')).toBeAttached({
@@ -408,7 +408,7 @@ test.describe('Phase 4 - the register control stack', () => {
       await addFirstProduct(page, vp.width);
 
       // With a customer attached the footer carries its longest totals list
-      // (subtotal, tax, loyalty discount, grand total), so that is the state
+      // (subtotal, tax, loyalty discount, total), so that is the state
       // the budget is really about.
       await attachCustomer(page, vp.width);
       if (vp.width < NARROW) await openCartDrawer(page);

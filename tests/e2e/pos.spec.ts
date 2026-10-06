@@ -40,7 +40,11 @@ test.describe('POS Checkout Flow', () => {
     await expect(page.locator('text=InvPos Register').first()).toBeVisible();
     await expect(page.locator('text=Current Order').first()).toBeVisible();
     await expect(page.locator('text=Subtotal').first()).toBeVisible();
-    await expect(page.locator('text=Grand Total').first()).toBeVisible();
+    // The totals figure. The label is plain "Total" since the Phase 7
+    // terminology pass; the figure carries its own testid so the locator
+    // cannot be fooled by a "Subtotal" substring match.
+    await expect(page.getByTestId('order-total')).toBeVisible();
+    await expect(page.getByTestId('order-total')).toContainText('₱');
 
     // Product catalog should be visible
     await expect(page.locator('text=All').first()).toBeVisible();
@@ -91,7 +95,7 @@ test.describe('POS Checkout Flow', () => {
 
     // Cart empties — the "Current Order" panel swaps to its empty-state copy.
     await expect(
-      page.locator('text=No items yet. Tap a product to add it.').first(),
+      page.locator('text=Find a product to start a new sale.').first(),
     ).toBeVisible({ timeout: 10000 });
   });
 
