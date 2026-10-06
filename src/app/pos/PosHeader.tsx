@@ -1,17 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Clock, ReceiptText } from "lucide-react";
+import { useEffect, useState } from "react";
 import TransactionHistory from "./TransactionHistory";
+import { useRegisterStatus } from "./register-status-store";
 import type { ReceiptStore } from "./Receipt";
 import type { Role } from "@/lib/types";
 
 /**
- * Phase 7 — the POS header, extracted verbatim.
+ * Phase 7 — the register's command header.
  *
- * This is a PURE REFACTOR. Nothing about what the header shows, when it shows,
- * or who can see which control has changed; the markup was moved out of
- * `PosCheckout.tsx` (1,759 lines) unchanged so the later Section 3 work has a
- * single, readable place to make the register understandable.
+ * Step 1 moved this markup out of `PosCheckout.tsx` (1,759 lines) unchanged.
+ * Step 2 then replaced the two things the header got wrong:
+ *
+ *   - "Register #1 · Online" was a hardcoded, always-green claim nobody ever
+ *     checked (and "#1" was invented); the badge now carries the REAL shift
+ *     state read by the status strip — on shift / on break / off shift, and
+ *   - the till showed the time nowhere at all; there is now a clock.
+ *
+ * The badge is fed by the strip's own read through `register-status-store.ts`
+ * (one fetch, one writer), so header and strip cannot contradict each other
+ * and NO second session/shift state or extra poll was introduced.
  *
  * Props are deliberately narrow: the operator's identity, whether they may void,
  * the store subset the history panel and receipts print, and the lock action. It
@@ -45,6 +54,31 @@ export default function PosHeader({
   taxRate,
   onLock,
 }: PosHeaderProps) {
+  // Current wall-clock time. `null` until mounted: the server cannot know the
+  // cashier's clock, so SSR and the hydration render both draw the same "no
+  // clock yet" markup, and the real time appears one effect later — no
+  // hydration mismatch. Ticks every 30s (the strip's own cadence); a re-render
+  // only lands when the minute shown actually changes.
+  const [now, setNow] = useState<number | null>(null);
+
+  // The till's shift state, PUBLISHED by the status strip's read — never
+  // fetched here. One read, one writer: the badge and the strip below cannot
+  // contradict each other, and no second session poll is added.
+  const status = useRegisterStatus();
+
+  useEffect(() => {
+    // The initial read is SCHEDULED rather than set inline: the value then
+    // arrives as the result of a timer firing, not as a consequence of the
+    // effect having run — the same shape the status strip uses for its first
+    // read, and what `react-hooks/set-state-in-effect` asks for.
+    const kick = setTimeout(() => setNow(Date.now()), 0);
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => {
+      clearTimeout(kick);
+      clearInterval(t);
+    };
+  }, []);
+
   return (
     <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm sm:px-6 sm:py-2.5">
       <h1 className="sr-only">Point of Sale</h1>
@@ -98,11 +132,58 @@ export default function PosHeader({
         )}
       </div>
 
+      {/* Centre: what time it is, and what THIS till is doing right now — the
+          two facts a cashier needs at a glance. The badge is present at every
+          viewport (it is state, not decoration); the clock hides below `sm`
+          where the row cannot spare the width, and the status strip one line
+          down still states the same shift state there. */}
+      <div className="flex shrink-0 items-center gap-2.5">
+        {now !== null && (
+          <time
+            dateTime={new Date(now).toISOString()}
+            className="hidden items-center gap-1.5 text-sm font-medium tabular-nums text-slate-600 sm:inline-flex"
+          >
+            {new Date(now).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </time>
+        )}
+        {status && (
+          <span
+            // Its OWN testid — two elements must never share one. The
+            // `data-on-clock`/`data-on-break` attributes let a test assert the
+            // header and the strip report the same state, whatever the copy.
+            data-testid="header-shift-state"
+            data-on-clock={status.onClock ? "true" : "false"}
+            data-on-break={status.onBreak ? "true" : "false"}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              status.onBreak
+                ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                : status.onClock
+                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                  : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                status.onBreak
+                  ? "bg-amber-500"
+                  : status.onClock
+                    ? "bg-emerald-500"
+                    : "bg-slate-400"
+              }`}
+            />
+            {status.onBreak
+              ? "On break"
+              : status.onClock
+                ? "On shift"
+                : "Off shift"}
+          </span>
+        )}
+      </div>
+
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="hidden sm:inline">Register #1 · </span>Online
-        </span>
         {/* Command-center links (Phase 5): the cashier's own attendance and their own
             sales both live outside the dashboard shell, reachable from the
             till because "where are my hours?" and "what did I ring up?" are

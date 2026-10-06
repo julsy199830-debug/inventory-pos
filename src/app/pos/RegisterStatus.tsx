@@ -11,6 +11,7 @@ import {
   startBreakSelf,
   type RegisterStatus,
 } from './pos-actions'
+import { publishRegisterStatus } from './register-status-store'
 
 /**
  * Register status strip for the till (Phase 4, section 3).
@@ -92,8 +93,13 @@ export default function RegisterStatusBar({
 
   const refresh = useCallback(async () => {
     const res = await getRegisterStatus()
-    if (res.ok) setStatus(res.data)
-    else setError(res.error)
+    if (res.ok) {
+      setStatus(res.data)
+      // Phase 7 step 2: publish the SAME snapshot this strip renders, so the
+      // header badge is fed by this read and can never contradict the strip.
+      // One fetch, one writer - the header adds no second session poll.
+      publishRegisterStatus(res.data)
+    } else setError(res.error)
   }, [])
 
   // Load once on mount, then keep the elapsed clock ticking only while a shift
@@ -109,6 +115,12 @@ export default function RegisterStatusBar({
     const t = setTimeout(() => void refresh(), 0)
     return () => clearTimeout(t)
   }, [refresh])
+
+  // Drop the shared copy when the till unmounts (sign-out / navigation away),
+  // so a later visit cannot flash the previous operator's state before its own
+  // fresh read lands. The header unmounts with this strip, so nothing renders
+  // from the null.
+  useEffect(() => () => publishRegisterStatus(null), [])
 
   // Re-read the takings whenever the register reports activity.
   //
