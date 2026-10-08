@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getStoreSettings } from "@/app/actions/settings";
 import SettingsForm from "./SettingsForm";
 
@@ -25,16 +27,13 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Store Settings
-        </h1>
-        <p className="text-sm text-slate-500">
-          Store-wide configuration that drives receipts and checkout.
-          {settings && (
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Store Settings"
+        description="Store-wide configuration that drives receipts and checkout."
+        meta={
+          settings ? (
             <>
-              {" "}
               Last edited{" "}
               <time
                 dateTime={settings.updatedAt.toISOString()}
@@ -48,9 +47,11 @@ export default async function SettingsPage() {
               </time>
               .
             </>
-          )}
-        </p>
-      </header>
+          ) : (
+            "Not saved yet — configure the store below."
+          )
+        }
+      />
 
       {/* Settings form. A client island: it manages submit/error state and calls
           the `saveSettings` Server Action, which upserts the singleton row and

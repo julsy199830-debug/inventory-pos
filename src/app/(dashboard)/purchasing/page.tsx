@@ -1,5 +1,7 @@
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
+import { Plus } from "lucide-react";
+import { PageHeader } from "@/app/_components/ui/PageHeader";
 import Link from "next/link";
 import {
   getPurchaseOrders,
@@ -70,13 +72,12 @@ export default async function PurchasingPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Purchasing
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Purchasing"
+        description="Manage purchase orders and track what is owed."
+        meta={
+          <>
             Showing{" "}
             <span className="font-medium text-slate-900">
               {orders.length.toLocaleString()}
@@ -85,14 +86,24 @@ export default async function PurchasingPage({
             <span className="font-medium text-slate-900">
               {allOrders.length.toLocaleString()}
             </span>{" "}
-            purchase orders
-          </p>
-        </div>
-
-        {/* Lives outside the filter form below: the dialog renders its own
-            <form>, and nesting forms is invalid HTML. */}
-        <CreatePurchaseOrderDialog suppliers={suppliers} products={products} />
-      </header>
+            orders
+          </>
+        }
+        actions={
+          <>
+            <Link
+              href="/purchasing/new"
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            >
+              <Plus className="h-4 w-4" />
+              New Purchase Order
+            </Link>
+            {/* Lives outside the filter form below: the dialog renders its own
+                <form>, and nesting forms is invalid HTML. */}
+            <CreatePurchaseOrderDialog suppliers={suppliers} products={products} />
+          </>
+        }
+      />
 
       {/* Controls row — a GET form so submitting updates the URL searchParams,
           which re-renders this Server Component with the filtered rows. */}

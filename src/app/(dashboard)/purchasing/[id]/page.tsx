@@ -1,6 +1,8 @@
-import { getFormatSettings } from "@/lib/store-config";
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { formatMoney, type FormatSettings } from "@/lib/format";
-import Link from "next/link";
+
+import { getFormatSettings } from "@/lib/store-config";
 import { notFound } from "next/navigation";
 import { getPurchaseOrder } from "../actions";
 import PoStatusBadge from "../_components/PoStatusBadge";
@@ -68,35 +70,34 @@ export default async function PurchaseOrderDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Back link + header */}
-      <div className="space-y-3">
-        <Link
-          href="/purchasing"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-600"
-        >
-          <span aria-hidden>←</span>
-          Back to purchasing
-        </Link>
-
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-3">
-              <h1 className="font-mono text-2xl font-semibold tracking-tight text-slate-900">
-                {po.poNumber}
-              </h1>
-              <PoStatusBadge status={po.status} />
-            </div>
-            <p className="text-sm text-slate-500">
-              {po.itemCount.toLocaleString()}{" "}
-              {po.itemCount === 1 ? "item" : "items"} ·{" "}
-              <span className="font-medium text-slate-600">
-                {formatPrice(po.total, format)}
-              </span>{" "}
-              total · created by {po.createdByName}
-            </p>
+      {/* Back link + header. */}
+      <PageHeader
+        back={{ href: "/purchasing", label: "Back to purchasing" }}
+        title={po.poNumber}
+        description={
+          <>
+            <PoStatusBadge status={po.status} />
+            <span className="ml-2">
+              {po.itemCount.toLocaleString()} items · {po.supplierName} ·{" "}
+              {po.status === "DRAFT" ? "Draft" : po.status === "ORDERED" ? "Ordered" : po.status === "PARTIALLY_RECEIVED" ? "Partially received" : po.status === "RECEIVED" ? "Received" : po.status}
+            </span>
+          </>
+        }
+        meta={
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="text-slate-500">
+              Order date: <span className="font-medium text-slate-900">{formatDate(po.orderDate)}</span>
+            </span>
+            <span className="text-slate-500">
+              Expected date: <span className="font-medium text-slate-900">{formatDate(po.expectedDate)}</span>
+            </span>
+            <span className="text-slate-500">
+              Last updated: <span className="font-medium text-slate-900">{formatDateTime(po.updatedAt)}</span>
+            </span>
           </div>
-
-          {(canOrder || canCancel) && (
+        }
+        actions={
+          (canOrder || canCancel || canReceive) && (
             <div className="flex flex-wrap items-center gap-2">
               {canOrder && (
                 <OrderPurchaseOrderButton id={po.id} poNumber={po.poNumber} />
@@ -109,7 +110,7 @@ export default async function PurchaseOrderDetailPage({
                   purchaseOrderId={po.id}
                   poNumber={po.poNumber}
                   supplierName={po.supplierName}
-              items={po.items.map((item, index) => ({
+                  items={po.items.map((item, index) => ({
                     lineNumber: index + 1,
                     itemId: item.id,
                     productName: item.productName,
@@ -120,9 +121,9 @@ export default async function PurchaseOrderDetailPage({
                 />
               )}
             </div>
-          )}
-        </header>
-      </div>
+          )
+        }
+      />
 
       {/* Meta grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

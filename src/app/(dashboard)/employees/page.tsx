@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
 import { prisma } from "@/lib/db";
@@ -279,36 +281,32 @@ export default async function EmployeesPage({
   
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Employees
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Employees"
+        description="Manage the store roster and their shifts."
+        meta={
+          <>
             <span className="font-medium text-slate-900">{activeCount}</span> active
             of{" "}
             <span className="font-medium text-slate-900">
               {employees.length.toLocaleString()}
             </span>{" "}
             employees
-          </p>
-        </div>
-        {/* "Add New Employee" trigger + modal. Client island; submits to the
-            createEmployee Server Action, which inserts via Prisma and
-            revalidates this page so the new row streams in. */}
-        <div className="flex items-center gap-2">
-          {/* Phase 5: jump from the roster to the attendance view (breaks,
-              worked time, corrections) without hunting in the sidebar. */}
-          <Link
-            href="/dtr"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            Time &amp; attendance
-          </Link>
-          <AddEmployeeDialog />
-        </div>
-      </header>
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/dtr"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Time &amp; attendance
+            </Link>
+            <AddEmployeeDialog />
+          </div>
+        }
+      />
 
       {/* Phase 2: the sales-activity report. Sits directly under the header so
           "how is each cashier doing" is the first thing answered, with the

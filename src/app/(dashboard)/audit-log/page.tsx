@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 /**
  * The administrative audit log (Phase 1e).
  *
@@ -40,13 +42,19 @@ export default async function AuditLogPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Audit log</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          A record of who changed what, and when. Entries are append-only — they
-          are never edited or removed.
-        </p>
-      </header>
+      <PageHeader
+        title="Audit log"
+        description="A record of who changed what, and when. Entries are append-only — they are never edited or removed."
+        meta={
+          <>
+            Showing{" "}
+            <span className="font-medium text-slate-900">
+              {result.ok ? result.data.total.toLocaleString() : "—"}
+            </span>{" "}
+            entries
+          </>
+        }
+      />
 
       {result.ok ? (
         <AuditLogClient

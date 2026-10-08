@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
 import {
@@ -93,27 +95,23 @@ export default async function AccountingPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Accounting
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Accounting"
+        description="Financial summary for the selected period — completed sales only."
+        meta={
+          <>
             Financial summary for{" "}
             <span className="font-medium text-slate-900">
               {PRESET_LABELS[preset]}
             </span>{" "}
             — completed sales only.
-          </p>
-        </div>
-
-        {/* Client island: clicking a preset replaces `?range=<preset>`, which
-            re-renders this Server Component with a fresh window. Stateless and
-            navigation-driven (no useSearchParams) so the route stays
-            prerenderable. */}
-        <RangeSelector active={preset} />
-      </header>
+          </>
+        }
+        actions={
+          <RangeSelector active={preset} />
+        }
+      />
 
       {/* KPI cards. Mirrors the dashboard home stat tiles; the Positive/negative
           coloring on Net Profit and the margin communicate health at a glance.

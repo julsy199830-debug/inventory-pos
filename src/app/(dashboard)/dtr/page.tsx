@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageAuth } from "@/lib/session";
@@ -156,45 +158,44 @@ export default async function DtrPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Time &amp; attendance
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <PageHeader
+        title="Time &amp; attendance"
+        description="Clock in/out, view shifts, and track corrections for the selected window."
+        meta={
+          <>
             {rows.length} shift{rows.length === 1 ? "" : "s"} in window ·{" "}
             {formatMinutes(totalWorked)} worked · {formatMinutes(totalBreaks)} on break
-          </p>
-        </div>
-
-        {/* Plain GET form: filters are links, so back/refresh/share keep them. */}
-        <form method="GET" className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            From
-            <input
-              type="date"
-              name="from"
-              defaultValue={fromKey}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
-            />
-          </label>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            To
-            <input
-              type="date"
-              name="to"
-              defaultValue={toKey}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            Apply
-          </button>
-        </form>
-      </div>
+          </>
+        }
+        actions={
+          <form method="GET" className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              From
+              <input
+                type="date"
+                name="from"
+                defaultValue={fromKey}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              />
+            </label>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              To
+              <input
+                type="date"
+                name="to"
+                defaultValue={toKey}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+            >
+              Apply
+            </button>
+          </form>
+        }
+      />
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">

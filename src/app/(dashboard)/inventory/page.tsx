@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
 import Link from "next/link";
@@ -294,21 +296,23 @@ export default async function InventoryPage({
           data; hidden whenever every product is In Stock. */}
       <LowStockBanner items={lowStockItems} />
 
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Inventory Management
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Inventory Management"
+        description="Manage your product catalog, variants, and stock levels."
+        meta={
+          <>
             Showing{" "}
             <span className="font-medium text-slate-900">{products.length.toLocaleString()}</span>
             {" "}of{" "}
             <span className="font-medium text-slate-900">{total.toLocaleString()}</span>{" "}
             SKU items
-          </p>
-        </div>
-      </header>
+          </>
+        }
+        actions={
+          <AddProductDialog categories={categoryOptions} />
+        }
+      />
 
       {/* Controls row — a GET form so submitting (Enter or changing the
           dropdown) updates the URL searchParams, which re-renders this Server
@@ -371,12 +375,6 @@ export default async function InventoryPage({
             tone={valuation.atRiskValue > 0 ? "warning" : "default"}
           />
         </div>
-
-        {/* "Add New Product" trigger + modal. Client island (manages open
-            state); submits to the createProduct Server Action, which inserts
-            via Prisma and revalidates this page so the new row streams in.
-            `categories` populates the managed-category <select> inside. */}
-        <AddProductDialog categories={categoryOptions} />
 
         {/* Physical stock count. Prefers the *unfiltered* catalog so a full
             count sheet is never silently short because a search box or category

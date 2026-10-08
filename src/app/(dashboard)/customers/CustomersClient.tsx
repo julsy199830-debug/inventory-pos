@@ -17,6 +17,8 @@ import {
   type FormatSettings,
 } from "@/lib/format";
 import type { LedgerEntryKind } from "@/lib/ledger";
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { Modal } from "@/app/_components/ui/Modal";
 
 /** Rows per page. Small enough to scan, large enough to avoid constant paging. */
@@ -261,52 +263,66 @@ export function CustomersClient({
       className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-0"
       data-customers-hydrated={hydrated ? "true" : "false"}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500">Directory, credit limits, and debt tracking (“utang”).</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Export CSV — serializes the filtered ledger (name, contacts,
-              credit limit, outstanding debt, history counts) for the
-              bookkeeper. Client-side blob, no server round-trip. */}
-          <button
-            type="button"
-            className={ghost}
-            disabled={filtered.length === 0}
-            onClick={() =>
-              downloadCsv(
-                "invpos-customers.csv",
-                ["Name", "Phone", "Email", "Credit Limit", "Current Debt", "Sales", "Payments"],
-                filtered.map((r) => [
-                  r.name,
-                  r.phone ?? "",
-                  r.email ?? "",
-                  r.creditLimit,
-                  r.currentBalance,
-                  r.salesCount,
-                  r.paymentsCount,
-                ]),
-              )
-            }
-          >
-            Export CSV
-          </button>
-          <button
-            type="button"
-            className={primary}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-              setError(null);
-              setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
-            }}
-          >
-            Add Customer
-          </button>
-        </div>
-      </div>
-
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Customers"
+        description={'Directory, credit limits, and debt tracking ("utang").'}
+        meta={
+          <>
+            Showing{" "}
+            <span className="font-medium text-slate-900">
+              {rows.length.toLocaleString()}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-slate-900">
+              {rows.length.toLocaleString()}
+            </span>{" "}
+            customers
+          </>
+        }
+        actions={
+          <>
+            {/* Export CSV — serializes the filtered ledger (name, contacts,
+                credit limit, outstanding debt, history counts) for the
+                bookkeeper. Client-side blob, no server round-trip. Secondary
+                action sits before the primary in the header actions row. */}
+            <button
+              type="button"
+              className={ghost}
+              disabled={filtered.length === 0}
+              onClick={() =>
+                downloadCsv(
+                  "invpos-customers.csv",
+                  ["Name", "Phone", "Email", "Credit Limit", "Current Debt", "Sales", "Payments"],
+                  filtered.map((r) => [
+                    r.name,
+                    r.phone ?? "",
+                    r.email ?? "",
+                    r.creditLimit,
+                    r.currentBalance,
+                    r.salesCount,
+                    r.paymentsCount,
+                  ])
+                )
+              }
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className={primary}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+                setError(null);
+                setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
+              }}
+            >
+              Add Customer
+            </button>
+          </>
+        }
+      />
       {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>}
 
       {/* Search and sort sit on one row so a manager can narrow and reorder

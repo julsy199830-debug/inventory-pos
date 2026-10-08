@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getCustomerStatement } from "../actions";
 import { prisma } from "@/lib/db";
 import { requirePageAuth } from "@/lib/session";
@@ -122,34 +124,51 @@ export default async function CustomerAccountPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-0">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            {customer.name}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <PageHeader
+        back={{ href: "/customers", label: "Back to customers" }}
+        title={customer.name}
+        description={
+          <>
             Account statement
             {customer.phone && ` · ${customer.phone}`}
             {customer.email && ` · ${customer.email}`}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <a
-            href={exportStatementCsv({ customer, entries, format })}
-            className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-            data-testid="statement-export"
-          >
-            Export CSV
-          </a>
-          <button
-            type="button"
-            className="inline-flex items-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-            data-testid="statement-print"
-          >
-            Print statement
-          </button>
-        </div>
-      </header>
+          </>
+        }
+        meta={
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="text-slate-500">
+              Credit: <span className="font-medium text-slate-900">{formatMoney(creditAvailable ?? 0, format)}</span>
+            </span>
+            <span className="text-slate-500">
+              Credit limit: <span className="font-medium text-slate-900">{formatMoney(customer.creditLimit, format)}</span>
+            </span>
+            <span className="text-slate-500">
+              Total charges: <span className="font-medium text-slate-900">{formatMoney(totalCharges, format)}</span>
+            </span>
+            <span className="text-slate-500">
+              Total payments: <span className="font-medium text-slate-900">{formatMoney(totalPayments, format)}</span>
+            </span>
+          </div>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={exportStatementCsv({ customer, entries, format })}
+              className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              data-testid="statement-export"
+            >
+              Export CSV
+            </a>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              data-testid="statement-print"
+            >
+              Print statement
+            </button>
+          </div>
+        }
+      />
 
       <AccountFilters
         from={sp.from as string | undefined}

@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import type { ReactNode } from "react";
 import { getFormatSettings } from "@/lib/store-config";
 import { getSalesAnalytics } from "../actions";
@@ -22,6 +24,7 @@ import { formatMoney } from "../_components/chart-theme";
  * Share donut, then the Top Selling Products table — all on the standard
  * rounded-2xl slate-200/80 border + white card.
  */
+
 export default async function SalesAnalyticsPage() {
   // Phase 6: the whole resolved settings object, so the KPIs and every chart
   // share one currency/locale convention instead of a bare glyph string.
@@ -33,7 +36,10 @@ export default async function SalesAnalyticsPage() {
   if (!result.ok) {
     return (
       <div className="space-y-6">
-        <PageHeader />
+        <PageHeader
+          title="Sales Analytics"
+          description="Interactive overview of revenue, payment methods, categories, and top movers — completed sales only."
+        />
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {result.error}
         </div>
@@ -46,7 +52,19 @@ export default async function SalesAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader />
+      <PageHeader
+        back={{ href: "/reports", label: "Back to reports" }}
+        title="Sales Analytics"
+        description="Interactive overview of revenue, payment methods, categories, and top movers — completed sales only."
+        meta={
+          <>
+            <span className="font-medium text-slate-900">
+              {totals.orders30d.toLocaleString()}
+            </span>{" "}
+            orders in the last 30 days
+          </>
+        }
+      />
 
       {/* KPI tiles */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -95,20 +113,6 @@ export default async function SalesAnalyticsPage() {
       {/* Top movers */}
       <TopProductsTable products={data.topProducts} format={format} />
     </div>
-  );
-}
-
-function PageHeader() {
-  return (
-    <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-        Sales Analytics
-      </h1>
-      <p className="text-sm text-slate-500">
-        Interactive overview of revenue, payment methods, categories, and top
-        movers — completed sales only.
-      </p>
-    </header>
   );
 }
 

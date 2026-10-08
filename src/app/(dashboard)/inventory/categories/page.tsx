@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PageHeader } from "@/app/_components/ui/PageHeader";
 import { prisma } from "@/lib/db";
 import { LOW_STOCK_THRESHOLD } from "@/lib/types";
 import AddCategoryDialog from "./AddCategoryDialog";
@@ -55,40 +55,23 @@ export default async function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Categories
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        back={{ href: "/inventory", label: "Back to inventory" }}
+        title="Categories"
+        description="Organize your catalog. Each category sets its own low-stock threshold (default 10)."
+        meta={
+          <>
             <span className="font-medium text-slate-900">
               {total.toLocaleString()}
             </span>{" "}
             categor{total === 1 ? "y" : "ies"}
-          </p>
-        </div>
-        <Link
-          href="/inventory"
-          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
-        >
-          ← Back to inventory
-        </Link>
-      </header>
-
-      {/* Controls row — just the "Add Category" trigger + modal here (no text
-          search: the category set is small and sorted by name). Client island
-          manages open state and submits to the createCategory Server Action,
-          which inserts via Prisma and revalidates this page so the new row
-          streams in. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
-          Each category sets its own low-stock threshold (default{" "}
-          <span className="font-medium text-slate-900">{LOW_STOCK_THRESHOLD}</span>
-          ); the inventory page uses it to flag Low/Out of Stock.
-        </p>
-        <AddCategoryDialog />
-      </div>
+          </>
+        }
+        actions={
+          <AddCategoryDialog />
+        }
+      />
 
       {/* Data table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

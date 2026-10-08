@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import AddSupplierDialog from "./AddSupplierDialog";
 import DeleteSupplierButton from "./DeleteSupplierButton";
 import SupplierPerformancePanel from "./SupplierPerformancePanel";
+import { PageHeader } from "@/app/_components/ui/PageHeader";
 import { getSupplierPerformance } from "./supplier-data";
 import EditSupplierDialog from "./EditSupplierDialog";
 
@@ -75,13 +76,12 @@ export default async function SuppliersPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Suppliers
-          </h1>
-          <p className="text-sm text-slate-500">
+      {/* Phase 7 Step 4: title → description → count → primary action. */}
+      <PageHeader
+        title="Suppliers"
+        description="Manage the vendors you order stock from."
+        meta={
+          <>
             Showing{" "}
             <span className="font-medium text-slate-900">
               {suppliers.length.toLocaleString()}
@@ -91,9 +91,10 @@ export default async function SuppliersPage({
               {total.toLocaleString()}
             </span>{" "}
             suppliers
-          </p>
-        </div>
-      </header>
+          </>
+        }
+        actions={<AddSupplierDialog />}
+      />
 
       {/* Phase 2: the ordering / receiving position. The supplier roster below
           answers "who do we work with"; this answers "what have we committed to
@@ -109,9 +110,8 @@ export default async function SuppliersPage({
           Server Component with the filtered rows. The form deliberately wraps
           ONLY the search input: the "Add New Supplier" dialog renders its own
           <form> for the createSupplier Server Action, and nesting a form inside
-          a form is invalid HTML that React reports as a hydration error. The
-          trigger button therefore sits OUTSIDE the search form, inside the same
-          flex row so the layout is unchanged. */}
+          a form is invalid HTML that React reports as a hydration error — the
+          dialog trigger now lives up in the PageHeader actions. */}
       <div className="flex flex-wrap items-center gap-3">
         <form className="relative min-w-0 flex-1">
           <svg
@@ -134,13 +134,6 @@ export default async function SuppliersPage({
             className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
           />
         </form>
-
-        {/* "Add New Supplier" trigger + modal. Client island (manages open
-            state); submits to the createSupplier Server Action, which inserts
-            via Prisma and revalidates this page so the new row streams in.
-            Kept outside the search form above so its inner <form> is never
-            nested inside another form. */}
-        <AddSupplierDialog />
       </div>
 
       {/* Data table */}

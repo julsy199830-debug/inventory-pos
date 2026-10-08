@@ -1,3 +1,5 @@
+import { PageHeader } from "@/app/_components/ui/PageHeader";
+
 import { getStoreSettings } from "@/app/actions/settings";
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
@@ -101,56 +103,68 @@ export default async function ReportsPage({
     <div className="space-y-6">
       {/* Toolbar — cannot print (wrapped in .no-print). */}
       <div className="no-print">
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-              Reports
-            </h1>
-            <p className="text-sm text-slate-500">
-              End-of-day sales summary & Z-Report — completed sales only.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <form action="/reports" method="get" className="flex items-center gap-3">
-              <label
-                htmlFor="report-date"
-                className="text-sm font-medium text-slate-600"
-              >
-                Date
-              </label>
-              <input
-                id="report-date"
-                name="date"
-                type="date"
-                defaultValue={isoDate}
-                max={toISODate(new Date())}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+        <PageHeader
+          title="Reports"
+          description="End-of-day sales summary & Z-Report — completed sales only."
+          meta={
+            <div className="flex flex-wrap gap-3 text-sm">
+              <span className="text-slate-500">
+                Revenue: <span className="font-medium text-slate-900">{formatMoney(revenue, format)}</span>
+              </span>
+              <span className="text-slate-500">
+                Net profit: <span className="font-medium text-slate-900">{formatMoney(netProfit, format)}</span>
+              </span>
+              <span className="text-slate-500">
+                Sales: <span className="font-medium text-slate-900">{salesCount.toLocaleString()}</span>
+              </span>
+              <span className="text-slate-500">
+                Avg order value: <span className="font-medium text-slate-900">{formatMoney(avgOrderValue, format)}</span>
+              </span>
+            </div>
+          }
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <form action="/reports" method="get" className="flex items-center gap-3">
+                <label
+                  htmlFor="report-date"
+                  className="text-sm font-medium text-slate-600"
+                >
+                  Date
+                </label>
+                <input
+                  id="report-date"
+                  name="date"
+                  type="date"
+                  defaultValue={isoDate}
+                  max={toISODate(new Date())}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                />
+                <button
+                  type="submit"
+                  className="rounded-xl border border-slate-300 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Load
+                </button>
+              </form>
+              <PrintReportButton />
+              <ExportCsvButton
+                isoDate={isoDate}
+                dateLabel={dateLabel}
+                summary={summary}
+                topProducts={topProducts}
               />
-              <button
-                type="submit"
-                className="rounded-xl border border-slate-300 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Load
-              </button>
-            </form>
-            <PrintReportButton />
-            <ExportCsvButton
-              isoDate={isoDate}
-              dateLabel={dateLabel}
-              summary={summary}
-              topProducts={topProducts}
-            />
-            {/* Phase 1e: the row-level sales ledger export, seeded with the same
-                day the Z-Report is showing. */}
-            <SalesExportButton
-              initialFrom={isoDate}
-              initialTo={isoDate}
-              initialPaymentMethod=""
-              initialCashierId=""
-              cashiers={exportCashiers}
-            />
-          </div>
-        </header>
+              {/* Phase 1e: the row-level sales ledger export, seeded with the same
+                  day the Z-Report is showing. */}
+              <SalesExportButton
+                initialFrom={isoDate}
+                initialTo={isoDate}
+                initialPaymentMethod=""
+                initialCashierId=""
+                cashiers={exportCashiers}
+              />
+            </div>
+          }
+        />
       </div>
 
       {error && (
