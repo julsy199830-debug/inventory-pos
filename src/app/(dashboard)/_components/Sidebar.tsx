@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { lockRegister } from "@/lib/actions/auth-actions";
 import type { Role } from "@/lib/types";
+import { GlobalSearch } from "@/app/search/GlobalSearch";
 
 /**
  * Phase 7 — navigation reorganised around how an employee actually thinks.
@@ -171,6 +172,12 @@ export default function Sidebar({
             {user.role === "ADMIN" ? "Administrator" : "Manager"}
           </span>
         </div>
+      </div>
+
+      {/* Search — Step 5: one box to find products, customers, sales, or pages.
+          Placed above the nav so it is the first control after the brand. */}
+      <div className="px-4 pt-3">
+        <GlobalSearch />
       </div>
 
       {/* Sectioned navigation */}

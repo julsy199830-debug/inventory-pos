@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock, ReceiptText } from "lucide-react";
 import { useEffect, useState } from "react";
 import TransactionHistory from "./TransactionHistory";
+import { GlobalSearch } from "@/app/search/GlobalSearch";
 import { useRegisterStatus } from "./register-status-store";
 import type { ReceiptStore } from "./Receipt";
 import type { Role } from "@/lib/types";
@@ -89,7 +90,7 @@ export default function PosHeader({
           width={120}
           height={120}
           priority
-          className="h-8 w-auto object-contain"
+          className="h-8 w-auto shrink-0 object-contain"
         />
         {cashier.role === "ADMIN" || cashier.role === "MANAGER" ? (
           <>
@@ -98,23 +99,35 @@ export default function PosHeader({
               className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-              <span className="sm:hidden">Back</span>
+              {/* Step 5: the long label only earns its ~90px at 2xl+. Below that
+                  the row is packed tight enough that keeping it forces the
+                  breadcrumb to wrap — and a wrapped breadcrumb is what grew the
+                  header past Phase 4's cart budget. The arrow plus "Back" still
+                  says where it goes; the search box reaches the dashboard too. */}
+              <span className="hidden 2xl:inline">Back to Dashboard</span>
+              <span className="2xl:hidden">Back</span>
             </Link>
+            {/* Step 5: `min-w-0` + `truncate` make the breadcrumb ELIDE instead
+                of wrapping. Its height used to be load-bearing — squeeze the
+                brand group and "Point of Sale" stacked onto three lines, taking
+                the header from 55px to 81px and the cart from 71px to 45px. A
+                breadcrumb may now shrink to an ellipsis, but it is always one
+                line, so the header height no longer depends on how much room the
+                controls row leaves it. */}
             <nav
-              className="hidden items-center gap-2 text-sm sm:flex"
+              className="hidden min-w-0 items-center gap-2 text-sm sm:flex"
               aria-label="Breadcrumb"
             >
               <Link
                 href="/"
-                className="font-medium text-slate-500 transition-colors hover:text-indigo-600"
+                className="shrink-0 font-medium text-slate-500 transition-colors hover:text-indigo-600"
               >
                 Dashboard
               </Link>
-              <span aria-hidden className="text-slate-600">
+              <span aria-hidden className="shrink-0 text-slate-600">
                 /
               </span>
-              <span className="font-semibold text-slate-900">Point of Sale</span>
+              <span className="min-w-0 truncate font-semibold text-slate-900">Point of Sale</span>
             </nav>
           </>
         ) : (
@@ -184,21 +197,32 @@ export default function PosHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {/* Search — Step 5: find products, customers, my sales, or pages without
+            leaving the till. Ctrl+K never fires inside a text field, so the
+            F-key payment shortcuts and the scan box keep working. */}
+        <span className="hidden sm:inline-flex">
+          <GlobalSearch />
+        </span>
         {/* Command-center links (Phase 5): the cashier's own attendance and their own
             sales both live outside the dashboard shell, reachable from the
             till because "where are my hours?" and "what did I ring up?" are
             both asked AT the register. Labels are the cashier's words —
-            "My hours" and "My transactions" — not the manager's "DTR". */}
+            "My hours" and "My transactions" — not the manager's "DTR".
+            Step 5: visible from lg up only — at tablet widths the header row
+            (search + Transactions + Lock) already fills the bar, and these two
+            links pushed it 26px past the viewport (sideways scroll). Both stay
+            one keystroke away through search ("my transactions", "my hours")
+            at every width. */}
         <Link
           href="/my-transactions"
-          className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
+          className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 lg:inline-flex"
         >
           <ReceiptText className="h-4 w-4" />
           My transactions
         </Link>
         <Link
           href="/my-activity"
-          className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
+          className="hidden items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 lg:inline-flex"
         >
           <Clock className="h-4 w-4" />
           My hours

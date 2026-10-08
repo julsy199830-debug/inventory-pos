@@ -8,6 +8,7 @@ import { PageTransition } from "@/app/_components/ui/PageTransition";
 import { stockStatusAt, lowStockThresholdFor } from "@/lib/types";
 import { prisma } from "@/lib/db";
 import InventoryAssistant from "./_components/InventoryAssistant";
+import { GlobalSearch } from "@/app/search/GlobalSearch";
 
 export default async function DashboardLayout({
   children,
@@ -53,6 +54,11 @@ export default async function DashboardLayout({
               </span>
             </Link>
             <Link href="/pos" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm">Point of Sale</Link>
+          </div>
+          {/* Search — Step 5: the sidebar (with its search box) is hidden below
+              lg, so the mobile header carries its own trigger. */}
+          <div className="mt-3">
+            <GlobalSearch />
           </div>
           <nav className="mt-3 flex gap-1 overflow-x-auto pb-0.5" aria-label="Mobile dashboard navigation">
             {[
