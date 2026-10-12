@@ -283,6 +283,7 @@ export default async function EmployeesPage({
     <div className="space-y-6">
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="employees"
         title="Employees"
         description="Manage the store roster and their shifts."
         meta={

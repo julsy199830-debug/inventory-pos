@@ -73,6 +73,7 @@ export default async function PurchaseOrderDetailPage({
       {/* Back link + header. */}
       <PageHeader
         back={{ href: "/purchasing", label: "Back to purchasing" }}
+        helpId="purchase-order"
         title={po.poNumber}
         description={
           <>

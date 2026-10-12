@@ -29,6 +29,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="settings"
         title="Store Settings"
         description="Store-wide configuration that drives receipts and checkout."
         meta={

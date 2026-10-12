@@ -78,6 +78,7 @@ export default async function SuppliersPage({
     <div className="space-y-6">
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="suppliers"
         title="Suppliers"
         description="Manage the vendors you order stock from."
         meta={

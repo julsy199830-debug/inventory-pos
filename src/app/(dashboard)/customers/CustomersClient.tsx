@@ -265,6 +265,7 @@ export function CustomersClient({
     >
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="customers"
         title="Customers"
         description={'Directory, credit limits, and debt tracking ("utang").'}
         meta={

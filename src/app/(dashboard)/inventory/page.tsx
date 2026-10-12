@@ -298,6 +298,7 @@ export default async function InventoryPage({
 
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="inventory"
         title="Inventory Management"
         description="Manage your product catalog, variants, and stock levels."
         meta={

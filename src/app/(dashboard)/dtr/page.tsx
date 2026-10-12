@@ -159,6 +159,7 @@ export default async function DtrPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        helpId="dtr"
         title="Time &amp; attendance"
         description="Clock in/out, view shifts, and track corrections for the selected window."
         meta={

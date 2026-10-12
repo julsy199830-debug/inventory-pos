@@ -104,6 +104,7 @@ export default async function ReportsPage({
       {/* Toolbar — cannot print (wrapped in .no-print). */}
       <div className="no-print">
         <PageHeader
+          helpId="reports"
           title="Reports"
           description="End-of-day sales summary & Z-Report — completed sales only."
           meta={

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { PAGE_HELP } from "./page-help-content";
+import { PageHelp } from "./PageHelp";
 
 /**
  * Phase 7 Step 4 — the single page-header pattern for every management page.
@@ -22,6 +24,7 @@ export function PageHeader({
   meta,
   actions,
   back,
+  helpId,
 }: {
   /** Page name — rendered as the single h1. */
   title: ReactNode;
@@ -35,6 +38,9 @@ export function PageHeader({
    * Either a ready-made node or a `{ href, label }` shorthand that renders as
    * the standard "← label" link. */
   back?: ReactNode | { href: string; label: string };
+  /** Phase 7 Step 6: key into `PAGE_HELP` for a "What can I do here?" trigger.
+   * Pass an unknown id and no help renders, so a typo is inert, not broken. */
+  helpId?: string;
 }) {
   const backHref =
     typeof back === "object" && back !== null && "href" in back
@@ -67,6 +73,9 @@ export function PageHeader({
           ) : null}
           {meta ? (
             <div className="text-sm text-slate-500">{meta}</div>
+          ) : null}
+          {helpId && PAGE_HELP[helpId] ? (
+            <PageHelp content={PAGE_HELP[helpId]} />
           ) : null}
         </div>
         {actions ? (

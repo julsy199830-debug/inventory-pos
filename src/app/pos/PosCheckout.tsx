@@ -36,6 +36,8 @@ import PosHeader from './PosHeader'
 import { useRegisterStatus } from './register-status-store'
 import { stockStatusAt } from '@/lib/types'
 import type { Role } from '@/lib/types'
+import { PageHelp } from '@/app/_components/ui/PageHelp'
+import { PAGE_HELP } from '@/app/_components/ui/page-help-content'
 
 /**
  * Public props passed up from `page.tsx` so this Client Component never touches
@@ -1287,30 +1289,36 @@ export default function PosCheckout({
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-slate-200">
           {/* Catalog toolbar: prominent search + category filter pills */}
           <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search or scan products"
-                aria-label="Search or scan products"
-                autoComplete="off"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-              />
-              {search !== '' && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  aria-label="Clear product search"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search or scan products"
+                  aria-label="Search or scan products"
+                  autoComplete="off"
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50 pl-11 pr-11 text-base font-medium text-slate-900 placeholder:font-normal placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                />
+                {search !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    aria-label="Clear product search"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {/* Phase 7 Step 6: a compact "how the register works" help. It sits
+                  beside the search (never over the cart or payment) and only opens
+                  a dismissible panel, so it can never block a scan or a checkout. */}
+              <PageHelp content={PAGE_HELP.pos} variant="compact" />
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <CategoryChip

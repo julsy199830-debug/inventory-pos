@@ -58,6 +58,7 @@ export default async function CategoriesPage() {
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
         back={{ href: "/inventory", label: "Back to inventory" }}
+        helpId="categories"
         title="Categories"
         description="Organize your catalog. Each category sets its own low-stock threshold (default 10)."
         meta={

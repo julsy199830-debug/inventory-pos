@@ -97,6 +97,7 @@ export default async function AccountingPage({
     <div className="space-y-6">
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="accounting"
         title="Accounting"
         description="Financial summary for the selected period — completed sales only."
         meta={

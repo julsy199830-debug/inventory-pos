@@ -74,6 +74,7 @@ export default async function PurchasingPage({
     <div className="space-y-6">
       {/* Phase 7 Step 4: title → description → count → primary action. */}
       <PageHeader
+        helpId="purchasing"
         title="Purchasing"
         description="Manage purchase orders and track what is owed."
         meta={

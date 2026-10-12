@@ -43,6 +43,7 @@ export default async function AuditLogPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        helpId="audit-log"
         title="Audit log"
         description="A record of who changed what, and when. Entries are append-only — they are never edited or removed."
         meta={

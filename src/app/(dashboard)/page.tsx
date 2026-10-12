@@ -21,6 +21,8 @@ import { StatCard } from "@/app/_components/ui/StatCard";
 import OperationalAlerts from "./_components/OperationalAlerts";
 import ActivityByHour from "./_components/ActivityByHour";
 import RevenueTrendChart from "./_components/RevenueTrendChart";
+import { PageHelp } from "@/app/_components/ui/PageHelp";
+import { PAGE_HELP } from "@/app/_components/ui/page-help-content";
 import {
   getDashboardData,
   getOperationalAlerts,
@@ -205,6 +207,11 @@ export default async function DashboardPage({
                 ? ` · On shift since ${formatTime(focus.shift.startedAt, format)}`
                 : " · Not clocked in"}
             </p>
+            {/* Phase 7 Step 6: same reusable help as the management pages, but the
+                dashboard has no PageHeader, so the trigger sits with the greeting. */}
+            <div className="pt-1">
+              <PageHelp content={PAGE_HELP.dashboard} />
+            </div>
           </div>
           {/* The window is its own element so it can be read (and asserted on)
               independently of the label beside it. */}

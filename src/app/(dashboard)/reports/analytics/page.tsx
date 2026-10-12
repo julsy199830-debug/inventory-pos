@@ -54,6 +54,7 @@ export default async function SalesAnalyticsPage() {
     <div className="space-y-6">
       <PageHeader
         back={{ href: "/reports", label: "Back to reports" }}
+        helpId="analytics"
         title="Sales Analytics"
         description="Interactive overview of revenue, payment methods, categories, and top movers — completed sales only."
         meta={
