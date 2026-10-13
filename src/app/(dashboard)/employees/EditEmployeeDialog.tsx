@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { updateEmployee } from './actions'
 import { Modal } from '@/app/_components/ui/Modal'
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+  selectCls,
+} from '@/app/_components/ui/Field'
 
 type Employee = {
   id: string
@@ -71,95 +79,85 @@ export default function EditEmployeeDialog({
         className="max-w-md"
       >
         <form onSubmit={onSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Name
-                </label>
+              <Field label="Name" htmlFor="emp-edit-name" required>
                 <input
+                  id="emp-edit-name"
                   name="name"
                   required
+                  disabled={pending}
                   defaultValue={employee.name}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className={inputCls}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Email
-                </label>
+              </Field>
+              <Field label="Email" htmlFor="emp-edit-email" required>
                 <input
+                  id="emp-edit-email"
                   name="email"
                   type="email"
                   required
+                  disabled={pending}
                   defaultValue={employee.email}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className={inputCls}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  PIN{' '}
-                  <span className="font-normal text-slate-500">
-                    (leave blank to keep current)
-                  </span>
-                </label>
+              </Field>
+              <Field
+                label="PIN"
+                htmlFor="emp-edit-pin"
+                hint="Leave blank to keep the current PIN. 4–6 digits."
+              >
                 <input
+                  id="emp-edit-pin"
                   name="pin"
                   inputMode="numeric"
                   pattern="\d{4,6}"
                   maxLength={6}
                   placeholder="4–6 digits"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  disabled={pending}
+                  className={inputCls}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Role
-                </label>
+              </Field>
+              <Field label="Role" htmlFor="emp-edit-role" required>
                 <select
+                  id="emp-edit-role"
                   name="role"
+                  disabled={pending}
                   defaultValue={employee.role}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className={selectCls}
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
                   <option value="CASHIER">Cashier</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Password{' '}
-                  <span className="font-normal text-slate-500">
-                    (leave blank to keep current)
-                  </span>
-                </label>
+              </Field>
+              <Field
+                label="Password"
+                htmlFor="emp-edit-password"
+                hint="Leave blank to keep the current password."
+              >
                 <input
+                  id="emp-edit-password"
                   name="password"
                   type="password"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  disabled={pending}
+                  className={inputCls}
                 />
-              </div>
+              </Field>
 
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"
-                >
-                  {error}
-                </p>
-              )}
+              <FormError>{error}</FormError>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
+                  className={dialogSecondaryCls}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className={dialogPrimaryCls}
                 >
                   {pending ? 'Saving…' : 'Save'}
                 </button>

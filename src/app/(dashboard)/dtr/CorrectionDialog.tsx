@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { correctShiftTime } from './actions'
 import { Modal } from '@/app/_components/ui/Modal'
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+  selectCls,
+} from '@/app/_components/ui/Field'
 
 /**
  * Per-shift "correct a punch" dialog (Phase 5 — DTR).
@@ -80,70 +88,76 @@ export default function CorrectionDialog({ shift }: { shift: CorrectableShift })
         className="max-w-md"
       >
         <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Which punch?</label>
+          <Field label="Which punch?" htmlFor="correction-field">
             <select
+              id="correction-field"
               value={field}
               onChange={(e) => setField(e.target.value === 'end' ? 'end' : 'start')}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              disabled={pending}
+              className={selectCls}
             >
               <option value="start">Clock in (start)</option>
               <option value="end">Clock out (end)</option>
             </select>
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              New {field === 'start' ? 'clock-in' : 'clock-out'} time
-            </label>
+          <Field
+            label={`New ${field === 'start' ? 'clock-in' : 'clock-out'} time`}
+            htmlFor="correction-value"
+            required
+            hint={
+              current
+                ? `Currently recorded: ${new Date(current).toLocaleString()}`
+                : field === 'start'
+                  ? 'Currently recorded: not set'
+                  : 'Currently recorded: still open (shift not clocked out)'
+            }
+          >
             <input
+              id="correction-value"
               key={`${shift.id}-${field}`}
               name="value"
               type="datetime-local"
               required
+              disabled={pending}
               defaultValue={toLocalInputValue(current)}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className={inputCls}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Recorded:{' '}
-              {current
-                ? new Date(current).toLocaleString()
-                : field === 'start'
-                  ? 'not set'
-                  : 'still open (shift not clocked out)'}
-            </p>
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Reason{' '}
-              <span className="font-normal text-slate-500">(required — kept on the record)</span>
-            </label>
+          <Field
+            label="Reason"
+            htmlFor="correction-reason"
+            required
+            hint="At least 4 characters — kept on the record with your name."
+          >
             <textarea
+              id="correction-reason"
               name="reason"
               required
               minLength={4}
               rows={2}
+              disabled={pending}
               placeholder="e.g. Forgot to clock in — arrived 8:55am"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className={inputCls}
             />
-          </div>
+          </Field>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <FormError>{error}</FormError>
 
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={() => setOpen(false)}
               disabled={pending}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className={dialogSecondaryCls}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+              className={dialogPrimaryCls}
             >
               {pending ? 'Saving…' : 'Save correction'}
             </button>

@@ -20,6 +20,13 @@ import type { LedgerEntryKind } from "@/lib/ledger";
 import { PageHeader } from "@/app/_components/ui/PageHeader";
 
 import { Modal } from "@/app/_components/ui/Modal";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 /** Rows per page. Small enough to scan, large enough to avoid constant paging. */
 const PAGE_SIZE = 12;
@@ -203,13 +210,29 @@ export function CustomersClient({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    // Client-side mirrors of the server's rules so the common mistakes are
+    // caught without a round-trip; the server remains authoritative. Entered
+    // values live in `form` state, so a failure never clears the form.
+    if (!form.name.trim()) {
+      setError("Customer name is required.");
+      return;
+    }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError("Email address is not valid — check for a typo, or leave it blank.");
+      return;
+    }
+    const creditLimit = Number(form.creditLimit || 0);
+    if (!Number.isFinite(creditLimit) || creditLimit < 0) {
+      setError("Credit limit must be 0 or more.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const payload = {
-      name: form.name,
+      name: form.name.trim(),
       email: form.email || null,
       phone: form.phone || null,
-      creditLimit: Number(form.creditLimit || 0),
+      creditLimit,
       notes: form.notes || null,
     };
     const res = editing ? await updateCustomer(editing.id, payload) : await createCustomer(payload);
@@ -224,11 +247,18 @@ export function CustomersClient({
   async function pay(e: React.FormEvent) {
     e.preventDefault();
     if (!paying) return;
+    // Same client-side guard as the server: a blank or zero amount is the one
+    // mistake worth catching here, and the typed amount stays put on failure.
+    const amount = Number(payment.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError("Payment amount must be greater than 0.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const res = await recordCustomerPayment({
       customerId: paying.id,
-      amount: Number(payment.amount),
+      amount,
       paymentMethod: payment.method,
       notes: payment.notes || null,
     });
@@ -520,36 +550,161 @@ export function CustomersClient({
           }}
         >
           <form onSubmit={save} className="space-y-3">
-            <input className={input} placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <input className={input} placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <input className={input} placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <input className={input} placeholder="Credit limit (0 = no credit)" type="number" min="0" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} />
-            <textarea className={input} placeholder="Notes" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            {/* Rendered INSIDE the dialog (not just the page-level banner
+                behind it) so a failed save explains itself where the user is
+                looking. */}
+            <FormError>{error}</FormError>
+
+            <Field label="Name" htmlFor="cust-name" required>
+              <input
+                id="cust-name"
+                className={inputCls}
+                placeholder="Name *"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+                disabled={busy}
+              />
+            </Field>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Phone" htmlFor="cust-phone">
+                <input
+                  id="cust-phone"
+                  className={inputCls}
+                  placeholder="Phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  disabled={busy}
+                />
+              </Field>
+              <Field
+                label="Email"
+                htmlFor="cust-email"
+                hint="Optional — leave blank if they have none."
+              >
+                <input
+                  id="cust-email"
+                  className={inputCls}
+                  placeholder="Email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  disabled={busy}
+                />
+              </Field>
+            </div>
+
+            <Field
+              label="Credit limit"
+              htmlFor="cust-credit"
+              hint="The most this customer may owe on credit. 0 = no credit sales."
+            >
+              <input
+                id="cust-credit"
+                className={inputCls}
+                placeholder="Credit limit (0 = no credit)"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.creditLimit}
+                onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
+                disabled={busy}
+              />
+            </Field>
+
+            <Field label="Notes" htmlFor="cust-notes">
+              <textarea
+                id="cust-notes"
+                className={inputCls}
+                placeholder="Notes"
+                rows={2}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                disabled={busy}
+              />
+            </Field>
             <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-              <button type="button" className={ghost} onClick={() => { setFormOpen(false); setEditing(null); setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" }); }}>Cancel</button>
-              <button type="submit" className={primary} disabled={busy}>{busy ? "Saving…" : editing ? "Save Changes" : "Add Customer"}</button>
+              <button
+                type="button"
+                className={dialogSecondaryCls}
+                onClick={() => {
+                  setFormOpen(false);
+                  setEditing(null);
+                  setError(null);
+                  setForm({ name: "", email: "", phone: "", creditLimit: "", notes: "" });
+                }}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+              <button type="submit" className={dialogPrimaryCls} disabled={busy}>{busy ? "Saving…" : editing ? "Save Changes" : "Add Customer"}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {paying && (
-        <Modal open title={`Receive Payment — ${paying.name}`} onClose={() => setPaying(null)}>
+        <Modal
+          open
+          title={`Receive Payment — ${paying.name}`}
+          description="Record money received against this customer's outstanding balance."
+          onClose={() => setPaying(null)}
+          busy={busy}
+        >
           <form onSubmit={pay} className="space-y-3">
+            <FormError>{error}</FormError>
             <p className="text-sm text-slate-500">
               Outstanding debt: <span className="font-semibold text-rose-600">{fmt.money(paying.currentBalance)}</span>
             </p>
-            <input className={input} placeholder="Amount *" type="number" min="0.01" step="0.01" value={payment.amount} onChange={(e) => setPayment({ ...payment, amount: e.target.value })} required />
-            <select className={input} value={payment.method} onChange={(e) => setPayment({ ...payment, method: e.target.value })}>
-              <option value="CASH">Cash</option>
-              <option value="CARD">Card</option>
-              <option value="GCASH">GCash</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <textarea className={input} placeholder="Notes (optional)" rows={2} value={payment.notes} onChange={(e) => setPayment({ ...payment, notes: e.target.value })} />
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" className={ghost} onClick={() => setPaying(null)}>Cancel</button>
-              <button type="submit" className={primary} disabled={busy}>{busy ? "Recording…" : "Record Payment"}</button>
+            <Field
+              label="Amount"
+              htmlFor="pay-amount"
+              required
+              hint="Enter the amount handed over. Paying more than owed is clamped to the balance."
+            >
+              <input
+                id="pay-amount"
+                className={inputCls}
+                placeholder="Amount *"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={payment.amount}
+                onChange={(e) => setPayment({ ...payment, amount: e.target.value })}
+                required
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Method" htmlFor="pay-method">
+              <select
+                id="pay-method"
+                className={inputCls}
+                value={payment.method}
+                onChange={(e) => setPayment({ ...payment, method: e.target.value })}
+                disabled={busy}
+              >
+                <option value="CASH">Cash</option>
+                <option value="CARD">Card</option>
+                <option value="GCASH">GCash</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </Field>
+            <Field label="Notes" htmlFor="pay-notes">
+              <textarea
+                id="pay-notes"
+                className={inputCls}
+                placeholder="Notes (optional)"
+                rows={2}
+                value={payment.notes}
+                onChange={(e) => setPayment({ ...payment, notes: e.target.value })}
+                disabled={busy}
+              />
+            </Field>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+              <button type="button" className={dialogSecondaryCls} onClick={() => { setPaying(null); setError(null); }} disabled={busy}>Cancel</button>
+              <button type="submit" className={dialogPrimaryCls} disabled={busy}>{busy ? "Recording…" : "Record Payment"}</button>
             </div>
           </form>
         </Modal>

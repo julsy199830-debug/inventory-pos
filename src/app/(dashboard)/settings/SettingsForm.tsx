@@ -7,6 +7,12 @@ import {
   type StoreSettingsData,
 } from "@/app/actions/settings";
 import { DATE_FORMATS, TIME_FORMATS } from "@/lib/format";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 /**
  * The store settings form — the interactive island on the Settings page.
@@ -96,14 +102,7 @@ export default function SettingsForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-        >
-          {error}
-        </p>
-      )}
+      <FormError>{error}</FormError>
       {saved && !pending && (
         <p
           role="status"
@@ -151,7 +150,12 @@ export default function SettingsForm({
       </Field>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Tax rate (%)" htmlFor="taxRate" required>
+        <Field
+          label="Tax rate (%)"
+          htmlFor="taxRate"
+          required
+          error={taxRateValid ? undefined : "Enter a number between 0 and 100."}
+        >
           <input
             id="taxRate"
             name="taxRate"
@@ -166,11 +170,6 @@ export default function SettingsForm({
             aria-invalid={!taxRateValid}
             className={inputCls}
           />
-          {!taxRateValid && (
-            <p className="mt-1 text-xs text-red-600">
-              Enter a number between 0 and 100.
-            </p>
-          )}
         </Field>
 
         </div>
@@ -189,7 +188,12 @@ export default function SettingsForm({
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Currency symbol" htmlFor="currencySymbol" required>
+          <Field
+            label="Currency symbol"
+            htmlFor="currencySymbol"
+            required
+            error={currencySymbolValid ? undefined : "Must be 8 characters or fewer."}
+          >
             <input
               id="currencySymbol"
               name="currencySymbol"
@@ -202,11 +206,6 @@ export default function SettingsForm({
               aria-invalid={!currencySymbolValid}
               className={inputCls}
             />
-            {!currencySymbolValid && (
-              <p className="mt-1 text-xs text-red-600">
-                Must be 8 characters or fewer.
-              </p>
-            )}
           </Field>
 
           <Field label="Currency code" htmlFor="currencyCode" required>
@@ -328,40 +327,11 @@ export default function SettingsForm({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+          className={dialogPrimaryCls}
         >
           {pending ? "Saving…" : "Save settings"}
         </button>
       </div>
     </form>
-  );
-}
-
-const inputCls =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100";
-
-/** Labeled field wrapper — keeps the form DRY (matches the supplier dialogs). */
-function Field({
-  label,
-  htmlFor,
-  required,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-600"
-      >
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }

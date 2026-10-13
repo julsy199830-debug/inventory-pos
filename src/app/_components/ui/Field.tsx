@@ -2,16 +2,27 @@
  * Labeled form-field wrapper shared across the dashboard dialogs so the
  * markup stays DRY. Renders a compact uppercase micro-label (with an optional
  * required marker) above its children.
+ *
+ * Phase 7 Step 7: `hint` adds a short plain-language explanation under the
+ * control (e.g. what a SKU is for), and `error` renders a per-field message in
+ * the same rose style as `FormError` — so "which field needs attention" is
+ * answered next to the field itself, not only in a form-level banner.
  */
 export function Field({
   label,
   htmlFor,
   required,
+  hint,
+  error,
   children,
 }: {
   label: string;
   htmlFor: string;
   required?: boolean;
+  /** Short explanation shown under the control, e.g. "Must be unique." */
+  hint?: React.ReactNode;
+  /** Per-field validation message; renders with `role="alert"` under the control. */
+  error?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -24,6 +35,14 @@ export function Field({
         {required && <span className="ml-0.5 text-red-600">*</span>}
       </label>
       {children}
+      {hint ? (
+        <p className="text-xs text-slate-500">{hint}</p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-xs font-medium text-rose-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -17,13 +17,13 @@ import {
  * The dialog mounts its own modal overlay once `open` is set, then submits via a
  * manual async handler that `await`s the raw `createSupplier` Server Action
  * directly. Server Actions are async functions that resolve to their declared
- * return type, so awaiting one gives us the result in the same tick — we close +
+ * return type, so awaiting one gives us the result in the same tick - we close +
  * reset the form right there on success, no effect needed. (This is the
  * "Event Handlers" calling convention from the mutating-data docs.)
  *
  * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
  * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` — which
+ * react to its success is `setState` inside an effect keyed on `state` - which
  * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
  * action ourselves sidesteps that entirely: the close/reset lives in the submit
  * handler, where side effects belong, not in a render-following effect.
@@ -32,17 +32,17 @@ import {
  * so a JS-disabled client can never reach the form to submit it. `<form action>`
  * would therefore buy nothing real here, and a manual JS submit is the honest
  * shape. Self-contained client island that owns the trigger + modal together so
- * the parent page stays a pure Server Component — the same structure as the
+ * the parent page stays a pure Server Component - the same structure as the
  * inventory `AddProductDialog`.
  */
 export default function AddSupplierDialog() {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` — same UX (inputs + buttons lock
+  // than reading them out of `useActionState` - same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the insert succeeds — the next
+  // Ref onto the form so we can reset it once the insert succeeds - the next
   // time the dialog opens it's a blank form rather than the just-submitted row.
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -115,8 +115,8 @@ export default function AddSupplierDialog() {
                 />
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Contact name" htmlFor="contactName">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Contact name" htmlFor="contactName" hint="Optional - the person you email or call about orders.">
                   <input
                     id="contactName"
                     name="contactName"
@@ -138,7 +138,7 @@ export default function AddSupplierDialog() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Phone" htmlFor="phone">
                   <input
                     id="phone"

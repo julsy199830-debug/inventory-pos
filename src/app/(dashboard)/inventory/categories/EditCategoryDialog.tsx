@@ -7,6 +7,13 @@ import {
   type CategoryResult,
 } from "../actions";
 import { Modal } from "@/app/_components/ui/Modal";
+import {
+  Field,
+  FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
+  inputCls,
+} from "@/app/_components/ui/Field";
 
 /**
  * Modal dialog for editing an existing category: rename + low-stock threshold.
@@ -134,14 +141,7 @@ export default function EditCategoryDialog({
                   server actions know which row to update. */}
               <input type="hidden" name="id" value={category.id} />
 
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-                >
-                  {error}
-                </p>
-              )}
+              <FormError>{error}</FormError>
 
               <Field label="Category name" htmlFor="name" required>
                 <input
@@ -155,7 +155,12 @@ export default function EditCategoryDialog({
                 />
               </Field>
 
-              <Field label="Low-stock threshold" htmlFor="threshold" required>
+              <Field
+                label="Low-stock threshold"
+                htmlFor="threshold"
+                required
+                hint="Products in this category are flagged Low Stock below this number. 0 is always Out of Stock."
+              >
                 <input
                   id="threshold"
                   name="threshold"
@@ -170,23 +175,19 @@ export default function EditCategoryDialog({
                 />
               </Field>
 
-              <p className="text-xs text-slate-500">
-                A product is <span className="font-medium text-slate-700">Low Stock</span> when its stock is below this threshold (0 is always Out of Stock). Raising it flags high-velocity lines sooner; the inventory badges re-flow on save.
-              </p>
-
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
+                  className={dialogSecondaryCls}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className={dialogPrimaryCls}
                 >
                   {pending ? "Saving…" : "Save changes"}
                 </button>
@@ -194,34 +195,5 @@ export default function EditCategoryDialog({
         </form>
       </Modal>
     </>
-  );
-}
-
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:bg-white";
-
-/** Labeled field wrapper — keeps the form DRY (matches the sibling dialogs). */
-function Field({
-  label,
-  htmlFor,
-  required,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-xs font-medium uppercase tracking-wide text-slate-500"
-      >
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }

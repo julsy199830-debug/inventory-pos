@@ -8,6 +8,7 @@ import {
   type CreateProductResult,
 } from "./actions";
 import { Modal } from "@/app/_components/ui/Modal";
+import { FormSection } from "@/app/_components/ui/PageHeader";
 import ProductImageField from "./ProductImageField";
 import {
   Field,
@@ -27,13 +28,13 @@ export type CategoryOption = { id: string; name: string };
  * The dialog mounts its own modal overlay once `open` is set, then submits via a
  * manual async handler that `await`s the raw `createProduct` Server Action
  * directly. Server Actions are async functions that resolve to their declared
- * return type, so awaiting one gives us the result in the same tick — we close +
+ * return type, so awaiting one gives us the result in the same tick - we close +
  * reset the form right there on success, no effect needed. (This is the
  * "Event Handlers" calling convention from the mutating-data docs.)
  *
  * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
  * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` — which
+ * react to its success is `setState` inside an effect keyed on `state` - which
  * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
  * action ourselves sidesteps that entirely: the close/reset lives in the submit
  * handler, where side effects belong, not in a render-following effect.
@@ -42,12 +43,12 @@ export type CategoryOption = { id: string; name: string };
  * so a JS-disabled client can never reach the form to submit it. `<form action>`
  * would therefore buy nothing real here, and a manual JS submit is the honest
  * shape. Self-contained client island that owns the trigger + modal together so
- * the parent page stays a pure Server Component — the same structure as the
+ * the parent page stays a pure Server Component - the same structure as the
  * suppliers `AddSupplierDialog`.
  *
  * Category is chosen from a managed `<select>` populated server-side (the page
  * passes the current set of {@link CategoryOption}s), so a product is always
- * linked to a real {@link Category} id or left uncategorized — the old free-text
+ * linked to a real {@link Category} id or left uncategorized - the old free-text
  * `category` field is gone. The field is named `categoryId` to match what
  * {@link createProduct} reads; an empty value means "uncategorized" and is a
  * legal, intentional choice.
@@ -59,11 +60,11 @@ export default function AddProductDialog({
 }) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` — same UX (inputs + buttons lock
+  // than reading them out of `useActionState` - same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the insert succeeds — the next
+  // Ref onto the form so we can reset it once the insert succeeds - the next
   // time the dialog opens it's a blank form rather than the just-submitted row.
   const formRef = useRef<HTMLFormElement>(null);
   // A photo chosen before the product exists has nowhere to live yet (uploads
@@ -91,7 +92,7 @@ export default function AddProductDialog({
       return;
     }
     // Attach the staged photo now that the row exists. A failure here is
-    // non-fatal — the product was created, and the clerk can retry the photo
+    // non-fatal - the product was created, and the clerk can retry the photo
     // from the row without re-entering the product.
     if (pendingImage && result.id) {
       const body = new FormData();
@@ -156,53 +157,63 @@ export default function AddProductDialog({
           <form onSubmit={onSubmit} ref={formRef} className="space-y-4">
             <FormError>{error}</FormError>
 
-            <Field label="Product name" htmlFor="name" required>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  disabled={pending}
-                  placeholder="e.g. Aurora Wireless Headphones"
-                  onChange={(e) => setNameValue(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
+            <FormSection title="Details" hint="What the item is and how it's identified.">
+              <div className="space-y-4">
+                <Field label="Product name" htmlFor="name" required>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      disabled={pending}
+                      placeholder="e.g. Aurora Wireless Headphones"
+                      onChange={(e) => setNameValue(e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="SKU" htmlFor="sku" required>
-                  <input
-                    id="sku"
-                    name="sku"
-                    type="text"
-                    required
-                    disabled={pending}
-                    placeholder="e.g. ELEC-0004"
-                    className={`${inputCls} font-mono`}
-                  />
-                </Field>
-                <Field label="Category" htmlFor="categoryId">
-                  <select
-                    id="categoryId"
-                    name="categoryId"
-                    disabled={pending}
-                    defaultValue=""
-                    className={inputCls}
-                  >
-                    {/* value="" is the "Uncategorized" sentinel the server
-                        coerces to null; kept first so it reads as the default. */}
-                    <option value="">Uncategorized</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field
+                      label="SKU"
+                      htmlFor="sku"
+                      required
+                      hint="Must be unique - this is the code you scan or type at the till."
+                    >
+                      <input
+                        id="sku"
+                        name="sku"
+                        type="text"
+                        required
+                        disabled={pending}
+                        placeholder="e.g. ELEC-0004"
+                        className={`${inputCls} font-mono`}
+                      />
+                    </Field>
+                    <Field label="Category" htmlFor="categoryId" hint="Optional - used for browsing and low-stock alerts.">
+                      <select
+                        id="categoryId"
+                        name="categoryId"
+                        disabled={pending}
+                        defaultValue=""
+                        className={inputCls}
+                      >
+                        {/* value="" is the "Uncategorized" sentinel the server
+                            coerces to null; kept first so it reads as the default. */}
+                        <option value="">Uncategorized</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
               </div>
+            </FormSection>
 
-              <div className="grid grid-cols-3 gap-4">
-                <Field label="Retail price (PHP)" htmlFor="price" required>
+            <FormSection title="Pricing & stock" hint="What it sells for, what it costs you, and how many you have.">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Field label="Retail price (PHP)" htmlFor="price" required hint="What the customer pays.">
                   <input
                     id="price"
                     name="price"
@@ -216,7 +227,7 @@ export default function AddProductDialog({
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Cost price (PHP)" htmlFor="cost" required>
+                <Field label="Cost price (PHP)" htmlFor="cost" required hint="What you pay the supplier. Used for profit reports.">
                   <input
                     id="cost"
                     name="cost"
@@ -230,7 +241,7 @@ export default function AddProductDialog({
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Stock" htmlFor="stock" required>
+                <Field label="Stock" htmlFor="stock" required hint="Units on hand right now.">
                   <input
                     id="stock"
                     name="stock"
@@ -245,26 +256,24 @@ export default function AddProductDialog({
                   />
                 </Field>
               </div>
+            </FormSection>
 
-              {/* Photo gets its own full-width section rather than a third of a
-                  three-column grid: choosing an image is a deliberate act, and a
-                  1/3-width drop target on a counter tablet is not a target. */}
-              <section className="space-y-3 border-t border-slate-200 pt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Photo
-                </h3>
-                <ProductImageField
-                  productName={nameValue}
-                  pending={pending}
-                  onFileSelected={setPendingImage}
-                  onImageUrlChange={() => setPendingImage(null)}
-                />
-                {pendingImage ? (
-                  <p className="text-xs text-slate-500">
-                    This photo is attached when the product is saved.
-                  </p>
-                ) : null}
-              </section>
+            {/* Photo gets its own full-width section rather than a third of a
+                three-column grid: choosing an image is a deliberate act, and a
+                1/3-width drop target on a counter tablet is not a target. */}
+            <FormSection title="Photo" hint="Optional - a picture makes the item easier to find at the till.">
+              <ProductImageField
+                productName={nameValue}
+                pending={pending}
+                onFileSelected={setPendingImage}
+                onImageUrlChange={() => setPendingImage(null)}
+              />
+              {pendingImage ? (
+                <p className="text-xs text-slate-500">
+                  This photo is attached when the product is saved.
+                </p>
+              ) : null}
+            </FormSection>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button

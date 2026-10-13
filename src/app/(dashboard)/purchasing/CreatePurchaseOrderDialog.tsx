@@ -145,6 +145,16 @@ export default function CreatePurchaseOrderDialog({
         >
           <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
             <input type="hidden" name="lineCount" value={lineCount} />
+            <FormError>{error}</FormError>
+
+            {/* The three-step purchasing flow, stated once up front: a first-time
+                manager otherwise has no way to know a draft is not yet an order. */}
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              How this works: <span className="font-semibold">1) save a draft</span>, then
+              <span className="font-semibold"> 2) mark it ordered</span> when you send it to the
+              supplier, then <span className="font-semibold">3) receive stock</span> on this page
+              when it arrives. Nothing here changes stock yet.
+            </p>
             <Field label="Supplier" htmlFor="po-supplier" required>
               <select
                 id="po-supplier"
@@ -268,8 +278,6 @@ export default function CreatePurchaseOrderDialog({
                 );
               })}
             </div>
-
-            <FormError>{error}</FormError>
 
             <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button

@@ -6,6 +6,8 @@ import { Modal } from "@/app/_components/ui/Modal";
 import {
   Field,
   FormError,
+  dialogPrimaryCls,
+  dialogSecondaryCls,
   inputCls,
 } from "@/app/_components/ui/Field";
 
@@ -16,20 +18,20 @@ import {
  * AddProductDialog): a self-contained client island that owns the trigger +
  * modal together so the parent page stays a pure Server Component. Submits via
  * a manual async handler that `await`s the raw `createCustomer` Server Action
- * directly — Server Actions resolve to their declared return type, so awaiting
+ * directly - Server Actions resolve to their declared return type, so awaiting
  * one gives us the result in the same tick: close + reset right there on
  * success, no setState-in-effect (the side effects live in the handler).
  *
- * Fields mirror {@link CustomerInput} — name (required), email, phone,
+ * Fields mirror {@link CustomerInput} - name (required), email, phone,
  * address, credit limit (optional, defaults to 0 server-side).
  */
 export default function AddCustomerDialog() {
   const [open, setOpen] = useState(false);
-  // Driven from the awaited action result rather than `useActionState` — same
+  // Driven from the awaited action result rather than `useActionState` - same
   // UX (locked inputs + inline error), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref so the form resets once the insert succeeds — next open is blank.
+  // Ref so the form resets once the insert succeeds - next open is blank.
   const formRef = useRef<HTMLFormElement>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -111,7 +113,7 @@ export default function AddCustomerDialog() {
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Email" htmlFor="email">
                 <input
                   id="email"
@@ -145,7 +147,11 @@ export default function AddCustomerDialog() {
               />
             </Field>
 
-            <Field label="Credit limit" htmlFor="creditLimit">
+            <Field
+              label="Credit limit"
+              htmlFor="creditLimit"
+              hint="Leave 0 for no credit - the customer can only pay in full. Optional."
+            >
               <input
                 id="creditLimit"
                 name="creditLimit"
@@ -158,19 +164,19 @@ export default function AddCustomerDialog() {
               />
             </Field>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={dialogSecondaryCls}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={pending}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                className={dialogPrimaryCls}
               >
                 {pending ? "Saving…" : "Save customer"}
               </button>

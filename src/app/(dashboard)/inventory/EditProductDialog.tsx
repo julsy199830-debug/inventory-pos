@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { updateProduct, type UpdateProductResult } from "./actions";
 import type { CategoryOption } from "./AddProductDialog";
 import { Modal } from "@/app/_components/ui/Modal";
+import { FormSection } from "@/app/_components/ui/PageHeader";
 import ProductImageField from "./ProductImageField";
 import {
   Field,
@@ -21,7 +22,7 @@ import {
  * hidden `id` alongside the edited fields to the `updateProduct` Server Action.
  *
  * Like the Add dialog, the form submits via a manual async handler (`onSubmit`)
- * that `await`s `updateProduct(formData)` directly — the hidden `id` travels in
+ * that `await`s `updateProduct(formData)` directly - the hidden `id` travels in
  * the `FormData` just like the edited fields. Server Actions are async functions
  * that resolve to their declared return type, so awaiting one gives us the
  * result in the same tick: we close on success and surface validation errors
@@ -30,7 +31,7 @@ import {
  *
  * We deliberately don't use `useActionState` here. Its `(state, action, pending)`
  * triple is built for `<form action={...}>` wiring, and the idiomatic way to
- * react to its success is `setState` inside an effect keyed on `state` — which
+ * react to its success is `setState` inside an effect keyed on `state` - which
  * `react-hooks/set-state-in-effect` flags as a derived-state cascade. Calling the
  * action ourselves sidesteps that entirely: the close lives in the submit
  * handler, where side effects belong, not in a render-following effect.
@@ -71,11 +72,11 @@ export default function EditProductDialog({
 }) {
   const [open, setOpen] = useState(false);
   // We drive `pending`/`error` ourselves from the awaited action result rather
-  // than reading them out of `useActionState` — same UX (inputs + buttons lock
+  // than reading them out of `useActionState` - same UX (inputs + buttons lock
   // while submitting, error renders inline), but no setState-in-effect.
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref onto the form so we can reset it once the update succeeds — drops any
+  // Ref onto the form so we can reset it once the update succeeds - drops any
   // half-typed edits back to the prefilled values before the next open.
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -101,7 +102,7 @@ export default function EditProductDialog({
 
   return (
     <>
-      {/* Trigger — small pencil button rendered inline in the row's Actions cell */}
+      {/* Trigger - small pencil button rendered inline in the row's Actions cell */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -141,103 +142,111 @@ export default function EditProductDialog({
 
             <FormError>{error}</FormError>
 
-              <Field label="Product name" htmlFor="name" required>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  disabled={pending}
-                  defaultValue={product.name}
-                  className={inputCls}
-                />
-              </Field>
+              <FormSection title="Details" hint="What the item is and how it's identified.">
+                <div className="space-y-4">
+                  <Field label="Product name" htmlFor="name" required>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      disabled={pending}
+                      defaultValue={product.name}
+                      className={inputCls}
+                    />
+                  </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="SKU" htmlFor="sku" required>
-                  <input
-                    id="sku"
-                    name="sku"
-                    type="text"
-                    required
-                    disabled={pending}
-                    defaultValue={product.sku}
-                    className={`${inputCls} font-mono`}
-                  />
-                </Field>
-                <Field label="Category" htmlFor="categoryId">
-                  <select
-                    id="categoryId"
-                    name="categoryId"
-                    disabled={pending}
-                    defaultValue={product.categoryId ?? ""}
-                    className={inputCls}
-                  >
-                    {/* value="" is the "Uncategorized" sentinel the server
-                        coerces to null. Prefilled from product.categoryId, so a
-                        product whose category was deleted mid-edit (now null)
-                        lands here as Uncategorized rather than a phantom option. */}
-                    <option value="">Uncategorized</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field
+                      label="SKU"
+                      htmlFor="sku"
+                      required
+                      hint="Must be unique - this is the code you scan or type at the till."
+                    >
+                      <input
+                        id="sku"
+                        name="sku"
+                        type="text"
+                        required
+                        disabled={pending}
+                        defaultValue={product.sku}
+                        className={`${inputCls} font-mono`}
+                      />
+                    </Field>
+                    <Field label="Category" htmlFor="categoryId" hint="Optional - used for browsing and low-stock alerts.">
+                      <select
+                        id="categoryId"
+                        name="categoryId"
+                        disabled={pending}
+                        defaultValue={product.categoryId ?? ""}
+                        className={inputCls}
+                      >
+                        {/* value="" is the "Uncategorized" sentinel the server
+                            coerces to null. Prefilled from product.categoryId, so a
+                            product whose category was deleted mid-edit (now null)
+                            lands here as Uncategorized rather than a phantom option. */}
+                        <option value="">Uncategorized</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+              </FormSection>
 
-              <div className="grid grid-cols-3 gap-4">
-                <Field label="Retail price (PHP)" htmlFor="price" required>
-                  <input
-                    id="price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    required
-                    disabled={pending}
-                    defaultValue={product.price}
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Cost price (PHP)" htmlFor="cost" required>
-                  <input
-                    id="cost"
-                    name="cost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    required
-                    disabled={pending}
-                    defaultValue={product.cost}
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Stock" htmlFor="stock" required>
-                  <input
-                    id="stock"
-                    name="stock"
-                    type="number"
-                    min="0"
-                    step="1"
-                    inputMode="numeric"
-                    required
-                    disabled={pending}
-                    defaultValue={product.stock}
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
+              <FormSection title="Pricing & stock" hint="What it sells for, what it costs you, and how many you have.">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <Field label="Retail price (PHP)" htmlFor="price" required hint="What the customer pays.">
+                    <input
+                      id="price"
+                      name="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      required
+                      disabled={pending}
+                      defaultValue={product.price}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Cost price (PHP)" htmlFor="cost" required hint="What you pay the supplier. Used for profit reports.">
+                    <input
+                      id="cost"
+                      name="cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      required
+                      disabled={pending}
+                      defaultValue={product.cost}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Stock" htmlFor="stock" required hint="Units on hand right now.">
+                    <input
+                      id="stock"
+                      name="stock"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      required
+                      disabled={pending}
+                      defaultValue={product.stock}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              </FormSection>
 
-              <section className="space-y-3 border-t border-slate-200 pt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Photo
-                </h3>
+              <FormSection title="Photo" hint="Optional - a picture makes the item easier to find at the till.">
                 {/* Uploads/replace/remove act on the row immediately, so this is a
-                    standalone control rather than part of the form's submit — a
+                    standalone control rather than part of the form's submit - a
                     clerk can fix a photo without re-saving the whole product. */}
                 <ProductImageField
                   productId={product.id}
@@ -245,7 +254,7 @@ export default function EditProductDialog({
                   defaultImageUrl={product.imageUrl}
                   pending={pending}
                 />
-              </section>
+              </FormSection>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
                 <button

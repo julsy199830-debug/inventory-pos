@@ -98,7 +98,12 @@ export default function AddEmployeeDialog() {
               />
             </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="PIN" htmlFor="pin" required>
+              <Field
+                label="PIN"
+                htmlFor="pin"
+                required
+                hint="4–6 digits. The employee enters this at the register instead of a password."
+              >
                 <input
                   id="pin"
                   name="pin"
