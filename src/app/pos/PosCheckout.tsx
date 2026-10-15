@@ -774,12 +774,16 @@ export default function PosCheckout({
             ref={scanInputRef}
             type="text"
             value={scanInput}
-            onChange={(e) => setScanInput(e.target.value)}
+            onChange={(e) => {
+              setScanInput(e.target.value);
+              setSearch(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                e.preventDefault()
-                lookUpScannedCode(scanInput)
-                setScanInput('')
+                e.preventDefault();
+                lookUpScannedCode(scanInput);
+                setScanInput('');
+                setSearch('');
               }
             }}
             autoComplete="off"
