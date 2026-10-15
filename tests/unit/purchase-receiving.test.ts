@@ -74,8 +74,8 @@ moduleResolver._resolveFilename = function (
   return MOCKS[args[0]] ?? origResolve.apply(this, args);
 };
 
-const DB_DIR = path.resolve("test-results", "po-test-db");
-const DB_REL_URL = "file:./test-results/po-test-db/po-test.db";
+const DB_DIR = path.resolve("test-results", "po-receiving-test-db");
+const DB_REL_URL = "file:./test-results/po-receiving-test-db/po-test.db";
 
 let passed = 0;
 let failed = 0;
@@ -130,7 +130,11 @@ function monthKey(d = new Date()): string {
 
 async function main(): Promise<void> {
   // ── Throwaway database: the project's REAL migrations, test-only data ─────
-  rmSync(DB_DIR, { recursive: true, force: true });
+  try {
+    rmSync(DB_DIR, { recursive: true, force: true });
+  } catch {
+    console.log("note: previous temp test DB left in place — attempting to continue");
+  }
   mkdirSync(DB_DIR, { recursive: true });
   process.env.DATABASE_URL = DB_REL_URL;
 
@@ -166,8 +170,10 @@ async function main(): Promise<void> {
     [MANAGER, "Audit Manager", "MANAGER", "2345"],
     [CASHIER, "Audit Cashier", "CASHIER", "3456"],
   ] as const) {
-    await prisma.user.create({
-      data: {
+    await prisma.user.upsert({
+      where: { id },
+      update: {},
+      create: {
         id,
         name,
         email: `${name.toLowerCase().replace(/ /g, ".")}@po-audit.test`,

@@ -102,8 +102,9 @@ test.describe('Phase 7 Step 6 — contextual page help', () => {
     // Catalog search stays usable with the trigger beside it.
     const search = page.locator('input[aria-label="Search or scan products"]');
     await expect(search).toBeVisible({ timeout: 15000 });
-    await search.fill('zzz-no-such-product');
-    await expect(page.locator('text=No products found').first()).toBeVisible({ timeout: 15000 });
+    await search.fill('xyzzy-no-match-qwerty-12345');
+    // Wait for the filtered catalog to be empty: "No products found" message appears.
+    await expect(page.getByText('No products found')).toBeVisible({ timeout: 10000 });
     await search.fill('');
 
     // Open + dismiss the compact help; cart flow remains reachable.

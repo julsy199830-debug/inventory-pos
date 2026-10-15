@@ -58,7 +58,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
 
     const aside = page.locator('aside');
 
-    // ── 1. Understand employee / shift status ─────────────────────────────
+    // 1. Understand employee / shift status
     // The strip's readiness flag doubles as "the register is hydrated".
     await expect(page.locator('[data-register-loaded="true"]')).toBeVisible({ timeout: 25000 });
     const strip = page.getByTestId('shift-state');
@@ -89,7 +89,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     }
 
 
-    // ── 2. See where to search / scan a product ──────────────────────────
+    // 2. See where to search / scan a product
     const catalogSearch = page.locator('input[aria-label="Search or scan products"]');
     await expect(catalogSearch).toBeVisible();
     // Both boxes describe the job in plain words — neither assumes the
@@ -108,7 +108,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     await expect(page.locator('text=Try another name or scan a barcode.').first()).toBeVisible();
     await page.locator('button[aria-label="Clear product search"]').click();
 
-    // ── 3. Add a product ─────────────────────────────────────────────────
+    // 3. Add a product
     const tile = page.locator('button[aria-label="Add Aurora Wireless Headphones to order"]');
     // The card says name, price and stock condition IN WORDS before the tap.
     await expect(tile).toContainText('Aurora Wireless Headphones');
@@ -120,7 +120,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
       ).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 20000 });
 
-    // ── 4. See the item appear in Current Order ──────────────────────────
+    // 4. See the item appear in Current Order
     await expect(aside.locator('h2:has-text("Current Order")')).toBeVisible();
     await expect(aside.locator('text=₱129.99 each')).toBeVisible({ timeout: 10000 });
     // The empty-state instruction has retired itself now that there is an
@@ -128,7 +128,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     await expect(page.locator('text=Find a product to start a new sale.')).toHaveCount(0);
     await expect(catalogHint).toHaveCount(0);
 
-    // ── 5. Understand quantity ───────────────────────────────────────────
+    // 5. Understand quantity
     const qty = aside.locator('input[aria-label="Quantity for Aurora Wireless Headphones"]');
     await expect(qty).toHaveValue('1');
     await aside
@@ -136,7 +136,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
       .click();
     await expect(qty).toHaveValue('2');
 
-    // ── 6. Optionally select a customer ──────────────────────────────────
+    // 6. Optionally select a customer
     // The picker opens and offers the guest default; the newcomer can see
     // the step is skippable and leave it skipped.
     await expect(async () => {
@@ -144,11 +144,11 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
       await expect(page.locator('#customer-search-input')).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 20000 });
     await expect(page.getByRole('option', { name: /Walk-in Customer/ }).first()).toBeVisible();
-    await page.keyboard.press('Escape');
+    await page.locator('#customer-search-input').press('Escape');
     await expect(page.locator('#customer-search-input')).toBeHidden({ timeout: 5000 });
     await expect(page.locator('#customer-trigger')).toContainText('Walk-in Customer');
 
-    // ── 7. Understand the Total ──────────────────────────────────────────
+    // 7. Understand the Total
     await expect(aside.getByText('Subtotal', { exact: true })).toBeVisible();
     // Plain "Total" — the accounting term "Grand Total" is gone.
     await expect(aside.getByText('Total', { exact: true }).first()).toBeVisible();
@@ -157,7 +157,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     const totalValue = Number(((await totalFigure.innerText()) ?? '').replace(/[^0-9.]/g, ''));
     expect(totalValue).toBeGreaterThan(0);
 
-    // ── 8. Select payment ────────────────────────────────────────────────
+    // 8. Select payment
     await expect(aside.getByText('Payment Method', { exact: true })).toBeVisible();
     for (const method of ['Cash', 'Card', 'Credit']) {
       await expect(aside.getByRole('button', { name: method, exact: true })).toBeVisible();
@@ -172,7 +172,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     await expect(payButton).toContainText('Process Payment');
 
 
-    // ── 9. Complete the sale ─────────────────────────────────────────────
+    // 9. Complete the sale
     await payButton.click();
     const cashDialog = page.locator('div[role="dialog"][aria-label="Collect cash payment"]');
     await expect(cashDialog).toBeVisible({ timeout: 10000 });
@@ -185,7 +185,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     await expect(cashDialog.getByText('Change due', { exact: true })).toBeVisible();
     await cashDialog.getByRole('button', { name: 'Complete Sale' }).click();
 
-    // ── 10. Understand the Sale Complete result ──────────────────────────
+    // 10. Understand the Sale Complete result
     const done = page.locator('div[role="dialog"][aria-label="Sale complete"]');
     await expect(page.getByText('Sale Complete').first()).toBeVisible({ timeout: 20000 });
     await expect(done).toBeVisible();
@@ -198,7 +198,7 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     await expect(done.getByRole('button', { name: 'New Sale' })).toBeVisible();
     await expect(done.getByRole('button', { name: 'Print Receipt' })).toBeVisible();
 
-    // ── 11. Start a new sale ─────────────────────────────────────────────
+    // 11. Start a new sale
     await done.getByRole('button', { name: 'New Sale' }).click();
     await expect(done).toBeHidden({ timeout: 10000 });
     await expect(
@@ -213,4 +213,3 @@ test.describe('Phase 7 - a first-time cashier can follow the register', () => {
     ).toContainText('Add a product to take payment.');
   });
 });
-

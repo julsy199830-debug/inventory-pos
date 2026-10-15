@@ -35,7 +35,7 @@ declare global {
   var __PO_TEST_COOKIES__: Record<string, string> | undefined;
 }
 
-// ── CJS-level mocks for Server-Action-only surfaces ──────────────────────────
+// CJS-level mocks for Server-Action-only surfaces
 // tsx compiles TS to CJS in this repo (no "type": "module"), so ESM `register()`
 // hooks never fire for `require()`. Redirect the three non-Node specifiers to
 // stub files via the CJS resolver instead — before any app module is imported.
@@ -128,8 +128,12 @@ function monthKey(d = new Date()): string {
 }
 
 async function main(): Promise<void> {
-  // ── Throwaway database: the project's REAL migrations, test-only data ─────
-  rmSync(DB_DIR, { recursive: true, force: true });
+  // Throwaway database: the project's REAL migrations, test-only data
+  try {
+    rmSync(DB_DIR, { recursive: true, force: true });
+  } catch {
+    console.log("note: previous temp test DB left in place — attempting to continue");
+  }
   mkdirSync(DB_DIR, { recursive: true });
   process.env.DATABASE_URL = DB_REL_URL;
 
@@ -155,7 +159,7 @@ async function main(): Promise<void> {
     cancelPurchaseOrder,
   } = await import("@/app/(dashboard)/purchasing/actions");
 
-  // ── Fixtures (test-only users/suppliers/products on the throwaway DB) ─────
+  // Fixtures (test-only users/suppliers/products on the throwaway DB)
   const ADMIN = "u-po-admin";
   const MANAGER = "u-po-manager";
   const CASHIER = "u-po-cashier";
@@ -164,8 +168,10 @@ async function main(): Promise<void> {
     [MANAGER, "Audit Manager", "MANAGER", "2345"],
     [CASHIER, "Audit Cashier", "CASHIER", "3456"],
   ] as const) {
-    await prisma.user.create({
-      data: {
+    await prisma.user.upsert({
+      where: { id },
+      update: {},
+      create: {
         id,
         name,
         email: `${name.toLowerCase().replace(/ /g, ".")}@po-audit.test`,
@@ -200,7 +206,7 @@ async function main(): Promise<void> {
     return res.id ?? "";
   }
 
-  // ══ 1. CREATE ══════════════════════════════════════════════════════════════
+  // 1. CREATE
   // Pre-seed the monthly counter to 41. With ZERO PO rows, a MAX(poNumber)+1
   // scheme would mint 000001 — minting 000042 proves the DB-backed counter
   // drives the sequence.
@@ -287,7 +293,7 @@ async function main(): Promise<void> {
     assert.ok(!res.ok && /already added/.test(res.error), !res.ok ? res.error : "");
   });
 
-  // ══ 2. STATUS TRANSITIONS (Phase 1 matrix) ════════════════════════════════
+  // 2. STATUS TRANSITIONS (Phase 1 matrix)
   await check("8. DRAFT → ORDERED succeeds (ADMIN)", async () => {
     const id = await makePo(ADMIN);
     const res = await orderPurchaseOrder(fd({ id }));
@@ -407,7 +413,7 @@ async function main(): Promise<void> {
     assert.deepEqual(suffixes, [base + 1, base + 2, base + 3]);
   });
 
-  // ══ 3. EDIT RULES ═════════════════════════════════════════════════════════
+  // 3. EDIT RULES
   await check("18. DRAFT edit: supplier/items/qty/cost/notes/expectedDate all editable", async () => {
     const id = await makePo(ADMIN, [[prodA.id, 2, 4]]);
     const res = await updatePurchaseOrder(
@@ -455,7 +461,7 @@ async function main(): Promise<void> {
     assert.ok(!res.ok && /products were not found/.test(res.error), !res.ok ? res.error : "");
   });
 
-  // ══ 4. WRITE ISOLATION ════════════════════════════════════════════════════
+  // 4. WRITE ISOLATION
   await check("22. create/order/cancel write no Sale, Customer, or StockMovement rows", async () => {
     const sales = await prisma.sale.count();
     const customers = await prisma.customer.count();
@@ -471,12 +477,10 @@ async function main(): Promise<void> {
   });
 
 
-
-
   console.log(`\nPO action tests: ${passed} passed, ${failed} failed.`);
   if (failed > 0) process.exitCode = 1;
 
-  // ── Cleanup: drop the throwaway database ──────────────────────────────────
+  // Cleanup: drop the throwaway database
   await prisma.$disconnect();
   try {
     rmSync(DB_DIR, { recursive: true, force: true });
@@ -489,4 +493,3 @@ main().catch((err) => {
   console.error("FATAL:", err);
   process.exitCode = 1;
 });
-
