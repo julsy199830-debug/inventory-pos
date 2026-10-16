@@ -32,6 +32,7 @@ import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
 import { Button } from '@/app/_components/ui/Button'
+import { ActionIconButton } from '@/app/_components/ui/ActionIconButton'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import PosHeader from './PosHeader'
 import { useRegisterStatus } from './register-status-store'
@@ -857,23 +858,23 @@ export default function PosCheckout({
               }}
               className="h-9 w-16 rounded-xl border border-slate-300 bg-white px-2 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
-            <button
-              type="button"
-              onClick={() => setRedeemPoints(maxRedeemable)}
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={pending || maxRedeemable === 0}
-              className="h-9 shrink-0 rounded-xl border border-indigo-200 bg-white px-2.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => setRedeemPoints(maxRedeemable)}
             >
               Redeem max
-            </button>
+            </Button>
             {redeemPointsApplied > 0 && (
-              <button
-                type="button"
-                onClick={() => setRedeemPoints(0)}
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={pending}
-                className="shrink-0 text-xs font-medium text-slate-500 underline underline-offset-2 transition hover:text-slate-700 disabled:opacity-50"
+                onClick={() => setRedeemPoints(0)}
               >
                 Clear
-              </button>
+              </Button>
             )}
             <span className="ml-auto shrink-0 text-xs font-medium tabular-nums text-slate-600">
               {availablePoints.toLocaleString()} pts available
@@ -902,21 +903,21 @@ export default function PosCheckout({
           ).map(({ value, label, icon: Icon }) => {
             const active = paymentMethod === value
             return (
-              <button
+              <Button
                 key={value}
-                type="button"
-                onClick={() => setPaymentMethod(value)}
-                aria-pressed={active}
+                variant="table"
+                size="sm"
                 className={[
-                  'inline-flex items-center justify-center gap-1.5 rounded-xl border px-2 py-1.5 text-xs font-semibold transition active:scale-[0.98]',
                   active
                     ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                     : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300 hover:bg-slate-50 hover:text-indigo-700',
                 ].join(' ')}
+                aria-pressed={active}
+                onClick={() => setPaymentMethod(value)}
               >
                 <Icon className="h-4 w-4" />
                 {label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -978,21 +979,21 @@ export default function PosCheckout({
                       The server re-applies the discount against the catalog
                       price at checkout, so this only drives the display. */}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => toggleLineDiscount(line.product.id)}
-                      aria-pressed={!!line.discount}
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className={[
-                        'rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors',
                         line.discount
                           ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
                           : 'text-slate-500 ring-1 ring-slate-300 hover:bg-slate-100 hover:text-slate-700',
                       ].join(' ')}
+                      aria-pressed={!!line.discount}
+                      onClick={() => toggleLineDiscount(line.product.id)}
                     >
                       {line.discount
                         ? `Discount −${money(lineDiscountMoney(line))}`
                         : 'Discount'}
-                    </button>
+                    </Button>
                     {line.discount && (
                       <span className="inline-flex items-center gap-1">
                         <select
@@ -1028,14 +1029,14 @@ export default function PosCheckout({
                   </div>
                 </div>
                 <div className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-slate-50 p-1">
-                  <button
+                  <ActionIconButton
                     type="button"
+                    label={`Decrease ${line.product.name} quantity`}
+                    title={`Decrease ${line.product.name} quantity`}
                     onClick={() => changeQty(line.product.id, -1)}
-                    aria-label={`Decrease ${line.product.name} quantity`}
-                    className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-700 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
-                  </button>
+                  </ActionIconButton>
                   {/* Phase 3: the quantity is a real number input, not a read-only
                       span. Tapping +/- three times to reach four units is the
                       slowest thing on the register; typing "4" is one gesture.
@@ -1052,14 +1053,14 @@ export default function PosCheckout({
                     aria-label={`Quantity for ${line.product.name}`}
                     className="h-8 w-12 rounded-md border border-slate-300 bg-white text-center text-sm font-bold tabular-nums text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                   />
-                  <button
+                  <ActionIconButton
                     type="button"
+                    label={`Increase ${line.product.name} quantity`}
+                    title={`Increase ${line.product.name} quantity`}
                     onClick={() => changeQty(line.product.id, 1)}
-                    aria-label={`Increase ${line.product.name} quantity`}
-                    className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-700 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
-                  </button>
+                  </ActionIconButton>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   {line.discount ? (
@@ -1640,21 +1641,19 @@ export default function PosCheckout({
 
             <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
               {/* Hierarchy: the repeatable next step — a new sale — is the            primary action; printing stays one click away but secondary, so            the filled indigo block marks where the workflow continues. */}
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 onClick={() => setCompleted(null)}
-                className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98]"
               >
                 New Sale
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 <Printer className="h-4 w-4" />
                 Print Receipt
-              </button>
+              </Button>
             </div>
             </motion.div>
           </motion.div>
@@ -1722,14 +1721,14 @@ export default function PosCheckout({
                 {/* Quick-tender chips: exact total + the smallest clean bill. */}
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {quickTenderOptions.map((option) => (
-                    <button
+                    <Button
                       key={option.label}
-                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setTenderedRaw(String(option.value))}
-                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold tabular-nums text-slate-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 active:scale-[0.97]"
                     >
                       {option.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
 

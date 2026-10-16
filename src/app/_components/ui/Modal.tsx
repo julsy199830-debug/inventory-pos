@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { ActionIconButton } from "./ActionIconButton";
 
 /**
  * `subscribe` for {@link useSyncExternalStore}: a no-op that never notifies.
@@ -168,15 +169,14 @@ export function Modal({
                 </p>
               )}
             </div>
-            <button
-              type="button"
+            <ActionIconButton
+              label="Close"
+              title="Close"
               onClick={onClose}
               disabled={busy}
-              className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Close"
             >
               <X className="h-5 w-5" />
-            </button>
+            </ActionIconButton>
           </div>
           {/* Body is the only scrolling region: the header stays pinned, and a
               short form never scrolls at all so the whole dialog + its action
