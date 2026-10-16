@@ -4,6 +4,7 @@ import { useState } from "react";
 import { getStockMovements, type StockMovementView } from "./actions";
 import type { StockMovementType } from "@/lib/types";
 import { Modal } from "@/app/_components/ui/Modal";
+import { ActionIconButton } from "@/app/_components/ui/ActionIconButton";
 
 /**
  * Modal for viewing one product's stock-movement audit trail.
@@ -66,12 +67,11 @@ export default function StockHistoryDialog({
   return (
     <>
       {/* Trigger — small clock/history icon button in the row's Actions cell */}
-      <button
+      <ActionIconButton
         type="button"
-        onClick={onOpen}
-        aria-label={`Stock history for ${productName}`}
+        label={`Stock history for ${productName}`}
         title={`Stock history for ${productName}`}
-        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        onClick={onOpen}
       >
         <svg
           className="h-4 w-4"
@@ -88,7 +88,7 @@ export default function StockHistoryDialog({
             d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
           />
         </svg>
-      </button>
+      </ActionIconButton>
 
       <Modal
         open={open}

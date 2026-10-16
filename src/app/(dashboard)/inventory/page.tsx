@@ -1,4 +1,13 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
+import { StatusBadge } from "@/app/_components/ui/StatusBadge";
+import { ButtonLink } from "@/app/_components/ui/Button";
+import { inputCls } from "@/app/_components/ui/Field";
 
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
@@ -319,7 +328,8 @@ export default async function InventoryPage({
           dropdown) updates the URL searchParams, which re-renders this Server
           Component with the filtered rows. CategoryFilter is a small client
           island so the dropdown can submit the form on change. */}
-      <form className="flex flex-wrap items-center gap-3">
+      <FilterBar>
+        <form className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
@@ -338,11 +348,12 @@ export default async function InventoryPage({
             name="q"
             defaultValue={query}
             placeholder="Search items..."
-            className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className={`${inputCls} pl-9`}
           />
         </div>
 
         <CategoryFilter categories={categoryOptions} active={activeCategory} />
+        </form>
 
         {/* Phase 2: stock-state tabs, carrying the text search and category
             through so the filters compose rather than replacing one another. */}
@@ -351,6 +362,7 @@ export default async function InventoryPage({
           counts={statusCounts}
           baseQuery={{ q: query, category: activeCategory, status: statusFilter }}
         />
+      </FilterBar>
 
         {/* Phase 2: what the shelf is worth. */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -415,9 +427,10 @@ export default async function InventoryPage({
             the set of categories (rename, threshold, delete) that this form
             and filter draw from. Plain server <Link>, so it stays a Server
             Component with no client island. */}
-        <Link
+        <ButtonLink
           href="/inventory/categories"
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          variant="secondary"
+          size="md"
         >
           <svg
             className="h-4 w-4"
@@ -435,8 +448,7 @@ export default async function InventoryPage({
             />
           </svg>
           Manage categories
-        </Link>
-      </form>
+        </ButtonLink>
 
       {/* Phase 2: per-category rollup, so "where is my money sitting" and
           "what is running out" are answerable without exporting anything. */}
@@ -464,11 +476,8 @@ export default async function InventoryPage({
       </Panel>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
+      <TableCard label="Products">
+            <TableHead>
                 <th className="w-14 px-4 py-3">
                   <span className="sr-only">Image</span>
                 </th>
@@ -519,8 +528,7 @@ export default async function InventoryPage({
                 </th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {/* Phase 2 empty state. Previously a filter that matched nothing
                   rendered a bare header over an empty body, which reads as a
@@ -528,12 +536,10 @@ export default async function InventoryPage({
                   filters are active and gives a way back out. */}
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-14 text-center">
-                    <p className="text-sm font-medium text-slate-700">
-                      No products match these filters
-                    </p>
-                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
-                      {[
+                  <td colSpan={10} className="text-center">
+                    <EmptyState
+                      title="No products match these filters"
+                      body={[
                         query.trim() ? `search "${query.trim()}"` : null,
                         activeCategory !== "all"
                           ? `category "${categoryNameFor(activeCategory, categoryOptions)}"`
@@ -543,14 +549,18 @@ export default async function InventoryPage({
                           : null,
                       ]
                         .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <Link
-                      href="/inventory"
-                      className="mt-4 inline-block rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      Clear all filters
-                    </Link>
+                        .join(" · ")
+                      }
+                      action={
+                        <ButtonLink
+                          href="/inventory"
+                          variant="secondary"
+                          size="sm"
+                        >
+                          Clear all filters
+                        </ButtonLink>
+                      }
+                    />
                   </td>
                 </tr>
               ) : (
@@ -613,30 +623,27 @@ export default async function InventoryPage({
               ))
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </TableCard>
     </div>
   );
 }
 
-// Visual treatment by stock status. The two pill-ish views ({@link StockBadge},
-// {@link StatusPill}) share this so a "Low Stock" row is the same shade of red
-// whether you're reading the count pill or the status pill, and the per-category
-// threshold (not a blanket 10) decides the cutoff — see {@link stockStatusAt}.
-const STATUS_STYLES: Record<StockStatus, { badge: string; status: string }> = {
-  out: {
-    badge: "bg-red-50 text-red-700 ring-1 ring-red-200",
-    status: "Out of Stock",
-  },
-  low: {
-    badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
-    status: "Low Stock",
-  },
-  ok: {
-    badge: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-    status: "In Stock",
-  },
+// Human-readable status label + shared StatusBadge variant by stock status.
+// Both pill views ({@link StockBadge}, {@link StatusPill}) draw from this so a
+// "Low Stock" row reads the same whether you're looking at the count pill or
+// the status pill, and the per-category threshold (not a blanket 10) decides
+// the cutoff — see {@link stockStatusAt}.
+const STATUS_LABEL: Record<StockStatus, string> = {
+  out: "Out of Stock",
+  low: "Low Stock",
+  ok: "In Stock",
+};
+
+/** Which shared {@link StatusBadge} tone renders each stock state. */
+const STATUS_VARIANT: Record<StockStatus, "danger" | "warning" | "success"> = {
+  out: "danger",
+  low: "warning",
+  ok: "success",
 };
 
 /**
@@ -658,7 +665,7 @@ function StockBadge({
       ? "bg-red-50 text-red-700 ring-1 ring-red-200"
       : status === "low"
         ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-        : "bg-slate-100 text-slate-700";
+        : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
   const label = stock <= 0 ? "0 in stock" : `${stock} in stock`;
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
@@ -677,9 +684,9 @@ function StatusPill({
 }) {
   const status = stockStatusAt(stock, threshold);
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status].badge}`}>
-      {STATUS_STYLES[status].status}
-    </span>
+    <StatusBadge variant={STATUS_VARIANT[status]}>
+      {STATUS_LABEL[status]}
+    </StatusBadge>
   );
 }
 

@@ -15,6 +15,7 @@ import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, formatNumber, formatTime } from "@/lib/format";
 import { RANGE_LABELS, resolveRange } from "@/lib/analytics";
 import { Panel } from "@/app/_components/ui/Panel";
+import { EmptyState } from "@/app/_components/ui/PageHeader";
 import { RangeTabs } from "@/app/_components/ui/RangeTabs";
 import { ShareBars } from "@/app/_components/ui/ShareBars";
 import { StatCard } from "@/app/_components/ui/StatCard";
@@ -466,9 +467,7 @@ export default async function DashboardPage({
           }
         >
           {data.employees.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">
-              No staff records yet.
-            </p>
+            <EmptyState title="No staff records yet" body="Employees you add will appear here." />
           ) : (
             <ul className="divide-y divide-slate-100">
               {data.employees.slice(0, 6).map((row) => (
@@ -498,12 +497,10 @@ export default async function DashboardPage({
         bodyClassName="px-0 py-0"
       >
         {data.recent.length === 0 ? (
-          <div className="px-5 py-10 text-center">
-            <p className="text-sm font-medium text-slate-700">No completed sales yet</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Sales appear here as soon as the register rings one up.
-            </p>
-          </div>
+          <EmptyState
+            title="No completed sales yet"
+            body="Sales appear here as soon as the register rings one up."
+          />
         ) : (
           <ul className="divide-y divide-slate-100">
             {data.recent.map((sale) => (

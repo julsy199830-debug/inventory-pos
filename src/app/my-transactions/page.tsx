@@ -7,6 +7,10 @@ import {
   HISTORY_PAYMENT_METHODS,
   HISTORY_STATUSES,
 } from "@/app/pos/history-types";
+import { EmptyState, PageHeader } from "@/app/_components/ui/PageHeader";
+import { StatusBadge } from "@/app/_components/ui/StatusBadge";
+import { inputCls, selectCls } from "@/app/_components/ui/Field";
+import { Button, ButtonLink } from "@/app/_components/ui/Button";
 
 /**
  * `/my-transactions` — the cashier's OWN sales ledger (Phase 5).
@@ -67,11 +71,11 @@ const PAYMENT_LABELS: Record<string, string> = {
   STORE_CREDIT: "Store credit",
 };
 
-const STATUS_TONES: Record<string, string> = {
-  Completed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  "Partially Refunded": "bg-amber-50 text-amber-700 ring-amber-200",
-  Refunded: "bg-slate-100 text-slate-600 ring-slate-200",
-  Voided: "bg-red-50 text-red-700 ring-red-200",
+const STATUS_TONES: Record<string, "success" | "warning" | "danger" | "info"> = {
+  Completed: "success",
+  "Partially Refunded": "warning",
+  Refunded: "info",
+  Voided: "danger",
 };
 
 /** Only one of the `searchParams` values, when it is a single string. */
@@ -156,40 +160,36 @@ export default async function MyTransactionsPage({
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white">
               IP
             </span>
-            <div>
-              <p className="text-base font-bold text-slate-900">
-                My transactions
-              </p>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {me.name}
-              </p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/pos"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
+            <ButtonLink href="/pos" variant="secondary" size="sm">
               Register
-            </Link>
-            <Link
-              href="/my-activity"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
-            >
+            </ButtonLink>
+            <ButtonLink href="/my-activity" variant="primary" size="sm">
               My hours
-            </Link>
+            </ButtonLink>
           </div>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-4xl space-y-5 px-4 py-6 sm:px-6">
-        <p className="text-sm text-slate-500">
-          Sales you rang up, newest first. Nobody else&apos;s transactions appear
-          here.
-        </p>
+        <PageHeader
+          back={{ href: "/pos", label: "Back to Register" }}
+          title="My transactions"
+          description={
+            <>
+              Sales you rang up, newest first. Nobody else&apos;s transactions appear
+              here.{" "}
+              <span>
+                {sales.length} shown{sales.length === 50 ? " (most recent 50)" : ""} Â· net{" "}
+                <span className="font-semibold tabular-nums text-slate-700">{money(netTotal)}</span>
+              </span>
+            </>
+          }
+        />
         <form
           method="GET"
-          className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-5"
+          className="grid gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:grid-cols-2 lg:grid-cols-5"
         >
           <label className="text-xs font-medium text-slate-500">
             Search
@@ -198,7 +198,7 @@ export default async function MyTransactionsPage({
               name="q"
               defaultValue={query}
               placeholder="Transaction no. or customer"
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              className={`mt-1 ${inputCls}`}
             />
           </label>
           <label className="text-xs font-medium text-slate-500">
@@ -207,7 +207,7 @@ export default async function MyTransactionsPage({
               type="date"
               name="from"
               defaultValue={fromKey}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              className={`mt-1 ${inputCls}`}
             />
           </label>
           <label className="text-xs font-medium text-slate-500">
@@ -216,7 +216,7 @@ export default async function MyTransactionsPage({
               type="date"
               name="to"
               defaultValue={toKey}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              className={`mt-1 ${inputCls}`}
             />
           </label>
           <label className="text-xs font-medium text-slate-500">
@@ -224,7 +224,7 @@ export default async function MyTransactionsPage({
             <select
               name="status"
               defaultValue={status ?? ""}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              className={`mt-1 ${selectCls}`}
             >
               <option value="">All</option>
               {HISTORY_STATUSES.map((s) => (
@@ -239,7 +239,7 @@ export default async function MyTransactionsPage({
             <select
               name="payment"
               defaultValue={paymentMethod ?? ""}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              className={`mt-1 ${selectCls}`}
             >
               <option value="">All</option>
               {HISTORY_PAYMENT_METHODS.map((p) => (
@@ -250,19 +250,13 @@ export default async function MyTransactionsPage({
             </select>
           </label>
           <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
-            <button
-              type="submit"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
+            <Button variant="primary" size="sm" type="submit">
               Apply
-            </button>
+            </Button>
             {anyFilter && (
-              <Link
-                href="/my-transactions"
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
+              <ButtonLink href="/my-transactions" variant="secondary" size="sm">
                 Clear
-              </Link>
+              </ButtonLink>
             )}
             <span className="ml-auto text-xs text-slate-500">
               {sales.length} shown
@@ -283,11 +277,14 @@ export default async function MyTransactionsPage({
           </div>
 
           {sales.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-slate-500">
-              {anyFilter
-                ? "No transactions match those filters."
-                : "You have not rung up any sales yet."}
-            </div>
+            <EmptyState
+              title={anyFilter ? "No matching transactions" : "No sales yet"}
+              body={
+                anyFilter
+                  ? "No transactions match those filters."
+                  : "You have not rung up any sales yet."
+              }
+            />
           ) : (
             <ul className="divide-y divide-slate-100">
               {sales.map((s) => (
@@ -304,14 +301,9 @@ export default async function MyTransactionsPage({
                         <span className="tabular-nums text-slate-600">
                           {s.createdAt.toLocaleString()}
                         </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
-                            STATUS_TONES[s.status] ??
-                            "bg-slate-100 text-slate-600 ring-slate-200"
-                          }`}
-                        >
+                        <StatusBadge variant={STATUS_TONES[s.status] ?? "info"}>
                           {s.status}
-                        </span>
+                        </StatusBadge>
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
                         {s._count.items} item

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { adjustStock, type StockAdjustResult } from "./actions";
+import { ActionIconButton } from "@/app/_components/ui/ActionIconButton";
 
 /**
  * Inline +/- quick-adjust controls for one product row.
@@ -63,12 +64,12 @@ export default function StockControls({
 
   return (
     <span className="inline-flex items-center gap-0.5" title={error ?? undefined}>
-      <button
+      <ActionIconButton
         type="button"
+        label="Decrease stock by one"
+        title="Decrease stock by one"
         onClick={() => adjust(-1)}
         disabled={pending}
-        aria-label="Decrease stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -82,18 +83,18 @@ export default function StockControls({
         >
           <path d="M2.5 6h7" />
         </svg>
-      </button>
+      </ActionIconButton>
       {/* Compact numeric readout so the inline control doubles as a stock
           gauge without duplicating the dedicated count pill column. */}
       <span className="min-w-[1.75rem] text-center font-mono text-xs font-medium text-slate-700">
         {displayed}
       </span>
-      <button
+      <ActionIconButton
         type="button"
+        label="Increase stock by one"
+        title="Increase stock by one"
         onClick={() => adjust(1)}
         disabled={pending}
-        aria-label="Increase stock by one"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
       >
         <svg
           className="h-3 w-3"
@@ -107,7 +108,7 @@ export default function StockControls({
         >
           <path d="M6 2.5v7M2.5 6h7" />
         </svg>
-      </button>
+      </ActionIconButton>
       {error && (
         <span role="alert" className="ml-1 text-xs font-medium text-red-600">
           {error}

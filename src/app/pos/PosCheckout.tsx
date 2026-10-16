@@ -31,6 +31,7 @@ import CustomerPicker, { FOCUS_CUSTOMER_EVENT } from './CustomerPicker'
 import RegisterStatusBar from './RegisterStatus'
 import { createPosCustomer } from './pos-actions'
 import ProductThumb from '@/app/_components/ui/ProductThumb'
+import { Button } from '@/app/_components/ui/Button'
 import { useBarcodeScanner } from './useBarcodeScanner'
 import PosHeader from './PosHeader'
 import { useRegisterStatus } from './register-status-store'
@@ -1757,22 +1758,22 @@ export default function PosCheckout({
               </div>
 
               <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
-                <button
-                  type="button"
-                  onClick={() => setCashStepOpen(false)}
+                <Button
+                  variant="secondary"
+                  size="sm"
                   disabled={pending}
-                  className="inline-flex items-center rounded-xl border border-slate-300 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setCashStepOpen(false)}
                 >
                   Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void completeSale(tenderedValue)}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   disabled={tenderedValue === null || tenderedValue < total || pending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                  onClick={() => void completeSale(tenderedValue)}
                 >
                   {pending ? 'Processing…' : 'Complete Sale'}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>
