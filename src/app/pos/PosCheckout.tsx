@@ -1126,21 +1126,21 @@ export default function PosCheckout({
       {/* Order-wide discount: toggle + inline %/₱ editor, applied after the
           per-line discounts and re-validated server-side at checkout. */}
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-pressed={!!cartDiscount}
           onClick={() =>
             setCartDiscount(cartDiscount ? null : { type: 'PERCENT', value: 10 })
           }
-          aria-pressed={!!cartDiscount}
           className={[
-            'rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
             cartDiscount
               ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
               : 'text-slate-500 ring-1 ring-slate-300 hover:bg-white hover:text-slate-700',
           ].join(' ')}
         >
           Order discount
-        </button>
+        </Button>
         {cartDiscount && (
           <span className="inline-flex items-center gap-1.5">
             <select
@@ -1169,14 +1169,14 @@ export default function PosCheckout({
               aria-label="Order discount value"
               className="h-8 w-20 rounded-lg border border-slate-300 bg-white px-2 text-xs tabular-nums text-slate-900 focus:border-indigo-500 focus:outline-none"
             />
-            <button
-              type="button"
+            <ActionIconButton
+              label="Clear order discount"
+              title="Clear order discount"
               onClick={() => setCartDiscount(null)}
               aria-label="Clear order discount"
-              className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
             >
               <X className="h-3.5 w-3.5" />
-            </button>
+            </ActionIconButton>
           </span>
         )}
       </div>
@@ -1211,15 +1211,16 @@ export default function PosCheckout({
           {money(total)}
         </span>
       </div>
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="lg"
         data-testid="checkout-button"
         disabled={cart.length === 0 || pending || creditBlocked}
         onClick={onCheckout}
-        className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 text-[15px] font-bold text-white shadow-sm shadow-indigo-600/25 transition-all duration-150 hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+        className="mt-2 w-full px-4 text-[15px]"
       >
         {pending ? 'Processing…' : 'Process Payment'}
-      </button>
+      </Button>
       {/* Phase 7 step 3: the button above is disabled until the order has
           something to charge — say so, rather than leaving a cashier to wonder
           what is broken. Rendered ONLY while the cart is empty, so it retires                the moment the first product lands and never grows the footer in the                states the Phase 4 geometry tests measure. */}
