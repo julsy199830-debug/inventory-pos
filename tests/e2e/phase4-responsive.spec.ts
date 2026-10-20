@@ -72,6 +72,21 @@ const FOOTER_BUDGET = 260;
 const CART_FLOOR = 96;
 const CART_PEEK = 64;
 
+/**
+ * The exact height the checkout button must render at.
+ *
+ * `size="lg"` on the shared `Button` is `h-12`, and the checkout CTA is the one
+ * control a cashier reaches for under pressure — at a till, often one-handed,
+ * sometimes with a customer queue waiting. Shrinking it to `md` (`h-10`, 40px)
+ * would cost 8px that the totals footer would then have to give back, and the
+ * cart's 64px floor at 1280x720 is already the binding constraint.
+ *
+ * So the height is pinned here rather than left to the button's own styling:
+ * a future `size=` change must fail loudly here, not quietly shrink the one
+ * button the whole layout is balanced around.
+ */
+const CHECKOUT_HEIGHT = 48;
+
 async function login(page: Page) {
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
@@ -333,6 +348,14 @@ function expectStackFits(report: StackReport, label: string, minCart: number) {
     checkout!.bottom,
     `${label}: the checkout button runs off the bottom of the screen`,
   ).toBeLessThanOrEqual(report.viewport.height + 1);
+  // The CTA's own height, pinned so a `size=` change cannot quietly demote the
+  // one button the whole footer budget is balanced around. The footer is sized
+  // around this 48px, so shrinking it would silently hand the 8px back to the
+  // cart and undo the `py-1.5` that keeps the 64px floor at 1280x720.
+  expect(
+    checkout!.height,
+    `${label}: the checkout button is ${checkout!.height}px tall, expected ${CHECKOUT_HEIGHT}px (size="lg")`,
+  ).toBe(CHECKOUT_HEIGHT);
 
   expect(
     report.cartVisible ?? 0,

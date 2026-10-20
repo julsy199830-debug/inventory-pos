@@ -1135,7 +1135,7 @@ export default function PosCheckout({
 
   // Totals + payment footer — shared by the desktop sidebar and mobile drawer.
   const cartFooter = (
-    <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5" data-testid="pos-footer">
+    <div className="border-t border-slate-200 bg-slate-50 px-4 py-1.5" data-testid="pos-footer">
       {/* Phase 3: stock problems are surfaced here, at the point of payment,
           rather than as a server rejection after the whole order is keyed.
           Named lines, not a count, because "something is wrong" is not
