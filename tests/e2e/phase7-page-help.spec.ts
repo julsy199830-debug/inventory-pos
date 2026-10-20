@@ -90,10 +90,14 @@ test.describe('Phase 7 Step 6 — contextual page help', () => {
   test('POS compact trigger never blocks scan or checkout', async ({ page }) => {
     await signIn(page, CASHIER);
     await page.goto('/pos');
-    // The register hydrates a large client tree; wait for a hydrated-only
-    // marker (the catalog hint renders purely client-side) before touching
-    // the search box, or the fill lands before filtering attaches.
-    await expect(page.getByTestId('pos-catalog-hint')).toBeVisible({ timeout: 15000 });
+    // The register hydrates a large client tree. Wait for the explicit
+    // hydration marker before touching the catalog, so the fill lands after
+    // React has attached the search filter's onChange. (The catalog hint
+    // renders server-side, so it is NOT a hydration signal — it is already in
+    // the DOM before React takes over.)
+    await expect(page.locator('[data-pos-hydrated="true"]')).toBeAttached({
+      timeout: 15000,
+    });
     const trigger = page.getByTestId('page-help-trigger-pos');
     await expect(trigger).toBeVisible({ timeout: 15000 });
     // No auto-open over the register.
@@ -102,9 +106,19 @@ test.describe('Phase 7 Step 6 — contextual page help', () => {
     // Catalog search stays usable with the trigger beside it.
     const search = page.locator('input[aria-label="Search or scan products"]');
     await expect(search).toBeVisible({ timeout: 15000 });
+    // Ensure the catalog is populated before searching: products are server-
+    // rendered, but we must confirm they have landed (otherwise
+    // "No products stocked yet" shows instead of "No products found").
+    await expect(
+      page.locator('button[aria-label^="Add "]').first(),
+    ).toBeVisible({ timeout: 15000 });
+    // Type into the focused box so React's onChange fires reliably.
+    await search.click();
     await search.fill('xyzzy-no-match-qwerty-12345');
     // Wait for the filtered catalog to be empty: "No products found" message appears.
-    await expect(page.getByText('No products found')).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.locator('text=No products found').first(),
+    ).toBeVisible({ timeout: 10000 });
     await search.fill('');
 
     // Open + dismiss the compact help; cart flow remains reachable.

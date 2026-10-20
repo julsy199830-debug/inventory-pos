@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import {
   Banknote,
   Barcode,
@@ -40,6 +40,20 @@ import { stockStatusAt } from '@/lib/types'
 import type { Role } from '@/lib/types'
 import { PageHelp } from '@/app/_components/ui/PageHelp'
 import { PAGE_HELP } from '@/app/_components/ui/page-help-content'
+
+/**
+ * Hydration snapshots for the register's readiness flag — the same shape as
+ * `Modal`'s `mounted` flag and `CustomersClient`'s `hydrated` flag.
+ *
+ * `subscribe` is a no-op because hydration happens exactly once per page load,
+ * so there is no external system to listen to. The server snapshot is `false`
+ * so the server render and the hydration render produce identical markup.
+ */
+const noopSubscribe = () => () => {}
+/** Hydrated: true from the first client render onward. */
+const clientSnapshot = () => true
+/** Not hydrated: false during SSR and the hydration render. */
+const serverSnapshot = () => false
 
 /**
  * Public props passed up from `page.tsx` so this Client Component never touches
@@ -224,6 +238,25 @@ export default function PosCheckout({
   // one short "you are off the clock" nudge in the order panel — no second
   // session poll, no duplicate shift state.
   const registerStatus = useRegisterStatus()
+
+  /**
+   * Hydration flag, published as `data-pos-hydrated` on the root element.
+   *
+   * The catalog is server-rendered, so the search box and every product tile
+   * are in the DOM well before React attaches `onChange`. Typing in that
+   * window writes the DOM value but never reaches `setSearch`, so the filter
+   * silently does nothing: the box shows the query while the catalog still
+   * shows the whole book. A test that types and immediately asserts on the
+   * filtered result can hit that window, so this is the marker it waits on
+   * instead of guessing with an arbitrary delay — the same trick as
+   * `data-customers-hydrated` on the customers page and
+   * `data-register-loaded` on the status strip.
+   *
+   * Same `useSyncExternalStore` shape as `Modal`'s `mounted` flag: `subscribe`
+   * is a no-op because hydration happens exactly once, and the server snapshot
+   * is `false` so the server and hydration markup stay identical.
+   */
+  const hydrated = useSyncExternalStore(noopSubscribe, clientSnapshot, serverSnapshot)
 
   // Group products by category for the catalog grid; stable order matches the
   // server's `orderBy name`.
@@ -1275,7 +1308,13 @@ export default function PosCheckout({
 
 
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-100">
+    <div
+      className="flex h-screen w-full flex-col bg-slate-100"
+      // `data-pos-hydrated` flips the moment React has taken over the register,
+      // so a caller can wait for the catalog's `onChange` to be live instead of
+      // guessing with an arbitrary delay. See the flag's comment above.
+      data-pos-hydrated={hydrated ? 'true' : 'false'}
+    >
       {/* ── Header ─────────────────────────────────────────────────────── */}
       {/* Phase 7: extracted verbatim into `PosHeader` — no markup, prop or
           behaviour change. It lives in its own file so the later Section 3 work
