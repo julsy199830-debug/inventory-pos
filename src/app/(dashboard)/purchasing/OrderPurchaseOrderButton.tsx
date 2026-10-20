@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { orderPurchaseOrder } from "./actions";
+import { buttonCls } from "@/app/_components/ui/Button";
 
 /**
  * "Mark as ordered" button — drives the DRAFT → ORDERED transition.
@@ -51,7 +52,7 @@ export default function OrderPurchaseOrderButton({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+        className={`${buttonCls("primary", "sm")} disabled:opacity-50`}
       >
         {pending ? "Ordering…" : "Mark as ordered"}
       </button>

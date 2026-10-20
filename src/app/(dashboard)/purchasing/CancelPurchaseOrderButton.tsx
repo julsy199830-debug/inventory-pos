@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cancelPurchaseOrder } from "./actions";
+import { buttonCls } from "@/app/_components/ui/Button";
 
 /**
  * "Cancel order" button — drives DRAFT/ORDERED → CANCELLED.
@@ -48,7 +49,7 @@ export default function CancelPurchaseOrderButton({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-red-600 hover:bg-white disabled:opacity-50"
+        className={`${buttonCls("destructive", "sm")} disabled:opacity-50`}
       >
         {pending ? "Cancelling…" : "Cancel order"}
       </button>

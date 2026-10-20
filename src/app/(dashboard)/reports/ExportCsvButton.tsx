@@ -2,6 +2,7 @@
 
 import { downloadCsv } from "@/lib/csv";
 import type { PaymentBreakdownRow, TopProduct } from "./actions";
+import { Button } from "@/app/_components/ui/Button";
 
 /**
  * "Export CSV" button for the daily Sales & Z-Report page (`/reports`).
@@ -67,11 +68,10 @@ export default function ExportCsvButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="secondary"
       onClick={onExport}
       disabled={summary === null}
-      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
     >
       <svg
         className="h-4 w-4"
@@ -89,6 +89,6 @@ export default function ExportCsvButton({
         />
       </svg>
       Export CSV
-    </button>
+    </Button>
   );
 }

@@ -1,6 +1,8 @@
 import type { FormatSettings } from '@/lib/format'
 import type { AnalyticsTopProduct } from "../actions";
 import { formatMoney } from "./chart-theme";
+import { Panel } from "@/app/_components/ui/Panel";
+import { TableHead } from "@/app/_components/ui/PageHeader";
 
 /**
  * Top-selling products table — best movers by units sold over the last 30
@@ -20,31 +22,23 @@ export default function TopProductsTable({
   format?: FormatSettings;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-900">
-          Top Selling Products
-        </h2>
-        <p className="text-sm text-slate-500">
-          Best movers by units sold — last 30 days.
-        </p>
-      </div>
-
-      {products.length === 0 ? (
-        <p className="px-5 py-12 text-center text-sm text-slate-500">
-          No product sales in the last 30 days.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="px-5 py-3 font-medium">Rank</th>
+    <Panel
+      title="Top Selling Products"
+      subtitle="Best movers by units sold — last 30 days."
+      className="overflow-hidden"
+      bodyClassName="p-0"
+      empty={products.length === 0}
+      emptyTitle="No product sales in the last 30 days."
+      emptyBody="Completed sales in this window will rank products here."
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <TableHead>
+            <th className="px-5 py-3 font-medium">Rank</th>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units Sold</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
-              </tr>
-            </thead>
+          </TableHead>
             <tbody className="divide-y divide-slate-200">
               {products.map((product, i) => (
                 <tr key={product.productId} className="hover:bg-slate-50">
@@ -83,8 +77,7 @@ export default function TopProductsTable({
             </tbody>
           </table>
         </div>
-      )}
-    </section>
+    </Panel>
   );
 }
 

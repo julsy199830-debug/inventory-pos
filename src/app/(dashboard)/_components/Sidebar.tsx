@@ -22,6 +22,7 @@ import {
 import { lockRegister } from "@/lib/actions/auth-actions";
 import type { Role } from "@/lib/types";
 import { GlobalSearch } from "@/app/search/GlobalSearch";
+import { buttonCls } from "@/app/_components/ui/Button";
 
 /**
  * Phase 7 — navigation reorganised around how an employee actually thinks.
@@ -145,10 +146,7 @@ export default function Sidebar({
           renders outside the (dashboard) layout (no sidebar there), so there's
           no on-route active state to track here. */}
       <div className="mx-4 mb-4">
-        <Link
-          href="/pos"
-          className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700"
-        >
+        <Link href="/pos" className={`${buttonCls("primary", "md")} w-full py-3`}>
           <ShoppingCart className="h-5 w-5 shrink-0" />
           Point of Sale
         </Link>
@@ -198,11 +196,12 @@ export default function Sidebar({
                     <Link
                       key={item.href}
                       href={item.href}
+                      aria-current={active ? "page" : undefined}
                       className={[
-                        "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
                         active
-                          ? "bg-indigo-50 font-medium text-indigo-700"
-                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                          ? "bg-indigo-50 font-semibold text-indigo-700"
+                          : "font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                       ].join(" ")}
                     >
                       <Icon
@@ -215,7 +214,7 @@ export default function Sidebar({
                       />
                       {item.label}
                       {active && (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden />
                       )}
                     </Link>
                   );
@@ -231,7 +230,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => lockRegister()}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          className={`${buttonCls("ghost", "md")} w-full justify-start gap-3`}
         >
           <Lock className="h-5 w-5 shrink-0 text-slate-500" />
           Lock Register

@@ -1,4 +1,9 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
 import { prisma } from "@/lib/db";
 import { LOW_STOCK_THRESHOLD } from "@/lib/types";
 import AddCategoryDialog from "./AddCategoryDialog";
@@ -75,17 +80,13 @@ export default async function CategoriesPage() {
       />
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
+      <TableCard label="Categories">
+        <TableHead>
                 <th className="px-5 py-3 font-medium">Category Name</th>
                 <th className="px-5 py-3 font-medium">Products</th>
                 <th className="px-5 py-3 font-medium">Low-stock threshold</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {categories.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-slate-50">
@@ -119,16 +120,18 @@ export default async function CategoriesPage() {
                   </td>
                 </tr>
               ))}
+              {categories.length === 0 && (
+                <tr>
+                  <td colSpan={4}>
+                    <EmptyState
+                      title="No categories yet."
+                      body="Add one to start grouping your inventory."
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
-          </table>
-        </div>
-
-        {categories.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-slate-500">
-            No categories yet. Add one to start grouping your inventory.
-          </div>
-        )}
-      </div>
+      </TableCard>
     </div>
   );
 }

@@ -1,9 +1,14 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
+import { ButtonLink } from "@/app/_components/ui/Button";
 
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
 import { prisma } from "@/lib/db";
-import Link from "next/link";
 import { asRole, type Role } from "@/lib/types";
 import AddEmployeeDialog from "./AddEmployeeDialog";
 import EmployeePerformancePanel from "./EmployeePerformancePanel";
@@ -298,12 +303,9 @@ export default async function EmployeesPage({
         }
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link
-              href="/dtr"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
+            <ButtonLink href="/dtr" variant="secondary" size="md">
               Time &amp; attendance
-            </Link>
+            </ButtonLink>
             <AddEmployeeDialog />
           </div>
         }
@@ -359,11 +361,8 @@ export default async function EmployeesPage({
       <ShiftWidget employees={clockedInList} format={format} />
 
       {/* Employee management table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
+      <TableCard label="Employees">
+            <TableHead>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Role</th>
@@ -374,8 +373,7 @@ export default async function EmployeesPage({
                 <th className="px-4 py-3 text-right font-medium">
                   Actions
                 </th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {employees.map((e) => (
                 <tr key={e.id} className="transition-colors hover:bg-slate-50">
@@ -462,16 +460,18 @@ export default async function EmployeesPage({
                   </td>
                 </tr>
               ))}
+              {employees.length === 0 && (
+                <tr>
+                  <td colSpan={8}>
+                    <EmptyState
+                      title="No employees yet."
+                      body="Add an employee to give them a PIN and shift history."
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
-          </table>
-        </div>
-
-        {employees.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-slate-500">
-            No employees yet.
-          </div>
-        )}
-      </div>
+      </TableCard>
     </div>
   );
 }

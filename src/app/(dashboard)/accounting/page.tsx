@@ -1,4 +1,5 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import { PageHeader, TableHead } from "@/app/_components/ui/PageHeader";
+import { Panel } from "@/app/_components/ui/Panel";
 
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
@@ -158,27 +159,25 @@ export default async function AccountingPage({
       {/* Per-product profitability breakdown. Sorted by profit desc inside
           getFinancialSummary, so the biggest contributors surface first. The
           margin column colors by sign so a loss can't masquerade as a win. */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-900">
-            Profit by Product
-          </h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Ranked by gross profit over the selected range.
-          </p>
-        </div>
+      <Panel
+        title="Profit by Product"
+        subtitle="Ranked by gross profit over the selected range."
+        className="overflow-hidden"
+        bodyClassName="p-0"
+        empty={productBreakdown.length === 0}
+        emptyTitle="No completed sales in this range yet."
+        emptyBody="Completed sales in this range will break down profit here."
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="px-5 py-3 font-medium">Product</th>
+            <TableHead>
+              <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 text-right font-medium">Units</th>
                 <th className="px-5 py-3 text-right font-medium">Revenue</th>
                 <th className="px-5 py-3 text-right font-medium">COGS</th>
                 <th className="px-5 py-3 text-right font-medium">Profit</th>
                 <th className="px-5 py-3 text-right font-medium">Margin</th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200">
               {productBreakdown.map((row) => (
                 <ProductRow
@@ -190,13 +189,7 @@ export default async function AccountingPage({
             </tbody>
           </table>
         </div>
-
-        {productBreakdown.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-slate-500">
-            No completed sales in this range yet.
-          </div>
-        )}
-      </div>
+      </Panel>
     </div>
   );
 }

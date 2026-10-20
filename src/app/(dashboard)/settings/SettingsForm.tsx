@@ -7,10 +7,10 @@ import {
   type StoreSettingsData,
 } from "@/app/actions/settings";
 import { DATE_FORMATS, TIME_FORMATS } from "@/lib/format";
+import { Button } from "@/app/_components/ui/Button";
 import {
   Field,
   FormError,
-  dialogPrimaryCls,
   inputCls,
 } from "@/app/_components/ui/Field";
 
@@ -324,13 +324,13 @@ export default function SettingsForm({
       </fieldset>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={!canSubmit}
-          className={dialogPrimaryCls}
         >
           {pending ? "Saving…" : "Save settings"}
-        </button>
+        </Button>
       </div>
     </form>
   );

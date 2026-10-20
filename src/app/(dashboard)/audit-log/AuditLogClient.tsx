@@ -16,6 +16,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Download, Search, X } from "lucide-react";
 import { downloadCsv, downloadSpreadsheet } from "@/lib/csv";
 import { formatAuditValue } from "@/lib/audit-format";
+import { EmptyState } from "@/app/_components/ui/PageHeader";
+import { Button, ButtonLink } from "@/app/_components/ui/Button";
 import type { AuditActor, AuditLogRow } from "./actions";
 
 export type AuditFilters = {
@@ -143,24 +145,22 @@ export default function AuditLogClient({
           {hasMore ? " (newest 100 shown)" : ""}
         </p>
         <div className="flex gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => downloadCsv("invpos-audit-log.csv", EXPORT_HEADERS, toRows())}
             disabled={initialRows.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-4 w-4" /> Export CSV
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() =>
               downloadSpreadsheet("invpos-audit-log.xls", EXPORT_HEADERS, toRows())
             }
             disabled={initialRows.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-4 w-4" /> Export Excel
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -279,18 +279,12 @@ function AuditFiltersForm({
           <input id="audit-to" name="to" type="date" defaultValue={active.to} className={FILTER_SELECT} />
         </div>
         <div className="flex gap-2">
-          <button
-            type="submit"
-            className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-          >
+          <Button type="submit" variant="primary">
             Apply filters
-          </button>
-          <a
-            href="/audit-log"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
+          </Button>
+          <ButtonLink href="/audit-log" variant="secondary" size="sm">
             <X className="h-3.5 w-3.5" /> Clear
-          </a>
+          </ButtonLink>
         </div>
       </div>
     </form>
@@ -309,9 +303,10 @@ function AuditRows({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-        No audit entries match these filters.
-      </p>
+      <EmptyState
+        title="No audit entries match these filters."
+        body="Adjust the filters or widen the date range to surface entries."
+      />
     );
   }
 
@@ -349,11 +344,11 @@ function AuditRows({
                 </span>
 
                 {diffs.length > 0 && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="table"
+                    size="sm"
                     onClick={() => setExpanded((prev) => ({ ...prev, [row.id]: !isOpen }))}
                     aria-expanded={isOpen}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                   >
                     {isOpen ? (
                       <ChevronDown className="h-3.5 w-3.5" />
@@ -361,7 +356,7 @@ function AuditRows({
                       <ChevronRight className="h-3.5 w-3.5" />
                     )}
                     {diffs.length} change{diffs.length === 1 ? "" : "s"}
-                  </button>
+                  </Button>
                 )}
               </div>
 

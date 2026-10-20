@@ -3,7 +3,14 @@ import { prisma } from "@/lib/db";
 import AddSupplierDialog from "./AddSupplierDialog";
 import DeleteSupplierButton from "./DeleteSupplierButton";
 import SupplierPerformancePanel from "./SupplierPerformancePanel";
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
+import { inputCls } from "@/app/_components/ui/Field";
 import { getSupplierPerformance } from "./supplier-data";
 import EditSupplierDialog from "./EditSupplierDialog";
 
@@ -113,7 +120,7 @@ export default async function SuppliersPage({
           <form> for the createSupplier Server Action, and nesting a form inside
           a form is invalid HTML that React reports as a hydration error — the
           dialog trigger now lives up in the PageHeader actions. */}
-      <div className="flex flex-wrap items-center gap-3">
+      <FilterBar>
         <form className="relative min-w-0 flex-1">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
@@ -132,17 +139,14 @@ export default async function SuppliersPage({
             name="q"
             defaultValue={query}
             placeholder="Search suppliers..."
-            className="w-full rounded-xl border border-slate-300 bg-white shadow-sm py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+            className={`${inputCls} pl-9`}
           />
         </form>
-      </div>
+      </FilterBar>
 
       {/* Data table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-600">
+      <TableCard label="Suppliers">
+        <TableHead>
                 <th className="px-4 py-3 font-medium">Supplier Name</th>
                 <th className="px-4 py-3 font-medium">Contact</th>
                 <th className="px-4 py-3 font-medium">Email</th>
@@ -150,8 +154,7 @@ export default async function SuppliersPage({
                 <th className="px-4 py-3 font-medium">Address</th>
                 <th className="px-4 py-3 font-medium">Products</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {suppliers.map((s) => (
                 <tr key={s.id} className="transition-colors hover:bg-slate-50">
@@ -183,16 +186,18 @@ export default async function SuppliersPage({
                   </td>
                 </tr>
               ))}
+              {suppliers.length === 0 && (
+                <tr>
+                  <td colSpan={7}>
+                    <EmptyState
+                      title="No suppliers found."
+                      body="Add a supplier to start ordering stock from them."
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
-          </table>
-        </div>
-
-        {suppliers.length === 0 && (
-          <div className="px-4 py-12 text-center text-sm text-slate-500">
-            No suppliers found.
-          </div>
-        )}
-      </div>
+      </TableCard>
     </div>
   );
 }

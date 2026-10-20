@@ -9,6 +9,7 @@ import { stockStatusAt, lowStockThresholdFor } from "@/lib/types";
 import { prisma } from "@/lib/db";
 import InventoryAssistant from "./_components/InventoryAssistant";
 import { GlobalSearch } from "@/app/search/GlobalSearch";
+import { ButtonLink } from "@/app/_components/ui/Button";
 
 export default async function DashboardLayout({
   children,
@@ -53,7 +54,9 @@ export default async function DashboardLayout({
                 <span className="block text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inventory & Sales</span>
               </span>
             </Link>
-            <Link href="/pos" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm">Point of Sale</Link>
+            <ButtonLink href="/pos" variant="primary" size="sm">
+              Point of Sale
+            </ButtonLink>
           </div>
           {/* Search — Step 5: the sidebar (with its search box) is hidden below
               lg, so the mobile header carries its own trigger. */}

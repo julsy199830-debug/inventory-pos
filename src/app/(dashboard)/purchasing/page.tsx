@@ -1,7 +1,14 @@
 import { getFormatSettings } from "@/lib/store-config";
 import { formatMoney, type FormatSettings } from "@/lib/format";
-import { Plus } from "lucide-react";
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
+import { buttonCls } from "@/app/_components/ui/Button";
+import { inputCls, selectCls } from "@/app/_components/ui/Field";
 import Link from "next/link";
 import {
   getPurchaseOrders,
@@ -92,73 +99,62 @@ export default async function PurchasingPage({
         }
         actions={
           <>
-            <Link
-              href="/purchasing/new"
-              className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-            >
-              <Plus className="h-4 w-4" />
-              New Purchase Order
-            </Link>
-            {/* Lives outside the filter form below: the dialog renders its own
-                <form>, and nesting forms is invalid HTML. */}
+            {/* Renders its own <form> for the createPO Server Action, so it
+                lives outside the filter form below — nesting forms is invalid
+                HTML. */}
             <CreatePurchaseOrderDialog suppliers={suppliers} products={products} />
           </>
         }
       />
 
       {/* Controls row — a GET form so submitting updates the URL searchParams,
-          which re-renders this Server Component with the filtered rows. */}
-      <form
-        method="get"
-        className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <div className="min-w-[220px] flex-1">
-          <label htmlFor="q" className="sr-only">
-            Search purchase orders
-          </label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            defaultValue={query}
-            placeholder="Search by PO number or supplier…"
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-          />
-        </div>
+          which re-renders this Server Component with the filtered rows. The
+          form is a plain block wrapper; the shared FilterBar provides the
+          visual band around its controls. */}
+      <form method="get">
+        <FilterBar>
+          <div className="min-w-[220px] flex-1">
+            <label htmlFor="q" className="sr-only">
+              Search purchase orders
+            </label>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              defaultValue={query}
+              placeholder="Search by PO number or supplier…"
+              className={inputCls}
+            />
+          </div>
 
-        <div>
-          <label htmlFor="status" className="sr-only">
-            Filter by status
-          </label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={statusFilter}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
-          >
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="ORDERED">Ordered</option>
-            <option value="PARTIALLY_RECEIVED">Partially received</option>
-            <option value="RECEIVED">Received</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
+          <div className="w-44">
+            <label htmlFor="status" className="sr-only">
+              Filter by status
+            </label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={statusFilter}
+              className={selectCls}
+            >
+              <option value="">All statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="ORDERED">Ordered</option>
+              <option value="PARTIALLY_RECEIVED">Partially received</option>
+              <option value="RECEIVED">Received</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
 
-        <button
-          type="submit"
-          className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-        >
-          Filter
-        </button>
+          <button type="submit" className={buttonCls("secondary", "md")}>
+            Filter
+          </button>
+        </FilterBar>
       </form>
 
       {/* PO table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
+      <TableCard label="Purchase orders">
+        <TableHead>
                 <th scope="col" className="px-4 py-3 font-medium">
                   PO number
                 </th>
@@ -183,15 +179,28 @@ export default async function PurchasingPage({
                 <th scope="col" className="px-4 py-3 text-right font-medium">
                   Actions
                 </th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
-                    {allOrders.length === 0
-                      ? "No purchase orders yet. Create one to get started."
-                      : "No purchase orders match these filters."}
+                  <td colSpan={8} className="px-4 py-6 text-center">
+                    <EmptyState
+                      title={
+                        allOrders.length === 0
+                          ? "No purchase orders yet."
+                          : "No purchase orders match these filters."
+                      }
+                      body={
+                        allOrders.length === 0
+                          ? "Create one to get started."
+                          : [
+                              query.trim() ? `search "${query.trim()}"` : null,
+                              statusFilter ? `status "${statusFilter}"` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")
+                      }
+                    />
                   </td>
                 </tr>
               ) : (
@@ -248,9 +257,7 @@ export default async function PurchasingPage({
                 ))
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </TableCard>
     </div>
   );
 }

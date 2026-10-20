@@ -1,4 +1,5 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import { PageHeader, TableHead } from "@/app/_components/ui/PageHeader";
+import { Button } from "@/app/_components/ui/Button";
 
 import { getCustomerStatement } from "../actions";
 import { prisma } from "@/lib/db";
@@ -160,13 +161,12 @@ export default async function CustomerAccountPage({
             >
               Export CSV
             </a>
-            <button
-              type="button"
-              className="inline-flex items-center rounded-xl bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+            <Button
+              variant="primary"
               data-testid="statement-print"
             >
               Print statement
-            </button>
+            </Button>
           </div>
         }
       />
@@ -193,15 +193,13 @@ export default async function CustomerAccountPage({
           be checked line by line against the records that caused it. */}
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm" data-testid="account-ledger">
-          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Detail</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3 text-right">Balance</th>
-            </tr>
-          </thead>
+          <TableHead>
+            <th className="px-4 py-3">Date</th>
+            <th className="px-4 py-3">Type</th>
+            <th className="px-4 py-3">Detail</th>
+            <th className="px-4 py-3 text-right">Amount</th>
+            <th className="px-4 py-3 text-right">Balance</th>
+          </TableHead>
           <tbody className="divide-y divide-slate-200/80">
             {entries.map((e) => (
               <tr key={`${e.kind}-${e.id}`} data-ledger-kind={e.kind}>

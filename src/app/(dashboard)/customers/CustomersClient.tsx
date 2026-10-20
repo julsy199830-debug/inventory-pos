@@ -17,7 +17,14 @@ import {
   type FormatSettings,
 } from "@/lib/format";
 import type { LedgerEntryKind } from "@/lib/ledger";
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import {
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  TableCard,
+  TableHead,
+} from "@/app/_components/ui/PageHeader";
+import { Button } from "@/app/_components/ui/Button";
 
 import { Modal } from "@/app/_components/ui/Modal";
 import {
@@ -82,12 +89,6 @@ const LEDGER_BADGE: Record<LedgerEntryKind, string> = {
   VOID: "rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600",
   ADJUSTMENT: "rounded bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700",
 };
-const input =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
-const primary =
-  "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50";
-const ghost =
-  "inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700";
 
 export function CustomersClient({
   initialRows,
@@ -317,9 +318,8 @@ export function CustomersClient({
                 credit limit, outstanding debt, history counts) for the
                 bookkeeper. Client-side blob, no server round-trip. Secondary
                 action sits before the primary in the header actions row. */}
-            <button
-              type="button"
-              className={ghost}
+            <Button
+              variant="secondary"
               disabled={filtered.length === 0}
               onClick={() =>
                 downloadCsv(
@@ -338,10 +338,9 @@ export function CustomersClient({
               }
             >
               Export CSV
-            </button>
-            <button
-              type="button"
-              className={primary}
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => {
                 setEditing(null);
                 setFormOpen(true);
@@ -350,7 +349,7 @@ export function CustomersClient({
               }}
             >
               Add Customer
-            </button>
+            </Button>
           </>
         }
       />
@@ -358,7 +357,8 @@ export function CustomersClient({
 
       {/* Search and sort sit on one row so a manager can narrow and reorder
           without the controls wrapping onto separate lines on a laptop. */}
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="mt-4">
+        <FilterBar>
         <input
           value={query}
           onChange={(e) => {
@@ -367,7 +367,7 @@ export function CustomersClient({
           }}
           placeholder="Search by name, phone, or email…"
           aria-label="Search customers"
-          className={`${input} sm:max-w-sm`}
+          className={`${inputCls} sm:max-w-sm`}
         />
         <div className="flex items-center gap-2 sm:ml-auto">
           <label htmlFor="customer-sort" className="text-xs font-medium text-slate-500">
@@ -388,25 +388,24 @@ export function CustomersClient({
               </option>
             ))}
           </select>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               setSortDir((d) => (d === "asc" ? "desc" : "asc"));
               resetPage();
             }}
             aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             {sortDir === "asc" ? "↑" : "↓"}
-          </button>
+          </Button>
         </div>
+        </FilterBar>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
+      <div className="mt-6">
+        <TableCard label="Customers">
+            <TableHead>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Credit Limit</th>
@@ -416,8 +415,7 @@ export function CustomersClient({
               <th className="px-4 py-3">Total spent</th>
               <th className="px-4 py-3">Last purchase</th>
               <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
+            </TableHead>
           <tbody className="divide-y divide-slate-200/80">
             {filtered.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
@@ -440,32 +438,32 @@ export function CustomersClient({
                 <td className="px-4 py-3 text-xs text-slate-500">{sinceLabel(r.lastSaleAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
-                    <button type="button" className={ghost} onClick={() => openStatement(r)}>
+                    <Button variant="table" size="sm" onClick={() => openStatement(r)}>
                       Statement
-                    </button>
-                    <button
-                      type="button"
-                      className={ghost}
+                    </Button>
+                    <Button
+                      variant="table"
+                      size="sm"
                       data-testid={`open-account-${r.id}`}
                       onClick={() => openAccount(r)}
                     >
                       Account
-                    </button>
+                    </Button>
                     {r.currentBalance > 0 && (
-                      <button
-                        type="button"
-                        className={ghost}
+                      <Button
+                        variant="table"
+                        size="sm"
                         onClick={() => {
                           setPaying(r);
                           setError(null);
                         }}
                       >
                         Record Payment
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      type="button"
-                      className={ghost}
+                    <Button
+                      variant="table"
+                      size="sm"
                       onClick={() => {
                         setEditing(r);
                         setFormOpen(true);
@@ -480,23 +478,28 @@ export function CustomersClient({
                       }}
                     >
                       Edit
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No customers found.</td>
+                <td colSpan={9}>
+                  <EmptyState
+                    title="No customers found."
+                    body="Try a different name, phone number, or email."
+                  />
+                </td>
               </tr>
             )}
-          </tbody>
-          </table>
-        </div>
+            </tbody>
+        </TableCard>
 
         {/* Count + pager. The count is stated even on a single page, so a
             manager can tell "showing everything" from "showing page 1 of 4". */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 px-4 py-3">
           <p className="text-xs text-slate-600">
             {sorted.length === 0
               ? "No customers"
@@ -509,27 +512,28 @@ export function CustomersClient({
           </p>
           {pageCount > 1 && (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="table"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage === 1}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-xs tabular-nums text-slate-600">
                 Page {safePage} of {pageCount}
               </span>
-              <button
-                type="button"
+              <Button
+                variant="table"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={safePage === pageCount}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
+          </div>
         </div>
       </div>
 

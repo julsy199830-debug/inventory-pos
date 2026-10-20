@@ -22,6 +22,7 @@
 import { useState } from "react";
 import { AlertTriangle, Check, Download, FileUp, Loader2, Upload } from "lucide-react";
 import { Modal } from "@/app/_components/ui/Modal";
+import { buttonCls } from "@/app/_components/ui/Button";
 import { downloadText } from "@/lib/csv";
 import { productImportTemplateCsv, PRODUCT_IMPORT_COLUMNS } from "@/lib/product-import";
 import {
@@ -100,7 +101,7 @@ export default function ProductImportDialog() {
           reset();
           setOpen(true);
         }}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+        className={`${buttonCls("secondary", "md")} disabled:opacity-50`}
       >
         <FileUp className="h-4 w-4" />
         Import products

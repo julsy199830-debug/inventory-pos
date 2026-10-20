@@ -1,4 +1,5 @@
 import { PageHeader } from "@/app/_components/ui/PageHeader";
+import { Button } from "@/app/_components/ui/Button";
 
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -188,12 +189,13 @@ export default async function DtrPage({
                 className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
               />
             </label>
-            <button
+            <Button
               type="submit"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+              variant="primary"
+              size="sm"
             >
               Apply
-            </button>
+            </Button>
           </form>
         }
       />

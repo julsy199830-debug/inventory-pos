@@ -8,6 +8,7 @@ import {
   type CreateProductResult,
 } from "./actions";
 import { Modal } from "@/app/_components/ui/Modal";
+import { buttonCls } from "@/app/_components/ui/Button";
 import { FormSection } from "@/app/_components/ui/PageHeader";
 import ProductImageField from "./ProductImageField";
 import {
@@ -125,7 +126,7 @@ export default function AddProductDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+        className={buttonCls("primary", "sm")}
       >
         <svg
           className="h-4 w-4"

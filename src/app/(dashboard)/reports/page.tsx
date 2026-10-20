@@ -1,4 +1,5 @@
 import { PageHeader } from "@/app/_components/ui/PageHeader";
+import { Button } from "@/app/_components/ui/Button";
 
 import { getStoreSettings } from "@/app/actions/settings";
 import { getFormatSettings } from "@/lib/store-config";
@@ -140,12 +141,9 @@ export default async function ReportsPage({
                   max={toISODate(new Date())}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
                 />
-                <button
-                  type="submit"
-                  className="rounded-xl border border-slate-300 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
+                <Button type="submit" variant="secondary" size="md">
                   Load
-                </button>
+                </Button>
               </form>
               <PrintReportButton />
               <ExportCsvButton

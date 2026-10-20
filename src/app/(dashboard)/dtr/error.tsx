@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "@/app/_components/ui/Button";
 
 /**
  * Route-level error boundary for `/dtr`.
@@ -47,14 +48,13 @@ export default function DtrError({
           </p>
         )}
         <div className="mt-6 flex justify-center gap-3">
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.98]"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
             Try again
-          </button>
+          </Button>
           <Link
             href="/"
             className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import { correctShiftTime } from './actions'
 import { Modal } from '@/app/_components/ui/Modal'
+import { Button } from '@/app/_components/ui/Button'
 import {
   Field,
   FormError,
-  dialogPrimaryCls,
-  dialogSecondaryCls,
   inputCls,
   selectCls,
 } from '@/app/_components/ui/Field'
@@ -71,13 +70,13 @@ export default function CorrectionDialog({ shift }: { shift: CorrectableShift })
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
       >
         Correct
-      </button>
+      </Button>
 
       <Modal
         open={open}
@@ -146,21 +145,22 @@ export default function CorrectionDialog({ shift }: { shift: CorrectableShift })
           <FormError>{error}</FormError>
 
           <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setOpen(false)}
               disabled={pending}
-              className={dialogSecondaryCls}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={pending}
-              className={dialogPrimaryCls}
             >
               {pending ? 'Saving…' : 'Save correction'}
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

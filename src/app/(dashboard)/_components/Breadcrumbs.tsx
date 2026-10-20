@@ -38,23 +38,32 @@ export default function Breadcrumbs() {
       aria-label="Breadcrumb"
       className="mb-6 flex flex-wrap items-center gap-2 text-sm"
     >
-      {crumbs.map((c, i) => (
-        <span key={c.href} className="flex items-center gap-2">
-          {i > 0 && (
-            <ChevronRight className="h-3.5 w-3.5 text-slate-600" aria-hidden />
-          )}
-          {c.current ? (
-            <span className="font-semibold text-slate-900">{c.label}</span>
-          ) : (
-            <Link
-              href={c.href}
-              className="font-medium text-slate-500 transition-colors hover:text-indigo-700"
-            >
-              {c.label}
-            </Link>
-          )}
-        </span>
-      ))}
+      {crumbs.map((c, i) => {
+        // Only the crumb that exactly matches the current path is rendered as
+        // plain "current" text. On dynamic routes (e.g. /purchasing/<id>) no
+        // crumb matches, so the parent stays a clickable link instead of being
+        // wrongly marked as the current page.
+        const isCurrent = c.href === pathname;
+        return (
+          <span key={c.href} className="flex items-center gap-2">
+            {i > 0 && (
+              <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            )}
+            {isCurrent ? (
+              <span className="font-semibold text-slate-900" aria-current="page">
+                {c.label}
+              </span>
+            ) : (
+              <Link
+                href={c.href}
+                className="font-medium text-slate-500 transition-colors hover:text-indigo-700"
+              >
+                {c.label}
+              </Link>
+            )}
+          </span>
+        );
+      })}
     </nav>
   );
 }

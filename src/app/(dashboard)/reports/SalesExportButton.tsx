@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Modal } from "@/app/_components/ui/Modal";
+import { Button } from "@/app/_components/ui/Button";
 import { downloadCsv, downloadSpreadsheet } from "@/lib/csv";
 import {
   getSalesExportRows,
@@ -126,18 +127,17 @@ export default function SalesExportButton({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={() => {
           setOpen(true);
           setRows(null);
           setError(null);
         }}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white"
       >
         <FileSpreadsheet className="h-4 w-4" />
         Export sales
-      </button>
+      </Button>
 
       <Modal
         open={open}
@@ -227,15 +227,14 @@ export default function SalesExportButton({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={preview}
               disabled={pending}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:opacity-50"
             >
               {pending && <Loader2 className="h-4 w-4 animate-spin" />}
               {rows ? "Refresh preview" : "Preview rows"}
-            </button>
+            </Button>
             {rows && (
               <p className="text-sm text-slate-600">
                 {rows.length.toLocaleString()} sale{rows.length === 1 ? "" : "s"} ready
@@ -257,20 +256,12 @@ export default function SalesExportButton({
           */}
           {rows && rows.length > 0 && (
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => download("csv")}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-              >
+              <Button variant="secondary" onClick={() => download("csv")}>
                 <Download className="h-4 w-4" /> Download CSV
-              </button>
-              <button
-                type="button"
-                onClick={() => download("xls")}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
-              >
+              </Button>
+              <Button variant="primary" onClick={() => download("xls")}>
                 <Download className="h-4 w-4" /> Download Excel
-              </button>
+              </Button>
             </div>
           )}
         </div>

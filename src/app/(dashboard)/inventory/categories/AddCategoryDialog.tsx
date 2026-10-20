@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createCategory, type CategoryResult } from "../actions";
 import { Modal } from "@/app/_components/ui/Modal";
+import { buttonCls } from "@/app/_components/ui/Button";
 import {
   Field,
   FormError,
@@ -61,7 +62,7 @@ export default function AddCategoryDialog() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+        className={buttonCls("primary", "sm")}
       >
         <svg
           className="h-4 w-4"

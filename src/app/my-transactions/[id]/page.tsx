@@ -1,12 +1,21 @@
 import { formatMoney } from "@/lib/format";
 import { getFormatSettings } from "@/lib/store-config";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Printer } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requirePageAuth } from "@/lib/session";
 import Receipt, { type ReceiptStore } from "@/app/pos/Receipt";
 import PrintButton from "./PrintButton";
+import { StatusBadge } from "@/app/_components/ui/StatusBadge";
+import { BackLink } from "@/app/_components/ui/BackLink";
+
+/** Sale status → shared badge tone (same mapping as the `/my-transactions` list). */
+const STATUS_TONES: Record<string, "success" | "warning" | "danger" | "info"> = {
+  Completed: "success",
+  "Partially Refunded": "warning",
+  Refunded: "info",
+  Voided: "danger",
+};
 
 /**
  * `/my-transactions/[id]` â€” one of YOUR sales, with its receipt (Phase 5).
@@ -93,12 +102,7 @@ return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <Link
-            href="/my-transactions"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            â† My transactions
-          </Link>
+          <BackLink href="/my-transactions" label="My transactions" />
           <PrintButton />
         </div>
       </header>
@@ -122,8 +126,10 @@ return (
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Status
               </p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {sale.status}
+              <p className="mt-1 flex justify-end">
+                <StatusBadge variant={STATUS_TONES[sale.status] ?? "info"}>
+                  {sale.status}
+                </StatusBadge>
               </p>
               {sale.refundedAmount > 0 && (
                 <p className="text-xs font-semibold text-amber-700">

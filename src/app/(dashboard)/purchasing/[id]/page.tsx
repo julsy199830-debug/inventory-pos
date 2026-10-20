@@ -1,4 +1,4 @@
-import { PageHeader } from "@/app/_components/ui/PageHeader";
+import { PageHeader, TableCard, TableHead } from "@/app/_components/ui/PageHeader";
 
 import { formatMoney, type FormatSettings } from "@/lib/format";
 
@@ -153,11 +153,8 @@ export default async function PurchaseOrderDetailPage({
       )}
 
       {/* Line items */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm shadow-slate-900/5">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-600">
-              <tr>
+      <TableCard label="Line items">
+        <TableHead>
                 <th scope="col" className="px-4 py-3 font-medium">SKU</th>
                 <th scope="col" className="px-4 py-3 font-medium">Product</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Ordered</th>
@@ -165,12 +162,11 @@ export default async function PurchaseOrderDetailPage({
                 <th scope="col" className="px-4 py-3 text-right font-medium">Current stock</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Unit cost</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Line total</th>
-              </tr>
-            </thead>
+            </TableHead>
             <tbody className="divide-y divide-slate-200/80">
               {po.items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                     No line items on this purchase order.
                   </td>
                 </tr>
@@ -217,9 +213,7 @@ export default async function PurchaseOrderDetailPage({
                 </td>
               </tr>
             </tfoot>
-          </table>
-        </div>
-      </div>
+      </TableCard>
 
         <p className="text-xs text-slate-600">
           Receiving records each delivery and increases product stock atomically. Purchase costs are retained on the PO line; Product.cost is not changed.

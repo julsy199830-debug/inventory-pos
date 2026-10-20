@@ -1,6 +1,7 @@
 "use client";
 
 import { downloadCsv } from "@/lib/csv";
+import { buttonCls } from "@/app/_components/ui/Button";
 
 /** One serializable row the Server Component hands over for export. */
 export type InventoryExportRow = {
@@ -49,7 +50,7 @@ export default function ExportCsvButton({ rows }: { rows: InventoryExportRow[] }
       type="button"
       onClick={onExport}
       disabled={rows.length === 0}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white shadow-sm px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+      className={`${buttonCls("secondary", "md")} disabled:opacity-50`}
     >
       <svg
         className="h-4 w-4"

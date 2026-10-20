@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageAuth } from "@/lib/session";
 import ActivityControls from "./ActivityControls";
+import { ButtonLink } from "@/app/_components/ui/Button";
+import { EmptyState } from "@/app/_components/ui/PageHeader";
+import { StatusBadge } from "@/app/_components/ui/StatusBadge";
 
 /**
  * `/my-activity` — the employee's own time record (Phase 5 — DTR).
@@ -101,31 +103,22 @@ export default async function MyActivityPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/pos"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ButtonLink href="/pos" variant="secondary" size="sm">
               Register
-            </Link>
+            </ButtonLink>
             {/* The cashier's own two questions live next to each other: what
                 did I work, and what did I sell. Labelled in the cashier's words
                 rather than the manager's "DTR". */}
-            <Link
-              href="/my-transactions"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
+            <ButtonLink href="/my-transactions" variant="secondary" size="sm">
               My transactions
-            </Link>
+            </ButtonLink>
             {/* Managers/admins get back to the management shell; cashiers have
                 no dashboard access, so the link is simply absent for them. */}
             {me.role !== "CASHIER" && (
-              <Link
-                href="/"
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
-              >
+              <ButtonLink href="/" variant="primary" size="sm">
                 Dashboard
-              </Link>
+              </ButtonLink>
             )}
           </div>
         </div>
@@ -178,9 +171,10 @@ export default async function MyActivityPage() {
           </div>
 
           {rows.length === 0 ? (
-            <div className="px-5 py-10 text-center text-sm text-slate-500">
-              No shifts recorded yet.
-            </div>
+            <EmptyState
+              title="No shifts recorded yet."
+              body="Clock in to start building your record."
+            />
           ) : (
             <ul className="divide-y divide-slate-100">
               {rows.map((r) => (
@@ -195,9 +189,7 @@ export default async function MyActivityPage() {
                           : "now"}
                       </span>
                       {r.end == null && (
-                        <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                          open
-                        </span>
+                        <StatusBadge variant="success">open</StatusBadge>
                       )}
                     </p>
                     <p className="text-sm font-semibold tabular-nums text-slate-900">
