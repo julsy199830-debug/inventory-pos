@@ -103,6 +103,14 @@ async function attemptLogin(
   await pinInput.fill(pin);
   await page.locator('button:has-text("Open register")').first().click();
   const outcome = await Promise.race([
+    // In a full-suite run the shared in-memory rate limiter may already be
+    // warm from earlier tests, surfacing a throttle message instead of the
+    // generic login failure. That is still a failure — no authentication — so
+    // treat it the same way.
+    page
+      .locator('text=Too many attempts')
+      .waitFor({ state: 'visible', timeout: 15000 })
+      .then(() => false),
     page.waitForURL(/\/(pos|)$/, { timeout: 15000 }).then(() => true),
     page
       .locator('text=Incorrect employee or PIN')

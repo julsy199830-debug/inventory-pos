@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import Database from 'better-sqlite3';
+import { getE2EDatabasePath } from '../setup/e2e-database';
 
 /**
  * Phase 5 E2E: time & attendance (DTR).
@@ -184,6 +186,27 @@ async function hasHorizontalOverflow(page: Page): Promise<boolean> {
     );
   });
 }
+/** Clear every DTR correction row so the shared E2E database starts each
+ * run from a clean slate. Corrections survive across full-suite executions
+ * (global setup only seeds Users/Products/Shifts — never deletes corrections),
+ * so without this a leftover correction from a previous run would make the
+ * "no corrections in this window" assertion fail. */
+function clearAllCorrections(): void {
+  const conn = db();
+  try {
+    conn.prepare('DELETE FROM "DtrCorrection"').run();
+  } finally {
+    conn.close();
+  }
+}
+
+function db() {
+  return new Database(getE2EDatabasePath()) as unknown as {
+    prepare(sql: string): { get(...args: unknown[]): unknown; run(...args: unknown[]): unknown };
+    close(): void;
+  };
+}
+
 test.describe('Phase 5 - my own attendance', () => {
   // Every test in this block ends at "off the clock": an open shift left behind
   // would show up as a phantom row on /dtr and a phantom "on the clock" on the
@@ -335,6 +358,9 @@ test.describe('Phase 5 - the manager DTR', () => {
   test('a correction without a reason is refused, and nothing is written', async ({
     page,
   }) => {
+    // Start from a clean slate: corrections survive across full-suite runs,
+    // so clear any leftovers before asserting "no corrections in this window."
+    clearAllCorrections();
     await ensureShiftOnRecord(page);
     await page.goto('/dtr');
     const row = page.locator('tbody tr').filter({ hasText: 'Admin' }).first();
@@ -387,7 +413,10 @@ test.describe('Phase 5 - the manager DTR', () => {
     // out of the window being asserted on.
     await dialog.locator('select').selectOption('end');
     await dialog.locator('input[name="value"]').fill(toDatetimeLocal(new Date()));
-    const reason = 'E2E - verified missed clock-out';
+    // Include a timestamp so the reason is unique to this run: leftover
+    // corrections from previous full-suite executions would otherwise match
+    // getByText(reason) and trigger a strict-mode violation.
+    const reason = `E2E - verified missed clock-out (${Date.now()})`;
     await dialog.locator('textarea[name="reason"]').fill(reason);
 
     await dialog.getByRole('button', { name: 'Save correction' }).click();
